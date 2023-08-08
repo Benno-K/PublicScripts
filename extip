@@ -1,0 +1,31 @@
+#!/bin/bash
+
+fritzbox=fritz.box
+xmlfile=${HOME}/.extip.xml.$$.tmp
+
+function createxml {
+	cat > $xmlfile <<EOI
+<?xml version="1.0" encoding="utf-8" ?>
+<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+  <s:Body>
+    <u:GetExternalIPAddress xmlns:u="urn:schemas-upnp-org:service:WANIPConnection:1" />
+  </s:Body>
+</s:Envelope>
+EOI
+}	
+
+function getexternalip {
+  createxml
+  curl $1 "http://${fritzbox}:49000/igdupnp/control/WANIPConn1" -H "Content-Type: text/xml; charset="utf-8"" -H "SoapAction:urn:schemas-upnp-org:service:WANIPConnection:1#GetExternalIPAddress" -d "@$xmlfile" | grep -Eo "\<[[:digit:]]{1,3}(\.[[:digit:]]{1,3}){3}\>"
+  savests=$?
+  rm -f $xmlfile
+  return $savests
+}
+
+extip=$(getexternalip -s)
+if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
+	echo $extip
+else
+	getexternalip
+	exit $?
+fi	
