@@ -29,8 +29,8 @@ extip=$(getexternalip -s)
 if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
 	echo $extip
 else
-# otherwise try again, this tome
-# non-silently
+# otherwise try again, this
+# time fail non-silently
 	getexternalip
 	exit $?
 fi	
