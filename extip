@@ -24,8 +24,8 @@ function getexternalip {
 
 # Ger local IP from FRITZ!box, faul
 # silently
-extip=$(getexternalip -s
-# If success then echo IO
+extip=$(getexternalip -s)
+# If success then echo IP
 if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
 	echo $extip
 else
