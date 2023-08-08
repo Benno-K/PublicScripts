@@ -22,7 +22,7 @@ function getexternalip {
   return $savests
 }
 
-# Ger local IP from FRITZ!box, faul
+# Ger local IP from FRITZ!box, fail
 # silently
 extip=$(getexternalip -s)
 # If success then echo IP
