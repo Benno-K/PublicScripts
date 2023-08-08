@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ "$1" = "-parse" ];then
+  shift
+  while read line
+    do
+    eval $line
+    done
+  echo "Provider: $isp"
+  exit
+  fi
+if [ "$1" = "" ];then
+  read -p "IP: " lookfor
+else
+  lookfor=$1
+fi
+curl http://ip-api.com/json/$lookfor 2>/dev/null|awk -F, '{ for (a = 2; a <= NF-1; a++) print $a}'|sed -e 's/":"/=/;s/"//;s/"//;s/:/=/;s/$/"/;s/=/="/' | $0 -parse
