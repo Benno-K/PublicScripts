@@ -1,2 +1,6 @@
 #!/bin/bash
+# See API description at
+# https://ipofy.org
+# As I only have IP V4, I can't tell
+# wether this works with UP V6
 curl -s https://api.ipify.org?format=json|awk -F '"' '{print $4}'
