@@ -22,10 +22,16 @@ function getexternalip {
   return $savests
 }
 
-extip=$(getexternalip -s)
+# Ger local IP from FRITZ!box, faul
+# silently
+extip=$(getexternalip -s
+# If success then echo IO
 if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
 	echo $extip
 else
+# otherwise try again, this tome
+# non-silently
 	getexternalip
 	exit $?
 fi	
+exit
