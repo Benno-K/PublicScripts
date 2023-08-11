@@ -1,0 +1,174 @@
+#!/bin/bash
+name="Non-Sequitur"
+refurl="http://www.gocomics.com/nonsequitur/"
+dst=/home/pi/nonsequitur
+nomail=0
+#mailto="kardel@freenet.de Benno.Kardel@airbus.com"
+mailto="kardel@freenet.de"
+#mailto="mail@kardel.eu"
+mailtohdr=$(echo $mailto | awk '{print $1}')
+fromaddr=perlfan@freakmail.de
+fromaddr=nonsequitur@kardel.eu
+fromname="${name}-Mailer"
+from="\"$fromname\" <$fromaddr>"
+sendmail=/usr/sbin/sendmail
+stamp=$(date +"%Y-%m-%d")
+headline="Non Sequitur $(date +%m/%d/%Y)"
+once=0
+noelderchk=0
+chkprevdays=40
+
+myname=$(basename $0)
+if [ x$myname = x$0 ]; then
+# Must be in path then
+self=$0
+else
+# Get full path to this script, store in $self
+read -d/ begin rest <<<$0
+if [ x$begin = x ]; then # we were invoked fully-qualified
+self=$0
+else
+if [ x$begin = x. ]; then # We were invoked using ./<whatever>
+self=$PWD/$myname
+else 
+# We were invoked partially qualified
+self=$PWD/$0
+fi
+fi
+fi
+
+function usage {
+if [ "$1" != 0 ]; then
+outdsc=2
+else
+outdsc=1
+fi
+cat <<EOF >&$outdsc
+Usage: $0 [-M] [-d YYYY/MM/DD ]
+-M  do not send mail
+-d  specify a specific date to download
+-o  once a day (no download, if called repeatedly and file exists)
+EOF
+exit $1
+}
+
+while [ "$1" != "" ]
+do
+recog=0
+if [ "$1" = "-h" ]; then
+usage 0
+fi
+if [ "$1" = "-o" ]; then
+once=1
+recog=1
+fi
+if [ "$1" = "-O" ]; then
+once=1
+noelderchk=1
+recog=1
+fi
+if [ "$1" = "-M" ]; then
+nomail=1
+recog=1
+fi
+if [ "$1" = "-d" ]; then
+shift
+stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
+headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d/%02d/%04d",$2,$3,$1}')
+refurl="${refurl}$1"
+recog=1
+fi
+if [ "$recog" = "0" ]; then
+echo "Unrecognized parameter or option: $1"
+    usage 1
+    exit 1
+  fi
+  shift
+  done
+
+if [ $once = 1 ] && [ $noelderchk = 0 ]; then
+  for (( d=$chkprevdays ; d>0 ; d-- ))
+    do
+    urlpostfix=$(date --date=today-${d}days +"%Y/%m/%d")
+    $self -O -d $urlpostfix
+    done
+fi
+
+name="${name}-${stamp}"
+out=$dst/$name.image
+[ $once = 1 ] && [ -e $dst/$name.[gpj][inp][fg] ] && exit 0 # Exit if -o and file present
+
+#url=$(wget -O - -q $refurl |awk -F'"' '/<img alt="Non Sequitur" class="strip"/{print $18}')
+url=$(wget -O - -q $refurl | awk -Fsrc= '/src="https:\/\/assets.amuniversal.com\//{print $2;exit}' | awk -F'"' '{print $2}')
+rm -rf $out.*
+wget -q --referer=$refurl -O $out "$url"
+
+if [ -r $out ] && [ "$1" != "-g" ]; then
+  filtyp=$(file $out|awk '{print tolower($2)}')
+  # Weird but true: The GIF of 2011/03/28 was recognized by file as sun disklbl
+  if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ] ; then
+    filext=$(echo $filtyp|sed -e 's/jpeg/jpg/g;s/sun/gif/g')
+    mv $out $dst/$name.$filext
+    out=$dst/$name.$filext
+    if [ "$nomail" != "1" ]; then
+      html=$(cat <<EOI
+<html>
+ <body>
+  <img alt="" src="cid:imgcid-$stamp">
+ </body>
+</html>
+EOI
+      )
+
+      # Construct the HTML part and store it in variable htmlpart
+      htmlpart=$(echo "$html"|mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
+
+      # Now construct - on the fly - the image part and pipe it into ...
+      mime-construct \
+          --subpart --type image/$filext \
+          --file $out \
+          --header "Content-ID: <imgcid-$stamp>" \
+          --header "Content-Disposition: inline;" \
+          --header " filename=\"Non-Sequitur-$stamp.$filext\"" \
+          --output| \
+      # ... the multipart-command, thus creating the entire message and ...
+      mime-construct \
+          --header "From: $from" \
+          --header "To: $mailtohdr" \
+          --subject "$headline" \
+          --multipart multipart/related \
+          --subpart-string "$htmlpart" \
+          --subpart-file - \
+          --output | \
+      # ..finally pipe that into the sendmail command
+      $sendmail -f "$from" -r $fromaddr $mailto
+    fi
+  else
+     cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
+Hello, this is $0
+
+I just downloaded $url 
+(retrieved using $refurl) into
+$out (on `hostname`).
+I expected $out
+to be an image, but it turned out to be of type $filtyp.
+
+If you have any idea why, please fix me.
+
+Your sincerely
+$0
+
+PS: I deleted $out.
+
+EOI
+     rm $out
+  fi
+fi
+
+exit
+# Here's what we get
+#  a) without a specific date
+#<picture class="gc-card__image gc-card__image--cropped-strip lazyload__padder lazyload__padder--card"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="auto" width="100%" src="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d" /></picture>
+root@server1:~# nonsequitur -d 2018/05/15
+#  b) with a specific date
+#<picture class="item-comic-image"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="
