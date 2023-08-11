@@ -20,78 +20,76 @@ chkprevdays=40
 
 myname=$(basename $0)
 if [ x$myname = x$0 ]; then
-# Must be in path then
-self=$0
+  # Must be in path then
+  self=$0
 else
-# Get full path to this script, store in $self
-read -d/ begin rest <<<$0
-if [ x$begin = x ]; then # we were invoked fully-qualified
-self=$0
-else
-if [ x$begin = x. ]; then # We were invoked using ./<whatever>
-self=$PWD/$myname
-else 
-# We were invoked partially qualified
-self=$PWD/$0
-fi
-fi
+  # Get full path to this script, store in $self
+  read -d/ begin rest <<<$0
+  if [ x$begin = x ]; then # we were invoked fully-qualified
+    self=$0
+  else
+    if [ x$begin = x. ]; then # We were invoked using ./<whatever>
+      self=$PWD/$myname
+    else
+      # We were invoked partially qualified
+      self=$PWD/$0
+    fi
+  fi
 fi
 
-function usage {
-if [ "$1" != 0 ]; then
-outdsc=2
-else
-outdsc=1
-fi
-cat <<EOF >&$outdsc
+function usage() {
+  if [ "$1" != 0 ]; then
+    outdsc=2
+  else
+    outdsc=1
+  fi
+  cat <<EOF >&$outdsc
 Usage: $0 [-M] [-d YYYY/MM/DD ]
 -M  do not send mail
 -d  specify a specific date to download
 -o  once a day (no download, if called repeatedly and file exists)
 EOF
-exit $1
+  exit $1
 }
 
-while [ "$1" != "" ]
-do
-recog=0
-if [ "$1" = "-h" ]; then
-usage 0
-fi
-if [ "$1" = "-o" ]; then
-once=1
-recog=1
-fi
-if [ "$1" = "-O" ]; then
-once=1
-noelderchk=1
-recog=1
-fi
-if [ "$1" = "-M" ]; then
-nomail=1
-recog=1
-fi
-if [ "$1" = "-d" ]; then
-shift
-stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
-headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d/%02d/%04d",$2,$3,$1}')
-refurl="${refurl}$1"
-recog=1
-fi
-if [ "$recog" = "0" ]; then
-echo "Unrecognized parameter or option: $1"
+while [ "$1" != "" ]; do
+  recog=0
+  if [ "$1" = "-h" ]; then
+    usage 0
+  fi
+  if [ "$1" = "-o" ]; then
+    once=1
+    recog=1
+  fi
+  if [ "$1" = "-O" ]; then
+    once=1
+    noelderchk=1
+    recog=1
+  fi
+  if [ "$1" = "-M" ]; then
+    nomail=1
+    recog=1
+  fi
+  if [ "$1" = "-d" ]; then
+    shift
+    stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
+    headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d/%02d/%04d",$2,$3,$1}')
+    refurl="${refurl}$1"
+    recog=1
+  fi
+  if [ "$recog" = "0" ]; then
+    echo "Unrecognized parameter or option: $1"
     usage 1
     exit 1
   fi
   shift
-  done
+done
 
 if [ $once = 1 ] && [ $noelderchk = 0 ]; then
-  for (( d=$chkprevdays ; d>0 ; d-- ))
-    do
+  for ((d = $chkprevdays; d > 0; d--)); do
     urlpostfix=$(date --date=today-${d}days +"%Y/%m/%d")
     $self -O -d $urlpostfix
-    done
+  done
 fi
 
 name="${name}-${stamp}"
@@ -104,14 +102,15 @@ rm -rf $out.*
 wget -q --referer=$refurl -O $out "$url"
 
 if [ -r $out ] && [ "$1" != "-g" ]; then
-  filtyp=$(file $out|awk '{print tolower($2)}')
+  filtyp=$(file $out | awk '{print tolower($2)}')
   # Weird but true: The GIF of 2011/03/28 was recognized by file as sun disklbl
-  if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ] ; then
-    filext=$(echo $filtyp|sed -e 's/jpeg/jpg/g;s/sun/gif/g')
+  if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ]; then
+    filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
     mv $out $dst/$name.$filext
     out=$dst/$name.$filext
     if [ "$nomail" != "1" ]; then
-      html=$(cat <<EOI
+      html=$(
+        cat <<EOI
 <html>
  <body>
   <img alt="" src="cid:imgcid-$stamp">
@@ -121,35 +120,35 @@ EOI
       )
 
       # Construct the HTML part and store it in variable htmlpart
-      htmlpart=$(echo "$html"|mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
+      htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
 
       # Now construct - on the fly - the image part and pipe it into ...
       mime-construct \
-          --subpart --type image/$filext \
-          --file $out \
-          --header "Content-ID: <imgcid-$stamp>" \
-          --header "Content-Disposition: inline;" \
-          --header " filename=\"Non-Sequitur-$stamp.$filext\"" \
-          --output| \
-      # ... the multipart-command, thus creating the entire message and ...
-      mime-construct \
+        --subpart --type image/$filext \
+        --file $out \
+        --header "Content-ID: <imgcid-$stamp>" \
+        --header "Content-Disposition: inline;" \
+        --header " filename=\"Non-Sequitur-$stamp.$filext\"" \
+        --output |
+        # ... the multipart-command, thus creating the entire message and ...
+        mime-construct \
           --header "From: $from" \
           --header "To: $mailtohdr" \
           --subject "$headline" \
           --multipart multipart/related \
           --subpart-string "$htmlpart" \
           --subpart-file - \
-          --output | \
-      # ..finally pipe that into the sendmail command
-      $sendmail -f "$from" -r $fromaddr $mailto
+          --output |
+        # ..finally pipe that into the sendmail command
+        $sendmail -f "$from" -r $fromaddr $mailto
     fi
   else
-     cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
+    cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
 Hello, this is $0
 
 I just downloaded $url 
 (retrieved using $refurl) into
-$out (on `hostname`).
+$out (on $(hostname)).
 I expected $out
 to be an image, but it turned out to be of type $filtyp.
 
@@ -161,7 +160,7 @@ $0
 PS: I deleted $out.
 
 EOI
-     rm $out
+    rm $out
   fi
 fi
 
