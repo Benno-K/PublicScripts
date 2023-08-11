@@ -23,11 +23,12 @@ image for a specific date and for today.
 Intended to run daily. Don't 
 run before 08:45 CET, the cartoon isn't available much earlier, otherwise you get yesterdays cartoon.
 
-> Usage: /usr/local/bin/nonsequitur [-M] [-d YYYY/MM/DD ]
+### Usage
+/usr/local/bin/nonsequitur [-M] [-d YYYY/MM/DD ]
 
->-M  do not send mail
+-M  do not send mail
 
->-d  specify a specific date to download
+-d  specify a specific date to download
 
->-o  once a day (no download, if called repeatedly and file exists)
+-o  once a day (no download, if called repeatedly and file exists)
 
