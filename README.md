@@ -17,8 +17,14 @@ named "Non Sequitur" by Wiley Miller,
 from a website. Because the website was redesigned witb some tool, it becsme quite complex and it's HTML
 is hard to read and understand. 
 Somehow I managed to figure out how 
-retrieve the URL of the cartoon 
+to retrieve the URL of the cartoon 
 image for a specific date and for today.
 
 Intended to run daily. Don't 
 run before 08:45 CET, the cartoon isn't available much earlier, otherwise you get yesterdays cartoon.
+
+> 
+Usage: /usr/local/bin/nonsequitur [-M] [-d YYYY/MM/DD ]
+-M  do not send mail
+-d  specify a specific date to download
+-o  once a day (no download, if called repeatedly and file exists)
