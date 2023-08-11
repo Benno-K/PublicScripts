@@ -12,7 +12,7 @@ Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases
 
 ## nonseqitur
-Script to fetch a specific cartoon,
+Script to fetch and store a specific cartoon,
 named "Non Sequitur" by Wiley Miller,
 from a website. Because the website was redesigned witb some tool, it becsme quite complex and it's HTML
 is hard to read and understand. 
