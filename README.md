@@ -57,7 +57,8 @@ interruptions of your connection.
 If the connection is re-established 
 later, you will just get your previous session as if nothing 
 happened.
-I use this on my raspi. It works
-perfectly, my only problem is
-that I forgot, where exactly is
-invoked from.
+I use this on my raspi. 
+I have included it in the 
+~/.profile of the user root and
+of my personal account.
+It has been working perfectly for about a decade now.
