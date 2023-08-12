@@ -1,5 +1,21 @@
 #!/bin/bash
 
+# Fill roots fs device with
+# zeroes for better compression
+# results
+
+# Get free MB of /, subtract
+# 500MB dovide it through 100
+# which makes the number of 
+# 100MBY blocks to write
 count=$(($(( $(df -m /|awk '/^\/dev\/root/{print $4}')-500))/100))
+
+# Noe fill the disk
 dd bs=100M if=/dev/zero of=/zeroes$$ count=$count oflag=nonblock
+
+# Remove again the file to
+# make the space available
+# again
 rm -rf /zeroes$$
+
+exit
