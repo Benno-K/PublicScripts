@@ -41,3 +41,23 @@ I do this once a week for thr root
 filesystem of my raspberry pi.
 Should run when no one is logged in
 because it **really** slows down the system.
+
+## screenify.sh
+
+See "man screen" to learn about the screen command 
+
+Run any interactive session, that is not already running in it, in a screen-session.
+
+If there are disconnected sessions, re-connect instead of creating new.
+
+Meant to be sourced during login
+so that every login runs in a 
+screen. The advantage is that the screen session will survive 
+interruptions of your connection.
+If the connection is re-established 
+later, you will just get your previous session as if nothing 
+happened.
+I use this on my raspi. It works
+perfectly, my only problem is
+that I forgot, where exactly is
+invoked from.
