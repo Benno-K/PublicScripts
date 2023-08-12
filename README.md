@@ -57,7 +57,7 @@ interruptions of your connection.
 If the connection is re-established 
 later, you will just get your previous session as if nothing 
 happened.
-I use this on my raspi. 
+I use this on all my computers. 
 I have included it in the 
 ~/.profile of the user root and
 of my personal account.
