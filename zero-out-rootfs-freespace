@@ -7,10 +7,10 @@
 # Get free MB of /, subtract
 # 500MB dovide it through 100
 # which makes the number of 
-# 100MBY blocks to write
+# 100MB blocks to write
 count=$(($(( $(df -m /|awk '/^\/dev\/root/{print $4}')-500))/100))
 
-# Noe fill the disk
+# Now fill the disk
 dd bs=100M if=/dev/zero of=/zeroes$$ count=$count oflag=nonblock
 
 # Remove again the file to
