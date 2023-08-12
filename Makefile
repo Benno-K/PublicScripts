@@ -1,4 +1,4 @@
-TARGETS = extip myip nonsequitur
+TARGETS = extip myip zzzz nonsequitur
 LBINDIR = /usr/local/bin
 
 install: $(TARGETS)
