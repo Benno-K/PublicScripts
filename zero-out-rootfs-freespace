@@ -1,0 +1,5 @@
+#!/bin/bash
+
+count=$(($(( $(df -m /|awk '/^\/dev\/root/{print $4}')-500))/100))
+dd bs=100M if=/dev/zero of=/zeroes$$ count=$count
+rm -rf /zeroes$$
