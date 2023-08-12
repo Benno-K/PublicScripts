@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fill roots fs device with
+# Fill root fs device with
 # zeroes for better compression
 # results
 
