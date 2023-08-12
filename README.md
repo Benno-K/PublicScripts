@@ -32,3 +32,12 @@ run before 08:45 CET, the cartoon isn't available much earlier, otherwise you ge
 
 -o  once a day (no download, if called repeatedly and file exists)
 
+## zero-out-rootfs-freespace
+
+When using dd piped into gzip
+for backing up filesystems that are actually used, it pays to fill the
+filesystems with zeroes, because these are compressed down to only a few zeroes.
+I do this once a week for thr root 
+filesystem of my raspberry pi.
+Should run when no one is logged in
+because it **really** slows down the system.
