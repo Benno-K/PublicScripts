@@ -1,6 +1,6 @@
-'
 - name: MyPlay
   hosts: server2
+  remote_user: pi
   tasks:
-   - name: Ping them
-     ansoble.builtin.ping:
+# - name: Ping them
+#    ansible.builtin.ping:
