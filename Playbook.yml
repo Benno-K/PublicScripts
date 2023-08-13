@@ -1,6 +1,6 @@
 '
--name: MyPlay
- hoszs: server2
- tasks:
-  -name: Ping them
-   ansoble.builtin.ping:
+- name: MyPlay
+  hosts: server2
+  tasks:
+   - name: Ping them
+     ansoble.builtin.ping:
