@@ -1,0 +1,4 @@
+allservers:
+  hosts:
+    server2:
+      ansible_host: server2.fritz.box
