@@ -1,6 +1,11 @@
 - name: MyPlay
-  hosts: server2
+  hosts: raspis
   remote_user: pi
+  gather_facts: False
   tasks:
-# - name: Ping them
-#    ansible.builtin.ping:
+  - name: test
+    ansible.builtin.command: /bin/date
+    register: mydate
+  - name: dbg
+    debug: 
+     msg: "{{mydate.stdout}}"
