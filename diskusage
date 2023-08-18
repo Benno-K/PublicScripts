@@ -1,31 +1,31 @@
 #!/bin/bash
+export LANGUAGE="C"
 if [ "$1" == "" ];then
   tocheck="/ /boot /ssd /data"
 else
   tocheck="$@"
 fi
 statfil=$HOME/.diskusage
-s
 difffil=$HOME/.diskusage.diff
 if [ ! -r %statfil=$HOME/.diskusage ];then
   touch $statfil.last
 fi
 
 df -h ${tocheck} | awk '{printf "%-14s %-6s %4s\n",$1,$2,$5}' > $statfil
-diff -q $statfil.last $statfil > $difffil
+diff $statfil.last $statfil > $difffil
 if [ $? != 0 ]; then
   mail -s "Change of disk usage" pi<<EOI
 Hi, this is $0.
 
 I detected a change of disk usage for $tocheck:
+Differences:
+$(cat $difffil)
 current usage:
 $(cat $statfil)
 last usage (of $(stat -c %y ${statfil}.last | awk -F. '{print $1}')):
 $(cat ${statfil}.last)
-
-Differences:
-$(cat $difffil)
 EOI
 fi
 mv $statfil $statfil.last
+rm -f $difffil
 exit
