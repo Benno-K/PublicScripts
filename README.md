@@ -62,3 +62,20 @@ I have included it in the
 ~/.profile of the user root and
 of my personal account.
 It has been working perfectly for about a decade now.
+
+## diskusage
+
+Checks the usage of some file-systems
+for changes. Actually it does 
+mainly a "df -h" stores the
+reuslt. Sends mail if result
+of check id dofferent from 
+last run. Should be used to
+get alarmed for filesystems
+where you do not expect 
+changes. To be run as cron-job
+but not too frequently (you
+may not want to get an email
+just because some program 
+creates 1% growth per minute
+while it runs for ten.
