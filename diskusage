@@ -1,0 +1,26 @@
+#!/bin/bash
+if [ "$1" == "" ];then
+  tocheck="/ /boot /ssd /data"
+else
+  tocheck="$@"
+fi
+statfil=$HOME/.diskusage
+if [ ! -r %statfil.last ];then
+  touch $statfil.last
+fi
+
+df -h ${tocheck} | awk '{printf "%-14s %-6s %4s\n",$1,$2,$5}' > $statfil
+diff -q $statfil.last $statfil > /dev/null
+if [ $? != 0 ]; then
+  mail -s "Change of disk usage" pi<<EOI
+Hi, this is $0.
+
+I detected a change of disk usage for $tocheck:
+current usage:
+$(cat $statfil)
+last usage (of $(stat -c %y ${statfil}.last | awk -F. '{print $1}')):
+$(cat ${statfil}.last)
+EOI
+fi
+mv $statfil $statfil.last
+exit
