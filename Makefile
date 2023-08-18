@@ -1,4 +1,4 @@
-TARGETS = extip myip nonsequitur zero-out-rootfs-freespace
+TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage
 LBINDIR = /usr/local/bin
 
 install: $(TARGETS)
