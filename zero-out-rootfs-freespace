@@ -10,7 +10,11 @@
 # 100MB blocks to write
 count=$(($(( $(df -m /|awk '/^\/dev\/root/{print $4}')-500))/100))
 
-# Now fill the disk
+# Now fill the disk - use non-
+# blocking IO (oflag) to
+# let other processes still
+# access the rootfs without
+# getting IO-errors
 dd bs=100M if=/dev/zero of=/zeroes$$ count=$count oflag=nonblock
 
 # Remove again the file to
