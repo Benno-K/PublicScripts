@@ -2,9 +2,9 @@
 Why call it public scripts?
 They are designated to be 
 available to all users on 
-a multi-user system. On Linux systemns they are typically located
+a multi-user system. On Linux systems they are typically located
 in a directory that is contained 
-in the execurion PATH of all users,
+in the execution PATH of all users,
 like /usr/local/bin.
 
 ## myip
