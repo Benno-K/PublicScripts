@@ -1,8 +1,8 @@
-TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage
+TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb
 LBINDIR = /usr/local/bin
 
 install: $(TARGETS)
-	install -m 755 -t $(LBINDIR) $(TARGETS)
+	sudo install -m 755 -t $(LBINDIR) $(TARGETS)
 
 # Code below is from template!
 usage:
