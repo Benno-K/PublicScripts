@@ -25,7 +25,7 @@ CERTFILE=fbx.bkpages.de.crt
 # Login credentials (emcrypted
 # password of user above on
 # FRITZ!box - saved with
-# script fbpssswdsave)
+# script fbpwdsave)
 credfil="/home/pi/.fblogcred.logfetch"
 
 
