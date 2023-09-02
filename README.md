@@ -43,6 +43,14 @@ run before 08:45 CET, the cartoon isn't available much earlier, otherwise you ge
 
 -o  once a day (no download, if called repeatedly and file exists)
 
+### Why is this script public?
+It could reside in the user's
+~/bin as well, it needs no
+permissions. I just put it 
+to /usr/local/bin so that
+every authorized user can
+imvoke it.
+
 ## zero-out-rootfs-freespace
 
 When using dd piped into gzip
