@@ -49,7 +49,7 @@ It could reside in the user's
 permissions. I just put it 
 to /usr/local/bin so that
 every authorized user can
-imvoke it.
+invoke it.
 
 ## zero-out-rootfs-freespace
 
