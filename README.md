@@ -6,6 +6,9 @@ a multi-user system. On Linux systems they are typically located
 in a directory that is contained 
 in the execution PATH of all users,
 like /usr/local/bin.
+Some of the scripts may need 
+to be run under specific
+accounts to access some files.
 
 ## myip
 Simple script using curl and ipify.org
