@@ -1,1 +1,7 @@
-../UserScripts/copyright.txt
+Author: Benno K.
+Email: perlfan@freakmail.de
+Github: https://www.github.com/Benno-K
+
+This script is available for
+public use under GPL V3 (see
+file LICENSE)
