@@ -1,4 +1,4 @@
-# PublicScript
+# PublicScripts
 Why call it public scripts?
 They are designated to be 
 available to all users on 
