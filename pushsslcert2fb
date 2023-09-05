@@ -1,7 +1,29 @@
 #!/bin/bash
 
-# Upload this hosts current
-# SSL-cert to Fritzbox
+# Upload tn SSL/TLS cert
+# to FRITZbox
+# Useful for regularly
+# updated certificated like
+# those from "Let's Encrypt"
+# as they expire within months.
+# Let' Encrypt provides a
+# script named getssl to
+# check and automatically
+# download a re-newed cert.
+# When a new cert is 
+# downloaded for a domain
+# a command can be executed.
+# Mostly these commands just
+# reload the webserver so 
+# it uses the new cert.
+# THIS script here can be used
+# whenever there is s new cert
+# for the domain of your 
+# FRITZ!box, so if you invoke
+# it via the getssl.conf of
+# your domain, your FRITZ!box
+# will get the new cert as 
+# soon as it is available.
 
 ##
 # Author: Benno K.
@@ -15,19 +37,21 @@
 
 # Variables
 USERNAME="logfetch"
-PASSWORD="fritzbox-password"
 CERTPATH="/root/.getssl/fbx.bkpages.de"
 CERTPASSWORD=""
 HOST=http://fritz.box
 KEYFILE=fbx.bkpages.de.key
 CHAINFILE=chain.crt
 CERTFILE=fbx.bkpages.de.crt
-# Login credentials (emcrypted
+# Login credentials (encrypted
 # password of user above on
 # FRITZ!box - saved with
 # script fbpwdsave)
-credfil="/home/pi/.fblogcred.logfetch"
-
+credfil=~pi/.fblogcred.logfetch
+# Define variable keycc
+. ~pi/.fblogsrc
+# contains sth. like this
+# keycc="UmVnbXN0cmllcnVuZ3Nwcm96ZXNzOdfCpysK"
 
 # make and secure a temporary file
 TMP="$(mktemp -t XXXXXX)"
@@ -35,7 +59,7 @@ chmod 600 $TMP
 
 # login to the box and get a valid SID
 CHALLENGE=`wget -q -O - $HOST/login_sid.lua | sed -e 's/^.*<Challenge>//' -e 's/<\/Challenge>.*$//'`
-HASH="`echo -n $CHALLENGE-$(ccat -K "UmVnaXN0cmllcnVuZ3Nwcm96ZXNzODfCpysK" $credfil) | iconv -f ASCII -t UTF16LE |md5sum|awk '{print $1}'`"
+HASH="`echo -n $CHALLENGE-$(ccat -K "$keycc" $credfil) | iconv -f ASCII -t UTF16LE |md5sum|awk '{print $1}'`"
 SID=`wget -q -O - "$HOST/login_sid.lua?sid=0000000000000000&username=$USERNAME&response=$CHALLENGE-$HASH"| sed -e 's/^.*<SID>//' -e 's/<\/SID>.*$//'`
 
 # generate our upload request
