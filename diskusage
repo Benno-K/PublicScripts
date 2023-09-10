@@ -11,17 +11,20 @@ if [ ! -r %statfil=$HOME/.diskusage ];then
   touch $statfil.last
 fi
 
-df -h ${tocheck} | awk '{printf "%-14s %-6s %4s\n",$1,$2,$5}' > $statfil
+df -h ${tocheck} | awk '{printf "%-14s %-6s %4s\n",$6,$5,$4}' > $statfil
 diff $statfil.last $statfil > $difffil
 if [ $? != 0 ]; then
-  mail -s "Change of disk usage" pi<<EOI
+  mail -a "Content-Type: text/plain" -s "Change of disk usage" pi<<EOI
 Hi, this is $0.
 
 I detected a change of disk usage for $tocheck:
+
 Differences:
-$(cat $difffil)
-current usage:
+$(cat $difffil | sed -e 's/>/curr.: /g' -e 's/</prev.: /g' | awk '!/^[0-9-]+/{print $0}')
+
+current. usage:
 $(cat $statfil)
+
 last usage (of $(stat -c %y ${statfil}.last | awk -F. '{print $1}')):
 $(cat ${statfil}.last)
 EOI
