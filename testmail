@@ -1,0 +1,11 @@
+#!/bin/bash
+# Recipient?
+if [ "$1" != "" ]; then
+  mailto="$1"
+else
+  read -p "To: " mailto
+fi
+
+# Send mail
+date +"Content:  %T"|mail -s "Testmail: $(date +%T)" $mailto
+exit
