@@ -102,4 +102,15 @@ while it runs for ten.
 Just because it suits my needs,
 the default filesystems checked
 when you don't pass any as arguments,
+
 are: / /boot /ssd /data"
+
+
+## testmail
+Sends a timestamped test
+email. 
+
+### Arguments:
+- Recipient
+If not specified it will be
+prompted.
