@@ -14,7 +14,7 @@ accounts to access some files.
 Very simple wrapper around
 s grep command that removes
 all comment lines (starting
-with s hash-sign (#)) and
+with a hash-sign (#)) and
 all empty lined. Specify
 zero or more filenames as
 parameters as of you would
