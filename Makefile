@@ -1,4 +1,4 @@
-TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail
+TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail clean
 
 LBINDIR = /usr/local/bin
 
