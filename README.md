@@ -10,16 +10,26 @@ Some of the scripts may need
 to be run under specific
 accounts to access some files.
 
+## clean
+Very simple wrapper around
+s grep command that removes
+all comment lines (starting
+with s hash-sign (#)) and
+all empty lined. Specify
+zero or more filenames as
+parameters as of you would
+do with grep.
+
+## extip
+Script to determine the external IP
+address of your FRITZ!box, which is your hosts IP as well in most cases
+
 ## myip
 Simple script using curl and ipify.org
 to determine own external IP address
 If you are connected to the Internet
 using a FRITZ!box I would recommend the extip script over this script as 
 it does not depend on remote servers
-
-## extip
-Script to determine the external IP
-address of your FRITZ!box, which is your hosts IP as well in most cases
 
 ## nonsequitur
 
@@ -110,7 +120,7 @@ are: / /boot /ssd /data"
 Sends a timestamped test
 email. 
 
-### Arguments:
+### Parameters:
 - Recipient
 If not specified it will be
 prompted.
