@@ -15,7 +15,7 @@ Very simple wrapper around
 a grep command that removes
 all comment lines (starting
 with a hash-sign (#)) and
-all empty lined. Specify
+all empty lines. Specify
 zero or more filenames as
 parameters as of you would
 do with grep.
