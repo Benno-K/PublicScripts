@@ -12,7 +12,7 @@ accounts to access some files.
 
 ## clean
 Very simple wrapper around
-s grep command that removes
+a grep command that removes
 all comment lines (starting
 with a hash-sign (#)) and
 all empty lined. Specify
