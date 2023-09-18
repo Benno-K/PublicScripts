@@ -1,5 +1,28 @@
 #!/bin/bash
+
+function format4edisonmail(){
+  cat<<EOI
+<html>
+<body>
+<pre>
+<code>
+$(cat)
+</code>
+</pre>
+</body>
+</html>
+EOI
+  return
+}
+
 export LANGUAGE="C"
+
+edison=0
+if [ "$1" = "-edison" ]; then
+	shift
+	edison=1
+fi
+
 if [ "$1" == "" ];then
   tocheck="/ /boot /ssd /data"
 else
@@ -14,7 +37,7 @@ fi
 df -h ${tocheck} | awk '{printf "%-14s %-6s %4s\n",$6,$5,$4}' > $statfil
 diff $statfil.last $statfil > $difffil
 if [ $? != 0 ]; then
-  mail -s "Change of disk usage" pi<<EOI
+	mailcontent=$(cat << EOI
 Hi, this is $0.
 
 I detected a change of disk usage for $tocheck:
@@ -22,12 +45,18 @@ I detected a change of disk usage for $tocheck:
 Differences:
 $(cat $difffil | sed -e 's/>/curr.: /g' -e 's/</prev.: /g' | awk '!/^[0-9-]+/{print $0}')
 
-current. usage:
+current usage:
 $(cat $statfil)
 
 last usage (of $(stat -c %y ${statfil}.last | awk -F. '{print $1}')):
 $(cat ${statfil}.last)
 EOI
+)
+  if [ $edison = 1 ]; then
+	  echo "$mailcontent"|format4edisonmail|mail -a 'Content-type: text/html' -s "Change of disk usage" pi
+	else
+	  echo "$mailcontent"|mail -s "Change of disk usage" pi
+	fi
 fi
 mv $statfil $statfil.last
 rm -f $difffil
