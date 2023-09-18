@@ -20,6 +20,14 @@ zero or more filenames as
 parameters as of you would
 do with grep.
 
+## crondtab
+Easily edit or list files in
+/etc/cron.d which usually
+come with some software that
+needs to run frequently, e.
+g. can be used for the 
+**diskusage** script.
+
 ## extip
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases
