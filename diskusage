@@ -18,7 +18,7 @@ EOI
 export LANGUAGE="C"
 
 edison=0
-if [ "$1" = "-edison" ]; then
+if [ "$1" == "-edison" ]; then
 	shift
 	edison=1
 fi
