@@ -16,7 +16,8 @@
 # needs to run frequently, 
 # e. g. can be used for the 
 # diskusage script.
-# crond=/etc/cron.d
+
+crond=/etc/cron.d
 
 if [ "$1" = "" ]; then
   ls $crond
