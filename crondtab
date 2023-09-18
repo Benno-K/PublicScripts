@@ -1,0 +1,11 @@
+#!/bin/bash
+
+crond=/etc/cron.d
+
+if [ "$1" = "" ]; then
+  ls $crond
+else
+  vi $crond/$1
+fi
+
+exit
