@@ -1,4 +1,13 @@
 #!/bin/bash
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
 
 if [ "$1" = "-c" ]; then
 	cdel="$2"
