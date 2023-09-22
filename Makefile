@@ -5,6 +5,9 @@ LBINDIR = /usr/local/bin
 install: $(TARGETS)
 	sudo install -m 755 -t $(LBINDIR) $(TARGETS)
 
+copyright: $(TARGETS)
+	crnupdate $(TARGETS)
+
 # Code below is from template!
 usage:
 	@echo "please use"
