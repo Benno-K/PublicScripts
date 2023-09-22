@@ -8,6 +8,9 @@ install: $(TARGETS)
 copyright: $(TARGETS)
 	crnupdate $(TARGETS)
 
+asset: $(TARGETS)
+	zip asset.zip $(TARGETS)
+
 # Code below is from template!
 usage:
 	@echo "please use"
