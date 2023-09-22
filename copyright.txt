@@ -1,5 +1,5 @@
 Author: Benno K.
-Email: perlfan@freakmail.de
+Email: benno@xyz.de
 Github: https://www.github.com/Benno-K
 
 This script is available for
