@@ -142,7 +142,7 @@ if [ "$action" == "clean" ];then
 	while [ $y -ge $fakebegin ]
 	do
 	ms=$(printf "%02d" $m)
-	searchfor=$(ls -r $kdbxdir/$kdbxname.kdbx.$y-$ms-*)
+	searchfor=$(ls -r $kdbxdir/$kdbxname.kdbx.$y-$ms-* 2>/dev/null)
 	skipped=0
 	for fn in $searchfor
 	do
