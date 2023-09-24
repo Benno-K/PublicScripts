@@ -1,4 +1,4 @@
-TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail clean crondtab
+TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail clean crondtab kpclean
 
 LBINDIR = /usr/local/bin
 
