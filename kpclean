@@ -26,7 +26,10 @@ args=""
 fakedays=7,17,27
 fakebegin=2021
 store=0
-settings=~/$(basename $0).settings
+kdbxdir=KeePass
+settings=~/.$(basename $0).settings
+action=clean
+
 if [ -r $settings ]; then
 	 . $settings
 fi
@@ -41,6 +44,11 @@ do
 	fi
 	if [ "$1" == "-dry" ]; then
 		dryrun=echo
+		shift
+		continue
+	fi
+	if [ "$1" == "-v" ]; then
+		verbose=1
 		shift
 		continue
 	fi
@@ -113,6 +121,9 @@ if [ "$action" == "mf" ];then
 	for fd in $fakefor
 	do
 	  fd=$(printf "%02d" $fd)
+		if [ $verbose == 1 ]; then
+		  echo "creating $kdbxdir/$kdbxname.kdbx.$y-$ms-$fd-11-11-11"
+		fi
 		$dryrun touch "$kdbxdir/$kdbxname.kdbx.$y-$ms-$fd-11-11-11"
 	done
 	((m--))
@@ -121,6 +132,45 @@ if [ "$action" == "mf" ];then
 		((y--))
 	fi
   done
+fi
+if [ "$action" == "clean" ];then
+	skc=0
+	rmc=0
+	y=$(date +%Y)
+	m=$(date +%m|sed -e s/^0//g)
+	fakefor=$(echo $fakedays|sed -e s/,/\ /g)
+	while [ $y -ge $fakebegin ]
+	do
+	ms=$(printf "%02d" $m)
+	searchfor=$(ls -r $kdbxdir/$kdbxname.kdbx.$y-$ms-*)
+	skipped=0
+	for fn in $searchfor
+	do
+		fy=$(echo $fn | cut -d. -f3|cut -d- -f1)
+		fm=$(echo $fn | cut -d. -f3|cut -d- -f2)
+		if [ $skipped == 0 ]; then
+			if [ $verbose == 1 ]; then
+		    echo skip $fm.$fy $fn
+			fi
+			((skipped++))
+			((skc++))
+			continue
+		fi
+	  if [ $skipped == 1 ]; then
+			if [ $verbose == 1 ]; then
+		    echo remove $fm.$fy $fn
+			fi
+		  $dryrun rm $fn
+			((rmc++))
+		fi
+	done
+	((m--))
+	if [ $m = 0 ]; then
+		m=12
+		((y--))
+	fi
+  done
+	echo $skc kept, $rmc removed
 fi
 
 exit
