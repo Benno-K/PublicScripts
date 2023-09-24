@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# Script to clean uo
+# KeePass database file
+# Deletes all old filrs
+# except one per month
+# (one per month is kept)
+# Keeps 2 months of 
+# completely all days
+# by default (= -k 2)
+
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+dryrun=""
+verbose=0
+argc=0
+args=""
+fakedays=7,17,27
+fakebegin=2021
+store=0
+settings=~/$(basename $0).settings
+if [ -r $settings ]; then
+	 . $settings
+fi
+
+while [ "${1:0:1}" == "-" ]
+do
+	if [ "$1" == "-begin" ]; then
+		shift
+		fakebegin=$1
+		shift
+		continue
+	fi
+	if [ "$1" == "-dry" ]; then
+		dryrun=echo
+		shift
+		continue
+	fi
+	if [ "$1" == "-makefake" ]; then
+		action=mf
+		shift
+		continue
+	fi
+	if [ "$1" == "-fakedays" ]; then
+		shift
+		fakedays=$1
+		shift
+		continue
+	fi
+	if [ "$1" == "-dir" ]; then
+		shift
+		kdbxdir=$1
+		shift
+		continue
+	fi
+	if [ "$1" == "-name" ]; then
+		shift
+		kdbxname=$1
+		shift
+		continue
+	fi
+	if [ "$1" == "-store" ]; then
+		shift
+		store=1
+		continue
+	fi
+	if [ "$1" == "-k" ]; then
+		shift
+		if [ "$1" == "" ]; then
+			keep=6
+		else
+			keep=$1
+		fi
+	  shift
+		continue
+	else
+   	echo >&2 "invalid option: $1"
+		exit 1
+  fi
+done
+if [ $store == 1 ]; then
+  cat <<EOI > $settings
+kdbxname=$kdbxname
+kdbxdir=$kdbxdir
+keep=$keep
+verbose=$verbose
+EOI
+  exit
+fi
+
+while [ "$1" != "" ]
+do
+	args="$args$1 "
+	shift
+	((arg++))
+done
+
+if [ "$action" == "mf" ];then
+	y=$(date +%Y)
+	m=$(date +%m|sed -e s/^0//g)
+	fakefor=$(echo $fakedays|sed -e s/,/\ /g)
+	while [ $y -ge $fakebegin ]
+	do
+	ms=$(printf "%02d" $m)
+	for fd in $fakefor
+	do
+	  fd=$(printf "%02d" $fd)
+		$dryrun touch "$kdbxdir/$kdbxname.kdbx.$y-$ms-$fd-11-11-11"
+	done
+	((m--))
+	if [ $m = 0 ]; then
+		m=12
+		((y--))
+	fi
+  done
+fi
+
+exit
