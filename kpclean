@@ -24,7 +24,7 @@ verbose=0
 argc=0
 args=""
 fakedays=7,17,27
-fakebegin=2021
+begin=2021
 store=0
 kdbxdir=KeePass
 settings=~/.$(basename $0).settings
@@ -38,7 +38,7 @@ while [ "${1:0:1}" == "-" ]
 do
 	if [ "$1" == "-begin" ]; then
 		shift
-		fakebegin=$1
+		begin=$1
 		shift
 		continue
 	fi
@@ -96,6 +96,7 @@ do
 done
 if [ $store == 1 ]; then
   cat <<EOI > $settings
+begin=$begin
 kdbxname=$kdbxname
 kdbxdir=$kdbxdir
 keep=$keep
@@ -115,7 +116,7 @@ if [ "$action" == "mf" ];then
 	y=$(date +%Y)
 	m=$(date +%m|sed -e s/^0//g)
 	fakefor=$(echo $fakedays|sed -e s/,/\ /g)
-	while [ $y -ge $fakebegin ]
+	while [ $y -ge $begin ]
 	do
 	ms=$(printf "%02d" $m)
 	for fd in $fakefor
@@ -139,7 +140,8 @@ if [ "$action" == "clean" ];then
 	y=$(date +%Y)
 	m=$(date +%m|sed -e s/^0//g)
 	fakefor=$(echo $fakedays|sed -e s/,/\ /g)
-	while [ $y -ge $fakebegin ]
+	skmonths=0
+	while [ $y -ge $begin ]
 	do
 	ms=$(printf "%02d" $m)
 	searchfor=$(ls -r $kdbxdir/$kdbxname.kdbx.$y-$ms-* 2>/dev/null)
@@ -150,13 +152,13 @@ if [ "$action" == "clean" ];then
 		fm=$(echo $fn | cut -d. -f3|cut -d- -f2)
 		if [ $skipped == 0 ]; then
 			if [ $verbose == 1 ]; then
-		    echo skip $fm.$fy $fn
+				echo skipped $fn
 			fi
 			((skipped++))
 			((skc++))
 			continue
 		fi
-	  if [ $skc -gt $keep ]; then
+	  if [ $skmonths -gt $keep ]; then
 			if [ $verbose == 1 ]; then
 		    echo remove $fm.$fy $fn
 			fi
@@ -166,6 +168,7 @@ if [ "$action" == "clean" ];then
 			((skc++))
 		fi
 	done
+	((skmonths++))
 	((m--))
 	if [ $m = 0 ]; then
 		m=12
