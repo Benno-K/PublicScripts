@@ -156,12 +156,14 @@ if [ "$action" == "clean" ];then
 			((skc++))
 			continue
 		fi
-	  if [ $skipped == 1 ]; then
+	  if [ $skc -gt $keep ]; then
 			if [ $verbose == 1 ]; then
 		    echo remove $fm.$fy $fn
 			fi
 		  $dryrun rm $fn
 			((rmc++))
+		else
+			((skc++))
 		fi
 	done
 	((m--))
