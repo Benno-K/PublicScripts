@@ -19,6 +19,27 @@
 # file LICENSE)
 ##
 
+function usage() {
+  cat <<EOI
+Usage: $0 [option [value]...
+ Options:
+  -name         name of database file,
+                if it is "mypwds.kdbx", use "mypwds"
+  -k num        number of months to keep the databases
+  -dry          dryrun, don't remove files
+  -begin year   go back to this year when scanning
+  -makefake     will create a lot of faked databases
+  -fakedays     specifies the days which wiil be created
+	        per month
+                specify as comma-separated list
+                default is 7,17,27
+  -store        store the values of -name, -dir, -k, -begin
+                stored values will be taken as defaults on next invocation
+  -v            verbose, list all files skipped and removed
+  -h            help (this text)
+EOI
+}
+
 dryrun=""
 verbose=0
 argc=0
@@ -41,6 +62,10 @@ do
 		begin=$1
 		shift
 		continue
+	fi
+	if [ "$1" == "-h" ]; then
+		usage
+		exit 0
 	fi
 	if [ "$1" == "-dry" ]; then
 		dryrun=echo
@@ -100,7 +125,6 @@ begin=$begin
 kdbxname=$kdbxname
 kdbxdir=$kdbxdir
 keep=$keep
-verbose=$verbose
 EOI
   exit
 fi
