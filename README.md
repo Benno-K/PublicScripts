@@ -32,6 +32,32 @@ g. can be used for the
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases
 
+## kpclean
+Clean out a directory where
+Keepass stores its database.
+Keepass stores a copy of the
+database every time you save
+the database. The copy is named
+like the database but appended
+by the date and time of the
+saving, so yyyy-mm-dd-HH-MM-SS
+gets appended, so if you save
+your database on 9/11 2023 at
+2:30 pm and your database is
+named mypass.kdbx you get the
+cooy named
+mypass.dbx.2023-09-11-14-39-00
+
+kpclean cleans up these copies 
+by removing all BUT ONE copies
+while keeping all copies of
+a number of months (default 3)
+
+See 
+>keyclean -help
+
+to find out how to specify.
+
 ## myip
 Simple script using curl and ipify.org
 to determine own external IP address
