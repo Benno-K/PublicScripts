@@ -34,7 +34,14 @@ to ctab at the end of the
 crondtab -c command to
 create the file with a single command line
 #### Example
-crondtab -c testit 20 21 w '\\*' pi '/usr/sbin/nologin'
+> crondtab -c testit 20 21 w '\\*' pi '/usr/sbin/nologin'
+
+will create the file
+/etc/cron.d/testit containing
+the line
+> 30 20   * *     *       pi    /usr/sbin/nologin
+
+which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
 ## ctab
 Little helper to manage cron
