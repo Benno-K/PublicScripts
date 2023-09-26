@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Script to create s line
+# for a cron tab
+# Parameters:
+#  Time of day (eg. 14:30, 
+#  but also possible *:0
+#  *:* 0:* and everything else
+#  that can go into the first
+#  two fields of a crontab
+#  (see "man 5 crontab")
+#  Take care if you specify
+#  a time without as the order
+#  is still hour followed by
+#  minute (in contrary to the
+#  order of crontab which is
+#  minute followed by hour):
+
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+echo $1|grep -q :
+if [ $? == 0 ]; then
+	h=${1:0:2}
+	m=${1:3:2}
+	if [ "${1:2:1}" != ":" ] ||
+		 [ "${1:5:1}" != "" ]; then
+	  echo >&2 "Illegal time format: $1"
+		exit 2
+	fi
+	if [ $m -gt 59 ] ||
+	   [ $h -gt 23 ]; then
+	  echo >&2 "Illegal time: $1"
+		exit 2
+	fi
+fi
+if [ "$h" == "" ]; then
+ if [ "$1" == "" ]; then
+  read -p "hour (0-23): " h
+ else
+	h=$1
+	shift
+ fi
+ if [ "$1" == "" ]; then
+  read -p "minute (0-59):" m
+ else
+	m=$1
+	shift
+ fi
+else
+	h=${1:0:2}
+	m=${1:3:2}
+	shift
+fi
+
+choice="$1"
+shift
+while [ "$choice" == "" ] && [ "$choice" != "m" ] && [ "$choice" != "w" ]
+do	
+	read -p "run monthly or weekly (m/w): " choice
+done
+
+if [ "$choice" == "w" ]; then
+	wd="$1"
+	if [ $wd -gt 7 ] ||
+		 [ $wd -lt 0 ]; then
+	  echo >&2 "Illegal weekday: $1"
+		exit 2
+	fi
+	shift
+	if [ "$wd" == "" ]; then
+    read -p "day of week (0-7, 0=7=Sun): " wd
+	else
+    md='*'
+	fi
+else
+	md="$1"
+	if [ $md -gt 31 ] ||
+		 [ $md -lt 1 ]; then
+	  echo >&2 "Illegal day of month: $1"
+		exit 2
+	fi
+	if [ "$md" == "" ]; then
+	  read -p "day of month (0-31): " md
+	else
+	  shift
+	fi
+	wd='*'
+fi
+u="$1"
+shift
+if [ "$u" == "" ]; then
+  read -p "run as (username  DEFAULT $USER): " u
+fi
+
+if [ "$1" == "" ]; then
+  read -p "command: " cmd
+else
+	cmd="$@"
+fi
+echo "$m $h $wd $md $u test -x $cmd && $cmd"
+exit
