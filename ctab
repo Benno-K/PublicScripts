@@ -10,7 +10,8 @@
 #  two fields of a crontab
 #  (see "man 5 crontab")
 #  Take care if you specify
-#  a time without as the order
+#  a time without a colon (:)
+#  as the order of parameters
 #  is still hour followed by
 #  minute (in contrary to the
 #  order of crontab which is
