@@ -49,13 +49,15 @@ if [ $? == 0 ]; then
 fi
 if [ "$h" == "" ]; then
  if [ "$1" == "" ]; then
-  read -p "hour (0-23): " h
+  echo -n >&2 "hour (0-23): "
+  read n
  else
 	h=$1
 	shift
  fi
  if [ "$1" == "" ]; then
-  read -p "minute (0-59):" m
+  echo -n >&2 "minute (0-59):"
+  read m
  else
 	m=$1
 	shift
@@ -70,7 +72,8 @@ choice="$1"
 shift
 while [ "$choice" == "" ] && [ "$choice" != "m" ] && [ "$choice" != "w" ]
 do	
-	read -p "run monthly or weekly (m/w): " choice
+	echo -n >&2 "run monthly or weekly (m/w): "
+	read choice
 done
 
 if [ "$choice" == "w" ]; then
@@ -84,7 +87,8 @@ if [ "$choice" == "w" ]; then
 	fi
 	shift
 	if [ "$wd" == "" ]; then
-    read -p "day of week (0-7, 0=7=Sun): " wd
+    echo -n >&2 "day of week (0-7, 0=7=Sun): "
+    read wd
 	else
     md='*'
 	fi
@@ -99,7 +103,8 @@ else
 		exit 2
 	fi
 	if [ "$md" == "" ]; then
-	  read -p "day of month (0-31): " md
+	  echo -n >&2 "day of month (0-31): "
+	  read md
 	else
 	  shift
 	fi
@@ -112,7 +117,8 @@ else
 		exit 2
 	fi
 	if [ "$my" == "" ]; then
-	  read -p "month (1-12): " my
+	  echo -n >&2 "month (1-12): "
+	  read my
 	else
 	  shift
 	fi
@@ -121,7 +127,8 @@ fi
 u="$1"
 shift
 if [ "$u" == "" ]; then
-  read -p "run as (username, default= $USER): " u
+ echo -n >&2 "run as (username, default= $USER): "
+  read u
 	if [ "$u" == "" ]; then
 		u=$USER
 	fi
@@ -130,8 +137,9 @@ fi
 cmd="$@"
 while [ "$cmd" == "" ]
 do
-  read -p "command: " cmd
+  echo -n >&2 "command: "
+  read cmd
 done
 
-echo "$m $h $wd $md $my $u $cmd"
+echo "$m $h	$wd $md	$my	$u	$cmd"
 exit
