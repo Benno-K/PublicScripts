@@ -49,6 +49,7 @@ will create the file
 /etc/cron.d/testit containing
 the line
 > 30 20   * *     *       pi    /usr/sbin/nologin
+
 which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
 ## extip
