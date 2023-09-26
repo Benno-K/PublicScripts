@@ -36,8 +36,8 @@ filed in /etc/cron.d/.
 
 #### Options
 - -c create a crontab file
-  -s show a crontab file
-  -l (without filename) list all crontab files
+-  -s show a crontab file
+-  -l (without filename) list all crontab files
  for creation it will ask for
  the reqired data. You can
  pass all the data asked as
