@@ -19,9 +19,20 @@
 
 crond=/etc/cron.d
 
-if [ "$1" = "" ]; then
+if [ "$1" = "-l" ]; then
   ls $crond
-else
-  vi $crond/$1
+	exit
 fi
+if [ "$1" = "-d" ]; then
+	rm -i $crond/$2
+	exit
+fi
+if [ "$1" = "-c" ]; then
+	cat <<<$(ctab) > $crond/$2
+	exit
+fi
+
+vi $crond/$1
+fi
+
 exit
