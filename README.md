@@ -27,6 +27,14 @@ come with some software that
 needs to run frequently, e.
 g. can be used for the 
 **diskusage** script.
+Invokes **ctsb** to get input
+for the file. You can pass all
+paramwters you like to handover
+to ctab at the end of the
+crondtab -c command to
+create the file with a single command line
+#### Example
+crondtab -c testit 20 21 w '\\*' pi '/usr/sbin/nologin'
 
 ## ctab
 Little helper to manage cron
