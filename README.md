@@ -28,6 +28,28 @@ needs to run frequently, e.
 g. can be used for the 
 **diskusage** script.
 
+## ctab
+Little helper to manage cron
+filed in /etc/cron.d/.
+### Usage
+> ctab [options...] [filenamw]
+
+#### Options
+- -c create a crontab file
+  -s show a crontab file
+  -l (without filename) list all crontab files
+ for creation it will ask for
+ the reqired data. You can
+ pass all the data asked as
+ parameters.
+#### Example
+> ctab -c testit 20 30 w \\* pi /usr/sbin/nologin
+will create the file
+/etc/cron.d/testit containing
+the line
+> 30 20   * *     *       pi    /usr/sbin/nologin
+which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
+
 ## extip
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases
