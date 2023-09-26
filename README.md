@@ -44,6 +44,7 @@ filed in /etc/cron.d/.
  parameters.
 #### Example
 > ctab -c testit 20 30 w \\* pi /usr/sbin/nologin
+
 will create the file
 /etc/cron.d/testit containing
 the line
