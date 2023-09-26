@@ -33,6 +33,5 @@ if [ "$1" = "-c" ]; then
 fi
 
 vi $crond/$1
-fi
 
 exit
