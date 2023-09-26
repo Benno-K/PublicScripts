@@ -88,6 +88,7 @@ if [ "$choice" == "w" ]; then
 	else
     md='*'
 	fi
+	my="*"
 else
 	md="$1"
 	# Numeric? Then check range
@@ -102,18 +103,35 @@ else
 	else
 	  shift
 	fi
+	my=$1
+	# Numeric? Then check range
+	if [[ $my =~ '^[0-9]+$' ]] &&
+	   ([ $my -gt 12 ] ||
+		  [ $my -lt 1 ]); then
+	  echo >&2 "Illegal month: $1"
+		exit 2
+	fi
+	if [ "$my" == "" ]; then
+	  read -p "month (1-12): " my
+	else
+	  shift
+	fi
 	wd='*'
 fi
 u="$1"
 shift
 if [ "$u" == "" ]; then
-  read -p "run as (username  DEFAULT $USER): " u
+  read -p "run as (username, default= $USER): " u
+	if [ "$u" == "" ]; then
+		u=$USER
+	fi
 fi
 
-if [ "$1" == "" ]; then
+cmd="$@"
+while [ "$cmd" == "" ]
+do
   read -p "command: " cmd
-else
-	cmd="$@"
-fi
-echo "$m $h $wd $md $u $cmd"
+done
+
+echo "$m $h $wd $md $my $u $cmd"
 exit
