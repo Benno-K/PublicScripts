@@ -27,7 +27,7 @@ come with some software that
 needs to run frequently, e.
 g. can be used for the 
 **diskusage** script.
-Invokes **atab** to get input
+Invokes **ctab** to get input
 for the file. You can pass all
 paramwters you like to handover
 to ctab at the end of the
