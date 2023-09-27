@@ -45,7 +45,7 @@ which will invoke /usr/sbin/nologin every day at 20:30 as user pi
 
 ## ctab
 Little helper to manage cron
-filed in /etc/cron.d/.
+files in /etc/cron.d/.
 ### Usage
 > ctab [options...] [filenamw]
 
