@@ -45,19 +45,13 @@ which will invoke /usr/sbin/nologin every day at 20:30 as user pi
 
 Get asked
 
-`crondtab -c testit
-
-`hour (0-23): **8**
-
-`minute (0-59):0
-
-`run monthly or weekly (m/w): w
-
-`day of week (0-7, 0=7=Sun): *
-
-`run as (username, default= pi): pi
-
-`command: /usr/sbin/nologin
+`crondtab -c testit`
+`hour (0-23): **8**`
+`minute (0-59):0`
+`run monthly or weekly (m/w): w`
+`day of week (0-7, 0=7=Sun): *`
+`run as (username, default= pi): pi`
+`command: /usr/sbin/nologin`
 
 this runs nologin every day
 at 08:00 as user pi
