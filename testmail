@@ -6,6 +6,16 @@ else
   read -p "To: " mailto
 fi
 
+cntfil=~/.testmailcnt
+if [ -r $cntfil ]; then
+  cnt=$(cat ~/.testmailcnt)
+else
+	cnt=0
+fi
+((cnt++))
+echo -n $cnt > $cntfil
+
 # Send mail
-date +"Content:  %T"|mail -s "Testmail: $(date +%T)" $mailto
+date +"Sent at $(date +%T)"|mail -s "Testmail $cnt" $mailto
+echo "Testmail $cnt"
 exit
