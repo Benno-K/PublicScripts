@@ -17,7 +17,7 @@ fi
 cntfil=~/.testmailcnt
 logfil=~/testmail.log
 if [ "$1" = "-l" ]; then
-	head -10 $logfil
+	less $logfil
 	exit
 fi
 
