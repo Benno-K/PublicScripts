@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# Create and send a test-mail
+# and keep track of them
+
+##
+#
+##
+
 # Recipient?
 if [ "$1" != "" ]; then
   mailto="$1"
@@ -8,6 +16,11 @@ fi
 
 cntfil=~/.testmailcnt
 logfil=~/testmail.log
+if [ "$1" = "-l" ]; then
+	head -10 $logfil
+	exit
+fi
+
 if [ -r $cntfil ]; then
   cnt=$(cat ~/.testmailcnt)
 else
