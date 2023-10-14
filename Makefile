@@ -4,9 +4,6 @@ TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert
 LBINDIR = /usr/local/bin
 
 install: $(TARGETS)
-	sudo install -m 755 -t $(LBINDIR) $(TARGETS)
-
-xins:
 	@for n in $(TARGETS);\
 	do \
 	diff -q $$n $(LBINDIR)/$$n > /dev/null;\
