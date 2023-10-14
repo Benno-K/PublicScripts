@@ -1,9 +1,20 @@
+SHELL = /bin/bash
 TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail clean crondtab kpclean ctab
 
 LBINDIR = /usr/local/bin
 
 install: $(TARGETS)
 	sudo install -m 755 -t $(LBINDIR) $(TARGETS)
+
+xins:
+	@for n in $(TARGETS);\
+	do \
+	diff -q $$n $(LBINDIR)/$$n > /dev/null;\
+	if [ "$$?" != "0"	];then \
+	   echo sudo install -m 755 -t $(LBINDIR) $$n;\
+	   sudo install -m 755 -t $(LBINDIR) $$n;\
+	fi;\
+	done
 
 copyright: $(TARGETS)
 	crnupdate $(TARGETS)
