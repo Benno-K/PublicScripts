@@ -7,6 +7,7 @@ else
 fi
 
 cntfil=~/.testmailcnt
+logfil=~/testmail.log
 if [ -r $cntfil ]; then
   cnt=$(cat ~/.testmailcnt)
 else
@@ -16,6 +17,8 @@ fi
 echo -n $cnt > $cntfil
 
 # Send mail
-date +"Sent at $(date +%T)"|mail -s "Testmail $cnt" $mailto
-echo "Testmail $cnt"
+echo "Sent by $USER at $(date +%T) on $(hostname) to $mailto"|mail -s "Testmail $cnt by $USER" $mailto
+echo "Testmail $cnt by $USER"
+# Log
+date "+$cnt %F %T $mailto" >> $logfil
 exit
