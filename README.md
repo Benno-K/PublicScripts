@@ -212,3 +212,8 @@ email.
 - Recipient
 If not specified it will be
 prompted.
+
+## ghrelease
+Add github token to github
+config files
+

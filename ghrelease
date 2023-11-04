@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ "$1" == "-a" ]; then
+	shift
+	asset=$1
+	shift
+else
+	asset=scripts.zip
+fi
+assetname=$(basename $asset)
+
+if [ "$1" == "" ]; then
+	read -p "Version: v" version
+else
+  version="v$1"
+fi
+
+url=$(grep "[[:space:]]url = " .git/config | cut -d= -f2)
+data=$(echo $url | cut -d/ -f3 | cut -d@ -f1)
+user=$(echo $data| cut -d: -f1)
+token=$(echo $data| cut -d: -f2)
+if [ -L $PWD ]; then
+	repo=$(readlink -f $PWD)
+else
+	repo=$PWD
+fi
+reponame=$(basename $repo)
+echo $url
+echo $data
+echo $user
+echo $token
+echo $repo
+echo $reponame
+
+git tag -a $version -m "Release $version"
+git push origin $version
+set -x
+curl -X POST -H "Authorization: token $token" --data '{"tag_name": "'$version'","target_commitish": "main","name": "'$version'","body": "Release '$version'","draft": false,"prerelease": false}' https://api.github.com/repos/$user/$reponame/releases?access_token=$token
+curl -X POST -H "Authorization: token $token" -H "Content-Type: application/octet-stream" --data-binary @$asset "https://uploads.github.com/repos/$user/$reponame/releases/$version/assets?name=$assetname"
