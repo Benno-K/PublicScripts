@@ -1,0 +1,166 @@
+#!/bin/bash
+# What's thr current image file
+img=$(curl --no-progress-meter  https://ruthe.de/|grep image_src |sed -E 's/.*(https.*strip_[0-9]*.jpg)">/\1/g')
+# and it's name
+filnam=$(basename $img)
+
+name="Ruthe"
+lcname="ruthe"
+refurl="https://ruthe.de/"
+dst=/home/pi/$lcname
+nomail=0
+mailto="mail@kardel.eu"
+
+# No new file, nothing to do
+if [ -r $dst/$filnam ];then
+	exit
+fi
+
+mailtohdr=$(echo $mailto | awk '{print $1}')
+fromaddr=ruthe@kardel.eu
+fromname="${name}-Mailer"
+from="\"$fromname\" <$fromaddr>"
+sendmail=/usr/sbin/sendmail
+stamp=$(date +"%Y-%m-%d")
+headline="Ruthe $(date +%m/%d/%Y)"
+once=0
+noelderchk=0
+chkprevdays=40
+
+myname=$(basename $0)
+if [ x$myname = x$0 ]; then
+  # Must be in path then
+  self=$0
+else
+  # Get full path to this script, store in $self
+  read -d/ begin rest <<<$0
+  if [ x$begin = x ]; then # we were invoked fully-qualified
+    self=$0
+  else
+    if [ x$begin = x. ]; then # We were invoked using ./<whatever>
+      self=$PWD/$myname
+    else
+      # We were invoked partially qualified
+      self=$PWD/$0
+    fi
+  fi
+fi
+
+function usage() {
+  if [ "$1" != 0 ]; then
+    outdsc=2
+  else
+    outdsc=1
+  fi
+  cat <<EOF >&$outdsc
+Usage: $0 [-M] [-d YYYY/MM/DD ]
+-M  do not send mail
+-d  specify a specific date to download
+EOF
+  exit $1
+}
+
+while [ "$1" != "" ]; do
+  recog=0
+  if [ "$1" = "-h" ]; then
+    usage 0
+  fi
+  if [ "$1" = "-O" ]; then
+    noelderchk=1
+    recog=1
+  fi
+  if [ "$1" = "-M" ]; then
+    nomail=1
+    recog=1
+  fi
+  if [ "$1" = "-d" ]; then
+    shift
+    stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
+    headline=$(echo $1 | awk -F/ '{printf "Ruthe %02d/%02d/%04d",$2,$3,$1}')
+    refurl="${refurl}$1"
+    recog=1
+  fi
+  if [ "$recog" = "0" ]; then
+    echo "Unrecognized parameter or option: $1"
+    usage 1
+    exit 1
+  fi
+  shift
+done
+
+name="${lcname}-${stamp}"
+lnk=$dst/$name.image
+out=$dst/$filnam
+
+wget -q -O $out "$img"
+if [ -r $out ]; then
+  filtyp=$(file $out | awk '{print tolower($2)}')
+  # Weird but true: The GIF of 2011/03/28 was recognized by file as sun disklbl
+  if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ]; then
+    filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
+#    mv $out $dst/$name.$filext
+    out=$dst/$name.$filext
+		(cd $dst;ln -s $filnam $name.$filext)
+    if [ "$nomail" != "1" ]; then
+      html=$(
+        cat <<EOI
+<html>
+ <body>
+  <img alt="" src="cid:imgcid-$stamp">
+ </body>
+</html>
+EOI
+      )
+
+      # Construct the HTML part and store it in variable htmlpart
+      htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
+
+      # Now construct - on the fly - the image part and pipe it into ...
+      mime-construct \
+        --subpart --type image/$filext \
+        --file $out \
+        --header "Content-ID: <imgcid-$stamp>" \
+        --header "Content-Disposition: inline;" \
+        --header " filename=\"Ruthe-$stamp.$filext\"" \
+        --output |
+        # ... the multipart-command, thus creating the entire message and ...
+        mime-construct \
+          --header "From: $from" \
+          --header "To: $mailtohdr" \
+          --subject "$headline" \
+          --multipart multipart/related \
+          --subpart-string "$htmlpart" \
+          --subpart-file - \
+          --output |
+        # ..finally pipe that into the sendmail command
+        $sendmail -f "$from" -r $fromaddr $mailto
+    fi
+  else
+    cat <<EOI | mailx -s "Ralph Ruthe of today failed!" $mailto
+Hello, this is $0
+
+I just downloaded $url 
+(retrieved using $refurl) into
+$out (on $(hostname)).
+I expected $out
+to be an image, but it turned out to be of type $filtyp.
+
+If you have any idea why, please fix me.
+
+Your sincerely
+$0
+
+PS: I deleted $out.
+
+EOI
+    rm $out
+  fi
+fi
+
+exit
+# Here's what we get
+#  a) without a specific date
+#<picture class="gc-card__image gc-card__image--cropped-strip lazyload__padder lazyload__padder--card"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="auto" width="100%" src="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d" /></picture>
+root@server1:~# nonsequitur -d 2018/05/15
+#  b) with a specific date
+#<picture class="item-comic-image"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="
