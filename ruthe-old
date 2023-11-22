@@ -1,0 +1,23 @@
+#!/bin/bash
+dst=~/ruthe
+curlnp="curl --no-progress-meter"
+pre=https://ruthe.de/
+nxt=/
+img=$($curlnp $pre$nxt/|grep link_archive|cut -d'"' -f6)
+num=$(basename $img .jpg|cut -d_ -f2)
+tpl=$(echo $img|sed -e "s/$num/%d/g")
+((skipped=0))
+((fetched=0))
+for (( n=$num ; n>=$1 ; n-- ))
+	do
+	img=$(printf "${tpl}" $n)
+	dstfil=$dst/$(basename $img)
+	if [ ! -r $dstfil ]; then
+		$curlnp $pre$img > $dstfil && echo $dstfil fetched
+		((fetched++))
+	else
+		((skipped++))
+	fi
+	done
+echo "$skipped already here, $fetched fetched"
+exit
