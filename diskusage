@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function format4edisonmail(){
+function format4html(){
   cat<<EOI
 <html>
 <body>
@@ -17,10 +17,10 @@ EOI
 
 export LANGUAGE="C"
 
-edison=0
-if [ "$1" == "-edison" ]; then
+html=0
+if [ "$1" == "-html" ]; then
 	shift
-	edison=1
+	html=1
 fi
 
 if [ "$1" == "" ];then
@@ -53,8 +53,8 @@ last usage (of $(stat -c %y ${statfil}.last | awk -F. '{print $1}')):
 $(cat ${statfil}.last)
 EOI
 )
-  if [ $edison = 1 ]; then
-	  echo "$mailcontent"|format4edisonmail|mail -a 'Content-type: text/html' -s "Change of disk usage" pi
+  if [ $html = 1 ]; then
+	  echo "$mailcontent"|format4html|mail -a 'Content-type: text/html' -s "Change of disk usage" pi
 	else
 	  echo "$mailcontent"|mail -s "Change of disk usage" pi
 	fi
