@@ -104,7 +104,7 @@ if [ -r $out ]; then
     if [ "$nomail" != "1" ]; then
       text=$(
 				cat <<EOI
-Here is today's "Shit happens" cartoon by Ralph Ruthe
+Here is today's new cartoon by Ralph Ruthe
 EOI
       )
       html=$(
