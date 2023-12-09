@@ -102,6 +102,11 @@ if [ -r $out ]; then
     out=$dst/$name.$filext
 		(cd $dst;ln -s $filnam $name.$filext)
     if [ "$nomail" != "1" ]; then
+      text=$(
+				cat <<EOI
+Here is today's "Shit happens" cartoon by Ralph Ruthe
+EOI
+      )
       html=$(
         cat <<EOI
 <html>
@@ -112,6 +117,7 @@ if [ -r $out ]; then
 EOI
       )
 
+      textpart=$(echo "$text" | mime-construct --subpart --type "text/plain; charset=utf-8" --encoding base64 --file - --output)
       # Construct the HTML part and store it in variable htmlpart
       htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
 
@@ -129,6 +135,8 @@ EOI
           --header "To: $mailtohdr" \
           --subject "$headline" \
           --multipart multipart/related \
+          --subpart-string "$textpart" \
+          --subpart-file - \
           --subpart-string "$htmlpart" \
           --subpart-file - \
           --output |
