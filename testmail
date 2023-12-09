@@ -7,6 +7,66 @@
 #
 ##
 
+usesendemail () {
+
+su="Testmail $cnt by $USER"
+if [ "$ma" = "" ]; then
+	ma=$fr
+fi
+sendemail -m "$mt" -f $fr -s $ss -xu $ma -t $1 -o timeout=5 -o fqdn=$fqdn -xp $xp -u $(date +"Testmail $cnt von $USER@$(hostname) %d.%m.%Y %H:%M:%S")
+}
+
+. ~/.tmsrc
+
+if [ x$1 == xvia ]; then
+	shift
+	case $1 in
+		wd|web-de|w)
+			shift
+			rcfil=~/.rc-web-de
+			;;
+		fn|freenet|freenet-de|f)
+			shift
+			rcfil=~/.rc-freenet-de
+			;;
+		to|td|t-online|t-online-de|t)
+			shift
+			rcfil=~/.rc-t-online-de
+			;;
+		lp|laposte|laposte-net|l)
+			shift
+			rcfil=~/.rc-laposte-net
+			;;
+		ke|kardel-eu|k)
+			shift
+			rcfil=~/.rc-kardel-eu
+			;;
+		bd|bkpages-de|b)
+			shift
+			rcfil=~/.rc-bkpages-de
+			;;
+		*)
+			echo $1 unknown
+			exit 4
+			;;
+	esac
+	fifo=$(mktemp -u ~/tmfifo-XXXXXXXXX)
+	mkfifo $fifo
+	rev $rcfil | base64 -d|rev > $fifo&
+	. $fifo
+#	echo $ss
+#	sp=$(echo $ss|cut -d: -f2)
+#	ss=$(echo $ss|cut -d: -f1)
+#	if [ "$sp" == "$ss" ]; then
+#		sp=""
+#	else
+#	  sp="-p $sp"
+#	fi
+	echo $ss
+#	echo $sp
+	rm $fifo
+	mt="Sent by $USER at $(date +%T) on $(hostname) to $1"
+fi
 # Recipient?
 if [ "$1" != "" ]; then
   mailto="$1"
@@ -30,8 +90,13 @@ fi
 echo -n $cnt > $cntfil
 
 # Send mail
-echo "Sent by $USER at $(date +%T) on $(hostname) to $mailto"|mail -s "Testmail $cnt by $USER" $mailto
-echo "Testmail $cnt by $USER"
+#echo "Sent by $USER at $(date +%T) on $(hostname) to $mailto"|mail -s "Testmail $cnt by $USER" $mailto
+usesendemail $1
+if [ $? != 0 ]; then
+	echo "Send failed!"
+else
+	echo "Testmail $cnt by $USER"
+fi
 # Log
 date "+$cnt %F %T $mailto" >> $logfil
 exit
