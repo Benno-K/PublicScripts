@@ -40,7 +40,8 @@ if [ $? != 0 ]; then
 	mailcontent=$(cat << EOI
 Hi, this is $0.
 
-I detected a change of disk usage for $tocheck:
+I detected a change of disk usage
+for $tocheck:
 
 Differences:
 $(cat $difffil | sed -e 's/>/curr.: /g' -e 's/</prev.: /g' | awk '!/^[0-9-]+/{print $0}')
