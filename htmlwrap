@@ -1,0 +1,28 @@
+#!/bin/bash
+export LANGUAGE="C"
+
+# Example of use:
+# cat /etc/postfix/main.cf|./htmlwrap |mutt -s Test -H - pi
+
+cat<<EOI
+Content-Type: text/html ; encoding="UTF-8"
+
+<!DOCTYPE PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” “https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd”>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+	    <title></title>
+  </head>
+  <body>
+	<body>
+		<pre>
+			<code>
+$(cat)
+			</code>
+		</pre>
+	</body>
+</html>
+EOI
+
+exit
