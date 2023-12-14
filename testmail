@@ -23,27 +23,27 @@ if [ x$1 == xvia ]; then
 	case $1 in
 		wd|web-de|w)
 			shift
-			rcfil=~/.rc-web-de
+			rcfil=~/.sendsmtp_web.de
 			;;
 		fn|freenet|freenet-de|f)
 			shift
-			rcfil=~/.rc-freenet-de
+			rcfil=~/.sendsmtp_freenet.de
 			;;
 		to|td|t-online|t-online-de|t)
 			shift
-			rcfil=~/.rc-t-online-de
+			rcfil=~/.sendsmtp_t-online.de
 			;;
 		lp|laposte|laposte-net|l)
 			shift
-			rcfil=~/.rc-laposte-net
+			rcfil=~/.sendsmtp_laposte.net
 			;;
-		ke|kardel-eu|k)
+		ke|kardel.eu|k)
 			shift
-			rcfil=~/.rc-kardel-eu
+			rcfil=~/.sendsmtp_kardel.eu
 			;;
-		bd|bkpages-de|b)
+		bd|bkpages.de|b)
 			shift
-			rcfil=~/.rc-bkpages-de
+			rcfil=~/.sendsmtp_bkpages.de
 			;;
 		*)
 			echo $1 unknown
