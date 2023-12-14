@@ -4,8 +4,16 @@ refurl="http://www.gocomics.com/nonsequitur/"
 dst=/home/pi/nonsequitur
 nomail=0
 mailto="kardel"
-#mailto="kardel@freenet.de"
+mailcc="kardel@freenet.de"
+#mailcc="Benno.Kardel@web.de,Benno.Kardel@laposte.net"
+#mailcc=""
 mailtohdr=$(echo $mailto | awk '{print $1}')
+mailcchdr=$(echo $mailcc | awk '{print $1}')
+if [ "$mailcc" != "" ]; then
+	recips="$mailto,$mailcc"
+else
+	recips="$mailto"
+fi
 fromaddr=nonsequitur@kardel.eu
 fromname="${name}-Mailer"
 from="\"$fromname\" <$fromaddr>"
@@ -126,6 +134,9 @@ EOI
       htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
       textpart=$(echo "$text" | mime-construct --subpart --type "text/plain; charset=utf-8" --encoding base64 --file - --output)
 
+			rlist=$(echo $recips|sed -e 's/,/ /g')
+			for envto in $rlist
+				do
       # Now construct - on the fly - the image part and pipe it into ...
       mime-construct \
         --subpart --type image/$filext \
@@ -135,19 +146,33 @@ EOI
         --header " filename=\"Non-Sequitur-$stamp.$filext\"" \
         --output |
         # ... the multipart-command, thus creating the entire message and ...
+				(if [ "$mailcc" != "" ]; then \
         mime-construct \
           --header "From: $from" \
           --header "To: $mailtohdr" \
+          --header "Cc: $mailcchdr" \
           --subject "$headline" \
           --multipart multipart/related \
           --subpart-string "$textpart" \
           --subpart-file - \
           --subpart-string "$htmlpart" \
           --subpart-file - \
-          --output |
+          --output;else \
+        mime-construct \
+          --header "From: $from" \
+          --header "To: $mailtohdr" \
+          --header "Cc: $mailcchdr" \
+          --subject "$headline" \
+          --multipart multipart/related \
+          --subpart-string "$textpart" \
+          --subpart-file - \
+          --subpart-string "$htmlpart" \
+          --subpart-file - \
+          --output;fi) | \
         # ..finally pipe that into the sendmail command
-        $sendmail -f "$from" -r $fromaddr $mailto
-    fi
+        $sendmail -f "$from" -r $fromaddr -c $cc $envto
+		done
+		fi
   else
     cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
 Hello, this is $0
