@@ -8,6 +8,7 @@ name="Ruthe"
 lcname="ruthe"
 refurl="https://ruthe.de/"
 dst=/home/pi/$lcname
+
 nomail=0
 mailto="mail@kardel.eu"
 
@@ -91,7 +92,6 @@ done
 name="${lcname}-${stamp}"
 lnk=$dst/$name.image
 out=$dst/$filnam
-
 wget -q -O $out "$img"
 if [ -r $out ]; then
   filtyp=$(file $out | awk '{print tolower($2)}')
@@ -124,7 +124,7 @@ EOI
       # Now construct - on the fly - the image part and pipe it into ...
       mime-construct \
         --subpart --type image/$filext \
-        --file $out \
+        --file  $dst/$filnam \
         --header "Content-ID: <imgcid-$stamp>" \
         --header "Content-Disposition: inline;" \
         --header " filename=\"Ruthe-$stamp.$filext\"" \
