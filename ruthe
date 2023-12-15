@@ -100,7 +100,7 @@ if [ -r $out ]; then
     filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
 #    mv $out $dst/$name.$filext
     out=$dst/$name.$filext
-		(cd $dst;ln -s $filnam $name.$filext)
+#		(cd $dst;ln -s $filnam $name.$filext)
     if [ "$nomail" != "1" ]; then
       text=$(
 				cat <<EOI
