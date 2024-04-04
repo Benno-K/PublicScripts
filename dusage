@@ -6,8 +6,14 @@ use warnings;
 use Data::Dumper;
 
 my $tocheck = "/ /boot /data /ssd";
-my $lastfile = "$ENV{'HOME'}/.dusagedd";
-my $ts = (stat($lastfile))[9];
+my $lastfile = "$ENV{'HOME'}/.dusagedf";
+my $limitsfile = "$ENV{'HOME'}/.dusagelimits";
+my $ts;
+if ( -e $lastfile ) {
+	$ts = (stat($lastfile))[9];
+else
+	$ts = "unknown";
+fi
 my $tstr = localtime($ts);
 my $doupdate = 0;
 my %res;
@@ -26,6 +32,13 @@ my %limits = (
 		high => 5,
 	},
 );
+sub readlimits() {
+open LF,"<$limitsfile";
+local $/;
+my $all = (<LF>);
+close LF;
+eval($all);
+}
 
 sub writelast () {
 	open(OUT,">$lastfile") || die "Error opening $lastfile ($!)";
@@ -47,6 +60,8 @@ sub dodf {
 	close(DF);
 	return(%retval);
 }
+
+readlimits();
 %res = dodf();
 open DF,"<$lastfile";
 local $/;
