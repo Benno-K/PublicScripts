@@ -1,0 +1,29 @@
+#!/bin/bash
+
+function format4html(){
+  cat<<EOI
+<html>
+<body>
+<pre>
+<code>
+$(cat)
+</code>
+</pre>
+</body>
+</html>
+EOI
+  return
+}
+mailto=$1
+shift
+subj=$@
+export LANGUAGE="C"
+dusage="echo -n"
+myname=$(basename $0)
+progname=${myname:0:-3}
+here=$(dirname $0)
+mailcontent=$($here/$progname)
+if [ ${#mailcontent} -ne  0 ]; then
+	echo "$mailcontent"|format4html|mail -a 'Content-type: text/html' -s "$subj" $mailto
+fi
+exit
