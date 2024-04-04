@@ -8,13 +8,13 @@ use Data::Dumper;
 my $tocheck = "/ /boot /data /ssd";
 my $lastfile = "$ENV{'HOME'}/.dusagedf";
 my $limitsfile = "$ENV{'HOME'}/.dusagelimits";
-my $ts;
+my $tstr;
 if ( -e $lastfile ) {
-	$ts = (stat($lastfile))[9];
+	my $ts = (stat($lastfile))[9];
+	$tstr = localtime($ts);
 else
-	$ts = "unknown";
+	$tstr = "unknown";
 fi
-my $tstr = localtime($ts);
 my $doupdate = 0;
 my %res;
 my %lastdf;
