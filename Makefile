@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-TARGETS = extip myip nonsequitur zero-out-rootfs-freespace diskusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe
+TARGETS = extip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun
 
 LBINDIR = /usr/local/bin
 
