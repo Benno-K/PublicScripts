@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# Start whatever program
+# and mail it's output
+# if there is output.
+# The program to be started
+# is taken from the name 
+# of (the soft-link of)
+# this script.
+# So to run a script named
+# "hugo" create a soft-link
+# named "hugorun" pointing
+# to this script
+
 function format4html(){
   cat<<EOI
 <html>
@@ -14,9 +26,18 @@ $(cat)
 EOI
   return
 }
-mailto=$1
-shift
-subj=$@
+if [ x$1 == x ]; then
+	read -p "Mail address: " mailto
+else
+	mailto=$1
+	shift
+fi
+if [ x$1 == x ]; then
+	read -p "Subject: " subj
+else
+	subj=$@
+fi
+
 export LANGUAGE="C"
 dusage="echo -n"
 myname=$(basename $0)
