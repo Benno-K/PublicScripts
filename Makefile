@@ -11,7 +11,10 @@ install: $(TARGETS)
 	   echo sudo install -m 755 -t $(LBINDIR) $$n;\
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
-	done
+	done;\
+	echo for dusage;\
+	echo " cp -n" dusagelimits ~/.dusagelimits;\
+	cp -n dusagelimits ~/.dusagelimits;\
 
 copyright: $(TARGETS)
 	crnupdate $(TARGETS)
