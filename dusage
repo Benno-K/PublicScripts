@@ -12,9 +12,9 @@ my $tstr;
 if ( -e $lastfile ) {
 	my $ts = (stat($lastfile))[9];
 	$tstr = localtime($ts);
-else
+} else {
 	$tstr = "unknown";
-fi
+}
 my $doupdate = 0;
 my %res;
 my %lastdf;
