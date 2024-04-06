@@ -15,7 +15,18 @@ if ( -e $lastfile ) {
 } else {
 	$tstr = "unknown";
 }
-my $doupdate = 0;
+my $doupdate=0;
+# FIXME
+# using $ARGV[0] gives
+# error with no args
+if ( "" eq "-dry" ) {
+	# This will not prohibit
+	# updating ~/.dusagedf
+	# when a system has more
+	# than 10000 filesystems
+	(($doupdate=-9999));
+	shift;
+}
 my %res;
 my %lastdf;
 my %limits = (
@@ -82,21 +93,21 @@ for my $k (sort keys %lastdf) {
 	if (	-($lastdf{$k}{pcent} -
 				$res{$k}{pcent}) >
 				$lowlim ) {
-					printf("decrease: %5s %d%% (lim:-%s%%)\n",$k,$absdiff,$lowlim);
+					printf("decrease %s by %d%% (lim:-%s%%)\n used: %d%%\n",$k,$absdiff,$lowlim,$res{$k}{pcent});
 					printf("  sua %6s %6s %6s\n",$res{$k}{size},$res{$k}{used},$res{$k}{avail});
 					printf("   since:  %s\n",$tstr);
-					$doupdate = 1;
+					(($doupdate ++));
 				}
 	if (	($lastdf{$k}{pcent} -
 				$res{$k}{pcent}) >
 				$highlim ) {
-					printf("increase: %5s %d%% (lim:%s%%)\n",$k,$absdiff,$highlim);
+					printf("increase %s by %d%% (lim:+%s%%)\n used: %d%%\n",$k,$absdiff,$highlim,$res{$k}{pcent});
 					printf("  sua %6s %6s %6s\n",$res{$k}{size},$res{$k}{used},$res{$k}{avail});
 					printf("   since:  %s\n",$tstr);
-					$doupdate = 1;
+					(($doupdate ++));
 				}
 }
-if ( $doupdate == 1) {
+if ( $doupdate > 0) {
 	writelast();
 }
 exit(0)
