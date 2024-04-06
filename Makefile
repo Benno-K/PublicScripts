@@ -15,6 +15,8 @@ install: $(TARGETS)
 	echo for dusage;\
 	echo " cp -n" dusagelimits ~/.dusagelimits;\
 	cp -n dusagelimits ~/.dusagelimits;\
+	echo "ln -s LBINDIR/whateverrun LBINDIR/dusagerun";\
+	ln -sf LBINDIR/whateverrun$LBINDIR/dusagerun;\
 
 copyright: $(TARGETS)
 	crnupdate $(TARGETS)
