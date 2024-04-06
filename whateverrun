@@ -32,7 +32,7 @@ else
 	mailto=$1
 	shift
 fi
-if [ x$1 == x ]; then
+if [ "$1" == "" ]; then
 	read -p "Subject: " subj
 else
 	subj=$@
