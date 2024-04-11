@@ -1,0 +1,11 @@
+#!/bin/bash
+
+doupd () {
+	echo n|apt-get upgrade|grep -q syncthing;if [ $? = 0 ];then echo y|apt-get install syncthing;fi
+}
+
+if [ $UID = 0 ]; then
+	doupd
+else
+	sudo $0
+fi
