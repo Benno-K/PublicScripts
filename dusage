@@ -44,11 +44,11 @@ my %limits = (
 	},
 );
 sub readlimits() {
-open LF,"<$limitsfile";
-local $/;
-my $all = (<LF>);
-close LF;
-eval($all);
+	open LF,"<$limitsfile";
+	local $/;
+	my $all = (<LF>);
+	close LF;
+	eval($all);
 }
 
 sub writelast () {
