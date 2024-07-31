@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo find /var/run/screen/* -mindepth 1
