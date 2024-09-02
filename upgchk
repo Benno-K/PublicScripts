@@ -3,8 +3,8 @@
 # there are ones send a mail
 
 # mail recipient and program
-mailto=root
-mailer=mutt
+mailto=${1:root}
+mailer=${2:mutt}
 
 # our name
 bn=$(basename $0)
