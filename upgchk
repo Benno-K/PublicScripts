@@ -2,9 +2,53 @@
 # check for any apt-packages that need update, if
 # there are ones send a mail
 
+while [ "${1:0:1}" = "-" ]
+	do
+	case $1 in
+		-h|--help)
+			cat <<-EOI>&2
+			usage: $bn [-t [ # ]][ recipient [ mail-prog ]]
+			  -t         test-mode [ #pkgs reported ]
+			  recipient  mail address to send mails to
+			             default is root
+			  mailprog   program used to send mail
+		             default is mutt
+			  -u         first run "apt update" (using sudo if uid!=0)
+			EOI
+			exit
+			;;
+# test-mode: assume there are packages to upgrade,
+# you may specify the number of packages after -t,
+# if you don't we will make it 99999
+		-t)
+			if [[ $2 =~ ^[0-9]+$ ]]; then
+  			cntadd=$2
+				shift
+			else
+				cntadd=99999
+			fi
+			faked="faked "
+			;;
+		-u)
+			# update apt cache
+			$sudo apt update
+			;;
+		*)
+			echo "option $1 unknown" >&2
+			exit 1
+			;;
+	esac
+	shift
+	done
+
 # mail recipient and program
-mailto=${1:root}
-mailer=${2:mutt}
+mailto=${1:-root}
+mailer=${2:-mutt}
+if [ $UID != 0 ]; then
+	sudo=sudo
+else
+	sudo=
+fi
 
 # our name
 bn=$(basename $0)
@@ -14,18 +58,10 @@ tmpf=$(mktemp /tmp/$bn-XXXXXXXY.tmp)
 trap "rm -rf $tmpf" SIGINT SIGSTOP EXIT
 
 # list upgradadeable packages and determine the count
-(( cntupg=$(apt list --upgradeable 2>/dev/null|tee -a $tmpf|wc -l)-1 ))
-
-# test-mode: assume there are packages to upgrade,
-# you may specify the number of packages after -t,
-# if you don't we will make it 99999
-if [ "$1" = "-t" ]; then
-  cntupg=${2:-99999}
-	faked="faked "
-fi 
+(( cntupg=$(apt list --upgradeable 2>/dev/null|tee -a $tmpf|wc -l)-1 + cntadd))
 
 # send mail about upgraded packages, if there are ones
 if [ $cntupg -gt 0 ]; then
-	 $mailer -s "$bn: There are $cntupg ${faked}packages to upgrade" "$mailto"  < $tmpf
+	 $mailer -s "$bn: There are $cntupg ${faked}packages to upgrade" "$mailto" < $tmpf
 fi
 exit # Removes $tmpf due to trap!
