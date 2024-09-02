@@ -2,8 +2,9 @@
 # check for any apt-packages that need update, if
 # there are ones send a mail
 
-# mail recipient
+# mail recipient and program
 mailto=root
+mailer=mutt
 
 # our name
 bn=$(basename $0)
@@ -25,6 +26,6 @@ fi
 
 # send mail about upgraded packages, if there are ones
 if [ $cntupg -gt 0 ]; then
-	mutt -s "$bn: There are $cntupg ${faked}packages to upgrade" "$mailto"  < $tmpf
+	 $mailer -s "$bn: There are $cntupg ${faked}packages to upgrade" "$mailto"  < $tmpf
 fi
 exit # Removes $tmpf due to trap!
