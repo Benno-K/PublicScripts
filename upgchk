@@ -2,6 +2,13 @@
 # check for any apt-packages that need update, if
 # there are ones send a mail
 
+# for commands that must run as root,don't sudo as root
+if [ $UID != 0 ]; then
+	sudo=sudo
+else
+	sudo=
+fi
+
 while [ "${1:0:1}" = "-" ]
 	do
 	case $1 in
@@ -44,13 +51,6 @@ while [ "${1:0:1}" = "-" ]
 # mail recipient and program
 mailto=${1:-$USER}
 mailer=${2:-mutt}
-
-# for commands that must run as root,don't sudo as root
-if [ $UID != 0 ]; then
-	sudo=sudo
-else
-	sudo=
-fi
 
 # our name
 bn=$(basename $0)
