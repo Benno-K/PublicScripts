@@ -217,3 +217,21 @@ prompted.
 Add github token to github
 config files
 
+## upgchk
+
+Check whether there are outstanding apt packages
+for upgrade. Send a mail if there are upgrades.
+Keep in mind that it might be necessary to update
+the apt-cache (apt update). You can use -u to
+initiate such an update (using sudo if not ran
+as root}.
+
+```
+usage:  [-t [ # ]][ recipient [ mail-prog ]]
+  -t         test-mode [ #pkgs reported ]
+  recipient  mail address to send mails to
+             default is root
+  mailprog   program used to send mail
+             default is mutt
+  -u         first run "apt update" (using sudo if uid!=0)
+	```
