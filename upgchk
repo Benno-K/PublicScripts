@@ -42,8 +42,10 @@ while [ "${1:0:1}" = "-" ]
 	done
 
 # mail recipient and program
-mailto=${1:-root}
+mailto=${1:-$USER}
 mailer=${2:-mutt}
+
+# for commands that must run as root,don't sudo as root
 if [ $UID != 0 ]; then
 	sudo=sudo
 else
