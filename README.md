@@ -62,7 +62,7 @@ at 08:00 as user pi
 Little helper to manage cron
 files in /etc/cron.d/.
 ### Usage
-> ctab [options...] [filenamw]
+> ctab [options...] [filename]
 
 #### Options
 - -c create a crontab file
