@@ -1,3 +1,17 @@
 #!/bin/bash
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 
-sudo find /var/run/screen/* -mindepth 1
+# show a list of all screeen sessions
+
+# If not root, run as root, else show sessions
+if [ $UID != 0 ]; then
+	exec sudo $0
+else
+	find /var/run/screen/* -mindepth 1 | awk -F/ '{	pf=NF-1;printf "%-8s %s\n",substr($pf,3),$NF;next}'
+fi
