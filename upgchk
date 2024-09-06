@@ -49,7 +49,7 @@ while [ "${1:0:1}" = "-" ]
 	done
 
 # mail recipient and program
-mailto=${1:-$USER}
+mailto=${1:-root}
 mailer=${2:-mutt}
 
 # our name
