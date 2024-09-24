@@ -1,0 +1,40 @@
+# Run any interactive session, that is not already running in it, in screen
+# If there are disconnected sessions, re-connect instead of creating new
+type screen >/dev/null 2>&1
+# If screen command exists, create a screen session
+if [ $? = 0 ] && [ "$(tty)" != "not a tty" ]; then
+	# already called - then exit
+	screen -list|grep -q $PPID && exit 0
+	# if current session is not a screen session
+	# then start or resume screen session
+  if  [ ${#STY} = 0 ]; then
+    # Check for existing detached sessions
+    # sessname=$(screen -ls | awk '/(Detached)/{print $1;exit}')
+		# and take the one using the lowest pty
+		maxscr=999999
+		for scr in $(screen -ls|awk '/Detached/{print $1}')
+		do
+			part="${scr//[0-9]*.pts-/}"
+			n=${part//.*/}
+			[ $n -lt $maxscr ] && sessname=$scr && maxscr=$n;
+		done
+		# it there is (at least) one detached session
+		# then resume it
+    if [ "$sessname" != "" ]; then
+      screen -r $sessname
+			# status to state that we are coming back
+			# from a resumed session
+			exit 11
+		# otherwise create a screen session
+    else
+      screen
+			# status to state that we are coming back
+			# from a new session
+			exit 10
+    fi
+	else
+	  exit 0
+  fi
+fi
+echo Logic error in $0 >&2 # because we should exired earlier
+exit 1
