@@ -7,7 +7,7 @@ if [ $? = 0 ] && [ "$(tty)" != "not a tty" ]; then
     # Check for existing detached sessions
     sessname=$(screen -ls | awk '/(Detached)/{print $1;exit}')
     if [ "$sessname" != "" ]; then
-      screen -drR
+      screen -r $sessname
       exit
     else
       screen
