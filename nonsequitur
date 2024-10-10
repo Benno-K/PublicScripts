@@ -112,7 +112,12 @@ if [ -r $out ] && [ "$1" != "-g" ]; then
   # Weird but true: The GIF of 2011/03/28 was recognized by file as sun disklbl
   if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ]; then
     filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
-    mv $out $dst/$name.$filext
+		if [ $filext = gif ];then
+			filext=jpg
+    	convert $out $dst/$name.$filext
+		else
+    	mv $out $dst/$name.$filext
+		fi
     out=$dst/$name.$filext
     if [ "$nomail" != "1" ]; then
       text=$(
