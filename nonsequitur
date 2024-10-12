@@ -98,9 +98,11 @@ if [ $once = 1 ] && [ $noelderchk = 0 ]; then
   done
 fi
 
+thisyear=$(date +%Y)
+[ ! -d $dst/$thisyear ] && mkdir $dst/$thisyear
 name="${name}-${stamp}"
-out=$dst/$name.image
-[ $once = 1 ] && [ -e $dst/$name.[gpj][inp][fg] ] && exit 0 # Exit if -o and file present
+out=$dst/$thisyear/$name.image
+[ $once = 1 ] && [ -e $dst/$thisyear/$name.[gpj][inp][fg] ] && exit 0 # Exit if -o and file present
 
 #url=$(wget -O - -q $refurl |awk -F'"' '/<img alt="Non Sequitur" class="strip"/{print $18}')
 url=$(wget -O - -q $refurl | awk -Fsrc= '/src="https:\/\/assets.amuniversal.com\//{print $2;exit}' | awk -F'"' '{print $2}')
@@ -114,11 +116,12 @@ if [ -r $out ] && [ "$1" != "-g" ]; then
     filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
 		if [ $filext = gif ];then
 			filext=jpg
-    	convert $out $dst/$name.$filext
+    	convert $out $dst/$thisyear/$name.$filext && rm $out
 		else
-    	mv $out $dst/$name.$filext
+    	mv $out $dst/$thisyear/$name.$filext
 		fi
-    out=$dst/$name.$filext
+		out=$dst/$thisyear/$name.$filext
+		touch -d $stamp $out
     if [ "$nomail" != "1" ]; then
       text=$(
 				cat <<EOI
