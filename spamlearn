@@ -1,4 +1,5 @@
 #!/bin/bash
+[ $UID != 0 ] && exec sudo $0 # run as root
 xup () {
 	upper=$(dirname "$1")
 	while [ "$upper" != "/" ]
