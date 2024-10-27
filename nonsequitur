@@ -125,7 +125,7 @@ if [ -r $out ] && [ "$1" != "-g" ]; then
     if [ "$nomail" != "1" ]; then
       text=$(
 				cat <<EOI
-Here is today's Non Sequitur cartoon by Wiley Miller
+Der aktuelle Non Sequitur Cartoon von Wiley Miller
 EOI
       )
       html=$(
