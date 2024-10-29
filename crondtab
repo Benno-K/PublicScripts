@@ -17,6 +17,8 @@
 # e. g. can be used for the 
 # diskusage script.
 
+[ $UID != 0 ] && exec sudo $0 $@ # run as root
+
 crond=/etc/cron.d
 
 if [ "$1" = "-l" ]; then
