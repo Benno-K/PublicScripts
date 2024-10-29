@@ -1,5 +1,5 @@
 #!/bin/bash
-[ $UID != 0 ] && exec sudo $0 # run as root
+[ $UID != 0 ] && exec sudo $0 $@ # run as root
 xup () {
 	upper=$(dirname "$1")
 	while [ "$upper" != "/" ]
@@ -8,11 +8,28 @@ xup () {
 		upper=$(dirname "$upper")
 	done
 }
-if [ ${#@} = 0 ]; then
-	find -L /home /data /ssd -maxdepth 8 -name .Junk -exec $0 '{}/cur/' \;
+
+# handle -d
+if [ "$1" = "-d" ]; then
+	del=1
+	shift
+	dflag=-d
+else
+	del=0
+fi
+
+if [ "$1" = "" ]; then
+	find -L /home /data /ssd/vmail/vmail -maxdepth 4 -name .Junk -exec $0 $dflag '{}/cur/' \;
 	exit 0
 else
 	xup "$1"
-	[ $(ls -1 "$1/" | wc -l) = 0 ] && exit 0 || echo learning spam from "$1";setfacl -R -m user:debian-spamd:rwx "$1";sudo -u debian-spamd sa-learn --spam "$1";exit 0
+	if [ $(ls -1 "$1/" | wc -l) = 0 ]; then
+		exit 0
+	else
+		setfacl -R -m user:debian-spamd:rwx "$1"
+		sudo -u debian-spamd sa-learn --spam "$1" |  awk '/^Learned tokens from /{if ($4 > 0) {printf "%s\n in '$1'\n",$0}}'
+		[ $del = 1 ] && find "$1" -maxdepth 2 -regextype egrep -regex '.*/[0-9]{10}\.M.*,S=.*,W=.*' -exec rm -v '{}' \;
+		exit 0
+	fi
 fi
 exit 4 # should never be reached
