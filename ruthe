@@ -1,7 +1,8 @@
 #!/bin/bash
-# What's thr current image file
+# What's the current image file
 img=$(curl --no-progress-meter  https://ruthe.de/|grep image_src |sed -E 's/.*(https.*strip_[0-9]*.jpg)">/\1/g')
 # and it's name
+[ img = "" ] && echo >2 "curl for ruthe failed - try again" && exit 0
 filnam=$(basename $img)
 
 name="Ruthe"
