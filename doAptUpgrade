@@ -1,0 +1,17 @@
+#!/bin/bash
+mailto=${1:-root}
+
+cmp='
+WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+
+Paketlisten werden gelesen…
+Abhängigkeitsbaum wird aufgebaut…
+Statusinformationen werden eingelesen…
+Paketaktualisierung (Upgrade) wird berechnet…
+0 aktualisiert, 0 neu installiert, 0 zu entfernen und 0 nicht aktualisiert.'
+
+log=$(mktemp /tmp/upglog-XXXXXXXX.tmp)
+sudo apt upgrade -y >$log 2>&1
+echo "$cmp" | diff -q - $log 2>&1 >/dev/null || grep -v stable $log|mail -s "Package upgrade took place - see log below ($0)" $mailto
+rm -f $log
+exit
