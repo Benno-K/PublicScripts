@@ -37,12 +37,12 @@
 
 # Variables
 USERNAME="logfetch"
-CERTPATH="/root/.getssl/fbx.bkpages.de"
+CERTPATH="/root/.getssl/kardel.eu"
 CERTPASSWORD=""
 HOST=http://fritz.box
-KEYFILE=fbx.bkpages.de.key
+KEYFILE=kardel.eu.key
 CHAINFILE=chain.crt
-CERTFILE=fbx.bkpages.de.crt
+CERTFILE=kardel.eu.crt
 # Login credentials (encrypted
 # password of user above on
 # FRITZ!box - saved with
