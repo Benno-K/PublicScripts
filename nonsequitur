@@ -58,6 +58,7 @@ EOF
   exit $1
 }
 
+thisyear=$(date +%Y)
 while [ "$1" != "" ]; do
   recog=0
   if [ "$1" = "-h" ]; then
@@ -79,6 +80,8 @@ while [ "$1" != "" ]; do
   if [ "$1" = "-d" ]; then
     shift
     stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
+    thisyear=$(echo $1 | awk -F/ '{printf "%04d",$1}')
+
     headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d.%02d.%04d",$3,$2,$1}')
     refurl="${refurl}$1"
     recog=1
@@ -98,7 +101,6 @@ if [ $once = 1 ] && [ $noelderchk = 0 ]; then
   done
 fi
 
-thisyear=$(date +%Y)
 [ ! -d $dst/$thisyear ] && mkdir $dst/$thisyear
 name="${name}-${stamp}"
 out=$dst/$thisyear/$name.image
@@ -107,6 +109,7 @@ out=$dst/$thisyear/$name.image
 #url=$(wget -O - -q $refurl |awk -F'"' '/<img alt="Non Sequitur" class="strip"/{print $18}')
 url=$(wget -O - -q $refurl | awk -Fsrc= '/src="https:\/\/assets.amuniversal.com\//{print $2;exit}' | awk -F'"' '{print $2}')
 rm -rf $out.*
+
 wget -q --referer=$refurl -O $out "$url"
 
 if [ -r $out ] && [ "$1" != "-g" ]; then
