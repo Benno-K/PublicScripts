@@ -24,7 +24,7 @@ function getexternalip {
 
 # Get local IP from FRITZ!box, fail
 # silently
-extip=$(getexternalip -s|awk '/NewExternalIPv6Address/{print substr($0,25,37)}')
+extip=$(getexternalip -s|awk '/NewExternalIPv6Address/{print substr($0,25,36)}')
 # If success then echo IP
 if ( [ $? = 0 ] && [ "$extip" != "" ] ); then
 	echo $extip
