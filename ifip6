@@ -1,0 +1,3 @@
+#!/bin/bash
+# print all non-local IPv6 addresses
+ip address show|grep -E 'inet6 [0-9a-f]{1,4}:[0-9a-f]{1,4}:'|awk -F/ '{print substr($1,11)}'
