@@ -35,14 +35,15 @@
 # file LICENSE)
 ##
 
-# Variables
+# Variable
 USERNAME="logfetch"
-CERTPATH="/root/.getssl/kardel.eu"
+CERTNAME="fbx.kardel.eu"
+CERTPATH="/root/.getssl/${CERTNAME}"
 CERTPASSWORD=""
 HOST=http://fritz.box
-KEYFILE=kardel.eu.key
+KEYFILE=${CERTNAME}.key
 CHAINFILE=chain.crt
-CERTFILE=kardel.eu.crt
+CERTFILE=${CERTNAME}.crt
 # Login credentials (encrypted
 # password of user above on
 # FRITZ!box - saved with
