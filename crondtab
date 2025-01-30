@@ -42,5 +42,6 @@ if [ "$1" = "-c" ]; then
 fi
 
 vi $crond/$1
+crontab -n $crond/$1
 
 exit
