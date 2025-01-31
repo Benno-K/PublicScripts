@@ -1,0 +1,16 @@
+[Unit]
+Documentation=man:ddclient(8)
+Description=Update dynamic domain name service entries
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/run/ddclient-6.pid
+Environment=daemon_interval=5m
+EnvironmentFile=-/etc/default/ddclient
+ExecStart=/usr/bin/ddclient -file /etc/ddclientipv6.conf-daemon $daemon_interval -syslog -pid /run/ddclient-6.pid
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
