@@ -2,9 +2,10 @@
 
 # print all IP addresses from DNS of server2 and FritzBOX
 
-for h in fbx.kardel.eu server2.kardel.eu server2.fritz.box
+
+for h in fbx.kardel.eu server2.kardel.eu server2.fritz.box fritz.box
 do
-	if [[ ${h} =~ ".fritz.box" ]]; then
+	if [[ ${h} =~ 'fritz.box' ]]; then
 		# for domain fritz.box ask the FritzBOX
 		#ns=192.168.178.1
 		ns=fd00::464e:6dff:fe1f:5707
