@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# print all IP addresses from DNS of server2 and FritzBOX
+
+for h in fbx.kardel.eu server2.kardel.eu server2.fritz.box
+do
+	if [[ ${h} =~ ".fritz.box" ]]; then
+		# for domain fritz.box ask the FritzBOX
+		ns=192.168.178.1
+		in="h"
+	else
+		# For other domains ask provider (Strato)
+		ns=docks06.rzone.de
+		in="i"
+	fi
+	host ${h} ${ns}|awk '/has address/{printf("%s%18s %s\n","'${in}'",$1,$4)};/IPv6/{printf("%s%18s %s\n","'${in}'",$1,$5)}'
+done
