@@ -1,6 +1,8 @@
 #!/bin/bash
 
-for svc in $(fail2ban-client status|awk '/Jail list:/{print substr($0,15)}'|sed -e s/,//g)
+# List detailed status for each fail2ban jail
+
+for jail in $(fail2ban-client status|awk '/Jail list:/{print substr($0,15)}'|sed -e s/,//g)
 do
-	fail2ban-client status $svc
+	fail2ban-client status $jail
 done
