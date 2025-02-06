@@ -1,8 +1,13 @@
 #!/bin/bash
 
 # List detailed status for each fail2ban jail
+if [ $UID = 0 ]; then
+	sudo=
+else
+	sudo="sudo "
+fi
 
-for jail in $(fail2ban-client status|awk '/Jail list:/{print substr($0,15)}'|sed -e s/,//g)
+for jail in $(${sudo}fail2ban-client status|awk '/Jail list:/{print substr($0,15)}'|sed -e s/,//g)
 do
-	fail2ban-client status $jail
+	${sudo}fail2ban-client status $jail
 done
