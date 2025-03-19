@@ -2,7 +2,9 @@
 name="Non-Sequitur"
 refurl="http://www.gocomics.com/nonsequitur/"
 dst=/home/pi/nonsequitur
+fails=$dst/fails.log
 nomail=0
+precheck=1
 mailto="kardel"
 #mailcc="kardel@freenet.de"
 #mailcc="Benno.Kardel@web.de,Benno.Kardel@laposte.net"
@@ -64,11 +66,11 @@ while [ "$1" != "" ]; do
   if [ "$1" = "-h" ]; then
     usage 0
   fi
-  if [ "$1" = "-o" ]; then
+  if [ "$1" = "-O" ]; then
     once=1
     recog=1
   fi
-  if [ "$1" = "-O" ]; then
+  if [ "$1" = "-o" ]; then
     once=1
     noelderchk=1
     recog=1
@@ -103,6 +105,11 @@ fi
 
 [ ! -d $dst/$thisyear ] && mkdir $dst/$thisyear
 name="${name}-${stamp}"
+if [ "$precheck" = 1 ]; then
+	if [ -s $dst/$thisyear/$name.* ];then
+		exit
+	fi
+fi
 out=$dst/$thisyear/$name.image
 [ $once = 1 ] && [ -e $dst/$thisyear/$name.[gpj][inp][fg] ] && exit 0 # Exit if -o and file present
 
@@ -185,7 +192,8 @@ EOI
 		done
 		fi
   else
-    cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
+    if [ "$nomail" != "1" ]; then
+    	cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
 Hello, this is $0
 
 I just downloaded $url 
@@ -202,6 +210,10 @@ $0
 PS: I deleted $out.
 
 EOI
+		else 
+			echo >&2 "download failed: for $out from $url"
+			echo $(basename $out) >> $fails
+		fi
     rm $out
   fi
 fi
