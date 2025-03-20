@@ -5,7 +5,7 @@ dst=/home/pi/nonsequitur
 fails=$dst/fails.log
 nomail=0
 precheck=1
-retries=3
+maxtries=3
 mailto="kardel"
 #mailcc="kardel@freenet.de"
 #mailcc="Benno.Kardel@web.de,Benno.Kardel@laposte.net"
@@ -54,10 +54,16 @@ function usage() {
     outdsc=1
   fi
   cat <<EOF >&$outdsc
-Usage: $0 [-M] [-d YYYY/MM/DD ]
--M  do not send mail
--d  specify a specific date to download
--o  once a day (no download, if called repeatedly and file exists)
+Usage: $0 <options> [-d YYYY/MM/DD ]
+-M            do not send mail
+-d            specify a specific date to download
+-h            show this help
+-o            once a day (no download, if called
+              repeatedly and file exists, downloads
+              missing preceeding dates also)
+-O            same as -o but does not care about
+              preceeding dates
+-maxtries #   how many tries if download fails 
 EOF
   exit $1
 }
@@ -70,13 +76,12 @@ thisyear=$(date +%Y)
 while [ "${1:0:1}" = "-" ]
 do
 	case "$1" in
-		-h)
+		-h|-help|--help)
 			usage 0
 			exit 0
 			;;
 		-O)
     	once=1
-    	recog=1
 			;;
 		-o)
     	once=1
@@ -89,9 +94,9 @@ do
 			shift
 			tries=$1
 			;;
-		-retries)
+		-maxtries)
 			shift
-			retries=$1
+			maxtries=$1
 			;;
 		-d)
 			shift
@@ -227,8 +232,8 @@ PS: I deleted $out.
 
 EOI
 		else 
-			echo >&2 "download try $tries of $retries failed: for $datepar"
-			if [ $tries -lt $retries ]; then
+			echo >&2 "download try $tries of $maxtries failed: for $datepar"
+			if [ $tries -lt $maxtries ]; then
 				$self $args -try $((++tries))
 			else
 				echo $datepar >> $fails
