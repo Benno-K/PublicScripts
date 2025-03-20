@@ -5,6 +5,7 @@ dst=/home/pi/nonsequitur
 fails=$dst/fails.log
 nomail=0
 precheck=1
+retries=3
 mailto="kardel"
 #mailcc="kardel@freenet.de"
 #mailcc="Benno.Kardel@web.de,Benno.Kardel@laposte.net"
@@ -21,6 +22,7 @@ fromname="${name}-Mailer"
 from="\"$fromname\" <$fromaddr>"
 sendmail=/usr/sbin/sendmail
 stamp=$(date +"%Y-%m-%d")
+datepar=$(date +"%Y/%m/%d")
 headline="Non Sequitur $(date +%d.%m.%Y)"
 once=0
 noelderchk=0
@@ -60,39 +62,53 @@ EOF
   exit $1
 }
 
-thisyear=$(date +%Y)
-while [ "$1" != "" ]; do
-  recog=0
-  if [ "$1" = "-h" ]; then
-    usage 0
-  fi
-  if [ "$1" = "-O" ]; then
-    once=1
-    recog=1
-  fi
-  if [ "$1" = "-o" ]; then
-    once=1
-    noelderchk=1
-    recog=1
-  fi
-  if [ "$1" = "-M" ]; then
-    nomail=1
-    recog=1
-  fi
-  if [ "$1" = "-d" ]; then
-    shift
-    stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
-    thisyear=$(echo $1 | awk -F/ '{printf "%04d",$1}')
+args=$@ # Remember args for possible recursive calls
+tries=1
 
-    headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d.%02d.%04d",$3,$2,$1}')
-    refurl="${refurl}$1"
-    recog=1
-  fi
-  if [ "$recog" = "0" ]; then
-    echo "Unrecognized parameter or option: $1"
-    usage 1
-    exit 1
-  fi
+thisyear=$(date +%Y)
+
+while [ "${1:0:1}" = "-" ]
+do
+	case "$1" in
+		-h)
+			usage 0
+			exit 0
+			;;
+		-O)
+    	once=1
+    	recog=1
+			;;
+		-o)
+    	once=1
+    	noelderchk=1
+			;;
+		-M)
+    	nomail=1
+			;;
+		-try)
+			shift
+			tries=$1
+			;;
+		-retries)
+			shift
+			retries=$1
+			;;
+		-d)
+			shift
+			datepar=$1
+			stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
+			thisyear=$(echo $1 | awk -F/ '{printf "%04d",$1}')
+
+
+			headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d.%02d.%04d",$3,$2,$1}')
+			refurl="${refurl}$1"
+  		;;
+		*)
+    	echo "Unrecognized parameter or option: $1"
+    	usage 1
+    	exit 1
+  		;;
+		esac
   shift
 done
 
@@ -211,17 +227,15 @@ PS: I deleted $out.
 
 EOI
 		else 
-			echo >&2 "download failed: for $out from $url"
-			echo $(basename $out) >> $fails
+			echo >&2 "download try $tries of $retries failed: for $datepar"
+			if [ $tries -lt $retries ]; then
+				$self $args -try $((++tries))
+			else
+				echo $datepar >> $fails
+    		rm $out
+			fi
 		fi
-    rm $out
   fi
 fi
 
 exit
-# Here's what we get
-#  a) without a specific date
-#<picture class="gc-card__image gc-card__image--cropped-strip lazyload__padder lazyload__padder--card"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="auto" width="100%" src="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d" /></picture>
-root@server1:~# nonsequitur -d 2018/05/15
-#  b) with a specific date
-#<picture class="item-comic-image"><img class="lazyload img-fluid" srcset="/assets/transparent.png" data-srcset="https://assets.amuniversal.com/9babf8b0344401363066005056a9545d 900w" sizes="
