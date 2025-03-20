@@ -58,11 +58,12 @@ Usage: $0 <options> [-d YYYY/MM/DD ]
 -M            do not send mail
 -d            specify a specific date to download
 -h            show this help
--o            once a day (no download, if called
-              repeatedly and file exists, downloads
-              missing preceeding dates also)
--O            same as -o but does not care about
+-o            same as -o but does not care about
               preceeding dates
+-o            once a day (no download, if called
+              repeatedly and file exists)
+-O            once a day (like -o, but downloads
+              missing preceeding dates also)
 -maxtries #   how many tries if download fails 
 EOF
   exit $1
@@ -234,6 +235,7 @@ EOI
 		else 
 			echo >&2 "download try $tries of $maxtries failed: for $datepar"
 			if [ $tries -lt $maxtries ]; then
+				sleep $((tries*3))
 				$self $args -try $((++tries))
 			else
 				echo $datepar >> $fails
