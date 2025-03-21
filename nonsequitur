@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Not yet used
 fetchyears() {
 	cy=$(date +%Y)
 	y1=${1:-$cy}
@@ -19,7 +18,6 @@ fetchyears() {
 	fi
 }
 
-# not yet used
 fetchyear () {
 	oneday=86400 # seconds
 	first=$(date -d $1/01/01 +%s)
@@ -105,6 +103,13 @@ Usage: $0 <options> [-d YYYY/MM/DD ]
 -maxtries #   how many tries if download fails 
 -M            do not send mail
 -rmf          remove fail logfile ($fails)
+-y            fetch one or more complete years
+              -y NNNN for a single year
+							or
+							-y NNNN NNNN for a range of years
+							(e.g. "-y 2000 2003" or 
+							 "-y 2003 2000", depending on
+							 which wanted first) 
 EOF
   exit $1
 }
@@ -165,6 +170,10 @@ do
 			headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d.%02d.%04d",$3,$2,$1}')
 			refurl="${refurl}$1"
   		;;
+		-y)
+			fetchyears $2 $3
+			exit
+			;;
 		*)
     	echo "Unrecognized parameter or option: $1"
     	usage 1
