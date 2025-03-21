@@ -105,12 +105,12 @@ Usage: $0 <options> [-d YYYY/MM/DD ]
 -rmf          remove fail logfile ($fails)
 -sf           show fail dates
 -y            fetch one or more complete years
-              -y NNNN for a single year
-							or
-							-y NNNN NNNN for a range of years
-							(e.g. "-y 2000 2003" or 
-							 "-y 2003 2000", depending on
-							 which wanted first) 
+               -y NNNN for a single year
+               or
+               -y NNNN NNNN for a range of years
+               (e.g. "-y 2000 2003" or 
+                "-y 2003 2000", depending on
+                which wanted first) 
 EOF
   exit $1
 }
