@@ -1,4 +1,39 @@
 #!/bin/bash
+
+# Not yet used
+fetchyears() {
+	cy=$(date +%Y)
+	y1=${1:-$cy}
+	y2=${2:-$y1}
+
+	if [ $y1 -gt $y2 ]; then
+		for (( y=$y1 ; y>=$y2; y-- ))
+		do
+			fetchyear $y
+		done
+	else
+		for (( y=$y1 ; y<=$y2; y++ ))
+		do
+			fetchyear $y
+		done
+	fi
+}
+
+# not yet used
+fetchyear () {
+	oneday=86400 # seconds
+	first=$(date -d $1/01/01 +%s)
+	last=$(date -d $1/12/31 +%s)
+	for (( d=$first; d<=$last; d=d+$oneday ))
+	do
+		if [ $d -ge $earliest ] &&
+			 [ $d -le $latest ]; then
+			date -d @$d +%Y/%m/%d
+			nonsequitur -M -o -maxtries 3 -d $(date -d @$d +%Y/%m/%d)
+		fi
+	done
+}
+
 name="Non-Sequitur"
 refurl="http://www.gocomics.com/nonsequitur/"
 dst=/home/pi/nonsequitur
@@ -6,6 +41,8 @@ fails=$dst/fails.log
 nomail=0
 precheck=1
 maxtries=3
+earliest=$(date -d 1992/02/16 +%s)
+latest=$(date -d 00:00 +%s)
 mailto="kardel"
 #mailcc="kardel@freenet.de"
 #mailcc="Benno.Kardel@web.de,Benno.Kardel@laposte.net"
@@ -55,8 +92,9 @@ function usage() {
   fi
   cat <<EOF >&$outdsc
 Usage: $0 <options> [-d YYYY/MM/DD ]
--M            do not send mail
 -d            specify a specific date to download
+-ff           fetch previously failed days
+              (uses $fails)
 -h            show this help
 -o            same as -o but does not care about
               preceeding dates
@@ -65,6 +103,8 @@ Usage: $0 <options> [-d YYYY/MM/DD ]
 -O            once a day (like -o, but downloads
               missing preceeding dates also)
 -maxtries #   how many tries if download fails 
+-M            do not send mail
+-rmf          remove fail logfile ($fails)
 EOF
   exit $1
 }
@@ -77,9 +117,24 @@ thisyear=$(date +%Y)
 while [ "${1:0:1}" = "-" ]
 do
 	case "$1" in
+		-ff|-fetch-failed)
+			[ ! -s $fails ] && exit
+			for d in $(cat $fails)
+			do
+				echo $d
+				$self -n -M -o -maxtries 3 -d $d
+			done
+			exit
+			;;
 		-h|-help|--help)
 			usage 0
 			exit 0
+			;;
+		-M)
+    	nomail=1
+			;;
+		-n|-nofaillog)
+			nofaillog=1
 			;;
 		-O)
     	once=1
@@ -88,8 +143,9 @@ do
     	once=1
     	noelderchk=1
 			;;
-		-M)
-    	nomail=1
+		-rmf|removefaillog)
+			rm -fv $fails
+			exit
 			;;
 		-try)
 			shift
@@ -128,7 +184,7 @@ fi
 [ ! -d $dst/$thisyear ] && mkdir $dst/$thisyear
 name="${name}-${stamp}"
 if [ "$precheck" = 1 ]; then
-	if [ -s $dst/$thisyear/$name.* ];then
+	if [ -s "$dst/$thisyear/$name.*" ];then
 		exit
 	fi
 fi
@@ -238,7 +294,7 @@ EOI
 				sleep $((tries*3))
 				$self $args -try $((++tries))
 			else
-				echo $datepar >> $fails
+				if [ "$nofaillog" != 1 ]; then echo $datepar >> $fails;fi
     		rm $out
 			fi
 		fi
