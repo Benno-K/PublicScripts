@@ -103,6 +103,7 @@ Usage: $0 <options> [-d YYYY/MM/DD ]
 -maxtries #   how many tries if download fails 
 -M            do not send mail
 -rmf          remove fail logfile ($fails)
+-sf           show fail dates
 -y            fetch one or more complete years
               -y NNNN for a single year
 							or
@@ -165,11 +166,20 @@ do
 			datepar=$1
 			stamp=$(echo $1 | awk -F/ '{printf "%04d-%02d-%02d",$1,$2,$3}')
 			thisyear=$(echo $1 | awk -F/ '{printf "%04d",$1}')
-
-
 			headline=$(echo $1 | awk -F/ '{printf "Non Sequitur %02d.%02d.%04d",$3,$2,$1}')
 			refurl="${refurl}$1"
   		;;
+		-sf)
+			if [ -s $fails ]; then
+				# if more than 24 lines, then use less else cat
+				if [ $(stat -c %s $fails) -gt 264 ]; then
+					less $fails
+				else
+					cat $fails
+				fi
+			fi
+			exit
+			;;
 		-y)
 			fetchyears $2 $3
 			exit
