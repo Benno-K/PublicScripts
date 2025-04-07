@@ -1,5 +1,52 @@
 #!/bin/bash
 
+fetchImage () {
+	local nsImgUrl=~pi/bin/nsimgurl
+	local maxtries=${2:-10}
+	local try=1
+	local nsdate=${1:-$(date +%Y/%m/%d)}
+	local nsfile=Non-Sequitur-${nsdate:0:4}-${nsdate:5:2}-${nsdate:8:2}
+	local nsdir=~pi/nonsequitur/${nsdate:0:4}
+
+	local page=$(wget -q -O - https://www.gocomics.com/nonsequitur/${nsdate})
+	if [ "$page" = "" ]; then
+		echo failed to fetch for ${nsdate} >&2
+		exit 3
+	fi
+	local imgurl=$(echo $page|$nsImgUrl)
+	while [ ${#imgurl} -gt 255 ]
+	do
+		imgurl=$(wget -q -O - https://www.gocomics.com/nonsequitur/${1}|$nsImgUrl)
+		((try++))
+		if [ $try -gt $maxtries ]; then exit 1;fi
+		echo "try $try (of $maxtries) in $try secs" >&2
+		sleep $try
+	done
+	conttype=$(wget -q -S $imgurl 2>&1|awk -F': ' '/Content-Type:/{print $2}')
+	# conttype=${conttype/\\r/}
+	typ=${conttype/\/*/}
+	ext=${conttype/*\//}
+	if [ "$typ" != "image" ]; then
+		echo "got content of type \"$typ\" - no idea how to deal with that" >&2
+		exit 2
+	else
+		ext=${ext/jpeg/jpg} # turn jpeg to jpg
+		if [ "${ext}" = "gif" ]; then
+			outfile=$nsdir/$nsfile.png
+		else
+			outfile=$nsdir/$nsfile.$ext
+		fi
+		if [ ! -s $outfile ]; then
+			if [ "${ext}" = "gif" ]; then
+				wget -q -O - $imgurl | convert - $outfile
+			else
+				wget -q -O $outfile $imgurl
+			fi
+		fi
+	fi
+	echo $outfile
+}
+
 mailtoday () {
 	name="Non-Sequitur"
 	fromaddr=nonsequitur@kardel.eu
@@ -52,17 +99,13 @@ fetchyear () {
 	done
 }
 
-mailtoday
-exit
-
-
 name="Non-Sequitur"
 refurl="http://www.gocomics.com/nonsequitur/"
 dst=/home/pi/nonsequitur
 fails=$dst/fails.log
 nomail=0
 precheck=1
-maxtries=3
+maxtries=10
 verbose=0
 earliest=$(date -d 1992/02/16 +%s)
 latest=$(date -d 00:00 +%s)
@@ -81,8 +124,6 @@ fromaddr=nonsequitur@kardel.eu
 fromname="${name}-Mailer"
 from="\"$fromname\" <$fromaddr>"
 sendmail=/usr/sbin/sendmail
-stamp=$(date +"%Y-%m-%d")
-datepar=$(date +"%Y/%m/%d")
 headline="Non Sequitur $(date +%d.%m.%Y)"
 once=0
 noelderchk=0
@@ -221,6 +262,8 @@ do
 		esac
   shift
 done
+datepar=${1:-$(date +"%Y/%m/%d")}
+stamp=${datepar:0:4}-${datepar:5:2}-${datepar:8:2}
 
 if [ $once = 1 ] && [ $noelderchk = 0 ]; then
   for ((d = $chkprevdays; d > 0; d--)); do
@@ -230,123 +273,109 @@ if [ $once = 1 ] && [ $noelderchk = 0 ]; then
 fi
 
 [ ! -d $dst/$thisyear ] && mkdir $dst/$thisyear
+
 name="${name}-${stamp}"
 if [ "$precheck" = 1 ]; then
 	if [ -s "$dst/$thisyear/$name.*" ];then
 		exit
 	fi
 fi
-out=$dst/$thisyear/$name.image
-[ $once = 1 ] && [ -e $dst/$thisyear/$name.[gpj][inp][fg] ] && exit 0 # Exit if -o and file present
+if [ $once = 1 ]; then
+	for ftyp in jpg png gif
+	do
+		if [ -s $dst/$thisyear/$name.$ftyp ]; then exit 0;fi
+	done
+fi
 
-#url=$(wget -O - -q $refurl |awk -F'"' '/<img alt="Non Sequitur" class="strip"/{print $18}')
-if [ $verbose = 1 ];then echo refURL=$refurl;fi
-url=$(wget -O - -q $refurl | awk -Fsrc= '/src="https:\/\/assets.gocomics.com\//{print $2;exit}' | awk -F'"' '{print $2}')
-rm -rf $out.*
-
-if [ $verbose = 1 ];then echo URL=$url;fi
-wget -q --referer=$refurl -O $out "$url"
-
+out=$(fetchImage "$datepar" $maxtries) || exit
+if [ $verbose = 1 ];then echo datepar=$datepar;fi
 if [ -r $out ] && [ "$1" != "-g" ]; then
-  filtyp=$(file $out | awk '{print tolower($2)}')
-  # Weird but true: The GIF of 2011/03/28 was recognized by file as sun disklbl
-  if [ "$filtyp" = "png" ] || [ "$filtyp" = "jpeg" ] || [ "$filtyp" = "gif" ] || [ "$filtyp" = "sun" ]; then
-    filext=$(echo $filtyp | sed -e 's/jpeg/jpg/g;s/sun/gif/g')
-		if [ $filext = gif ];then
-			filext=jpg
-    	convert $out $dst/$thisyear/$name.$filext && rm $out
-		else
-    	mv $out $dst/$thisyear/$name.$filext
-		fi
-		out=$dst/$thisyear/$name.$filext
-		touch -d $stamp $out
-    if [ "$nomail" != "1" ]; then
-      text=$(
-				cat <<EOI
-Der aktuelle Non Sequitur Cartoon von Wiley Miller
-EOI
-      )
-      html=$(
-        cat <<EOI
-<html>
- <body>
-  <img alt="" src="cid:imgcid-$stamp">
- </body>
-</html>
-EOI
-      )
+	touch -d $stamp $out
+	if [ "$nomail" != "1" ]; then
+		text=$(
+			cat <<-EOI
+			Der aktuelle Non Sequitur Cartoon von Wiley Miller
+			EOI
+		)
+		html=$(
+			cat <<-EOI
+			<html>
+			 <body>
+					<img alt="" src="cid:imgcid-$stamp">
+			 </body>
+			</html>
+			EOI
+		)
+		# Construct the HTML part and store it in variable htmlpart
+		htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
+		textpart=$(echo "$text" | mime-construct --subpart --type "text/plain; charset=utf-8" --encoding base64 --file - --output)
 
-      # Construct the HTML part and store it in variable htmlpart
-      htmlpart=$(echo "$html" | mime-construct --subpart --type "text/html; charset=utf-8" --encoding base64 --file - --output)
-      textpart=$(echo "$text" | mime-construct --subpart --type "text/plain; charset=utf-8" --encoding base64 --file - --output)
-
-			rlist=$(echo $recips|sed -e 's/,/ /g')
-			for envto in $rlist
-				do
-      # Now construct - on the fly - the image part and pipe it into ...
-      mime-construct \
-        --subpart --type image/$filext \
-        --file $out \
-        --header "Content-ID: <imgcid-$stamp>" \
-        --header "Content-Disposition: inline;" \
-        --header " filename=\"Non-Sequitur-$stamp.$filext\"" \
-        --output |
-        # ... the multipart-command, thus creating the entire message and ...
+		rlist=$(echo $recips|sed -e 's/,/ /g')
+		for envto in $rlist
+		do
+		# Now construct - on the fly - the image part and pipe it into ...
+			mime-construct \
+				--subpart --type image/$filext \
+				--file $out \
+				--header "Content-ID: <imgcid-$stamp>" \
+				--header "Content-Disposition: inline;" \
+				--header " filename=\"Non-Sequitur-$stamp.$filext\"" \
+				--output |
+				# ... the multipart-command, thus creating the entire message and ...
 				(if [ "$mailcc" != "" ]; then \
-        mime-construct \
-          --header "From: $from" \
-          --header "To: $mailtohdr" \
-          --header "Cc: $mailcchdr" \
-          --subject "$headline" \
-          --multipart multipart/related \
-          --subpart-string "$textpart" \
-          --subpart-file - \
-          --subpart-string "$htmlpart" \
-          --subpart-file - \
-          --output;else \
-        mime-construct \
-          --header "From: $from" \
-          --header "To: $mailtohdr" \
-          --header "Cc: $mailcchdr" \
-          --subject "$headline" \
-          --multipart multipart/related \
-          --subpart-string "$textpart" \
-          --subpart-file - \
-          --subpart-string "$htmlpart" \
-          --subpart-file - \
-          --output;fi) | \
-        # ..finally pipe that into the sendmail command
-        $sendmail -f "$from" -r $fromaddr -c $cc $envto
+				mime-construct \
+					--header "From: $from" \
+					--header "To: $mailtohdr" \
+					--header "Cc: $mailcchdr" \
+					--subject "$headline" \
+					--multipart multipart/related \
+					--subpart-string "$textpart" \
+					--subpart-file - \
+					--subpart-string "$htmlpart" \
+					--subpart-file - \
+					--output;else \
+				mime-construct \
+					--header "From: $from" \
+					--header "To: $mailtohdr" \
+					--header "Cc: $mailcchdr" \
+					--subject "$headline" \
+					--multipart multipart/related \
+					--subpart-string "$textpart" \
+					--subpart-file - \
+					--subpart-string "$htmlpart" \
+					--subpart-file - \
+					--output;fi) | \
+				# ..finally pipe that into the sendmail command
+				$sendmail -f "$from" -r $fromaddr -c $cc $envto
 		done
-		fi
-  else
-    if [ "$nomail" != "1" ]; then
-    	cat <<EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
-Hello, this is $0
+	fi # if [ "$nomail" != "1" ]; then
+else
+	if [ "$nomail" != "1" ]; then
+		cat <<-EOI | mailx -s "Wiley Miller's Non Sequitur of today failed!" $mailto
+		Hello, this is $0
 
-I just downloaded $url 
-(retrieved using $refurl) into
-$out (on $(hostname)).
-I expected $out
-to be an image, but it turned out to be of type $filtyp.
+		I just downloaded $url 
+		(retrieved using $refurl) into
+		$out (on $(hostname)).
+		I expected $out
+		to be an image, but it turned out to be of type $filtyp.
 
-If you have any idea why, please fix me.
+		If you have any idea why, please fix me.
 
-Your sincerely
-$0
+		Your sincerely
+		$0
 
-PS: I deleted $out.
+		PS: I deleted $out.
 
-EOI
-		else 
-			echo >&2 "download try $tries of $maxtries failed: for $datepar"
-			if [ $tries -lt $maxtries ]; then
-				sleep $((tries*3))
-				$self $args -try $((++tries))
-			else
-				if [ "$nofaillog" != 1 ]; then echo $datepar >> $fails;fi
-    		rm $out
-			fi
+		EOI
+	else 
+		echo >&2 "download try $tries of $maxtries failed: for $datepar"
+		if [ $tries -lt $maxtries ]; then
+			sleep $((tries*3))
+			$self $args -try $((++tries))
+		else
+			if [ "$nofaillog" != 1 ]; then echo $datepar >> $fails;fi
+			rm $out
 		fi
   fi
 fi
