@@ -1,0 +1,26 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+# open IN,"<$ARGV[0]" or die "cannot open $ARGV[0]";
+my $line=<>;
+my $outline="";
+# printf "%s\n",$line;
+my $scanfor="https://featureassets.gocomics.com/assets/";
+my $p1=0,my $p2=0;
+for (my $i = 0, my $s=0; $i < length($line); $i++) {
+	if (substr($line, $i, length($scanfor)) eq $scanfor ) {
+		#		printf "%7d,%s\n",$i,substr($line,$i-220,60);
+		#		printf "%7d %s\n",$i,substr($line,$i,76);
+		$p1=$i;
+	}
+		if (substr($line, $i, 1) eq '?' ) {
+			if (++$p2 > 0) {
+				printf "%s\n",substr($line,$p1,$i-$p1);
+				exit;
+			};
+			#exit;
+	}
+}
+#close IN;
+exit;
