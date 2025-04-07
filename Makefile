@@ -1,9 +1,19 @@
 SHELL = /bin/bash
 TARGETS = extip extip6 myip myip6 ifip6 nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade ddfbset homeaddr f2bsts
+UTARGETS=nsimgurl
 
 LBINDIR = /usr/local/bin
+UBINDIR = ~/bin
 
-install: $(TARGETS)
+install: $(TARGETS) $(UTARGETS)
+	@for n in $(UTARGETS);\
+	do \
+	diff -q $$n $(UBINDIR)/$$n > /dev/null;\
+	if [ "$$?" != "0"	];then \
+	   echo install -m 755 -t $(UBINDIR) $$n;\
+	   install -m 755 -t $(UBINDIR) $$n;\
+	fi;\
+	done
 	@for n in $(TARGETS);\
 	do \
 	diff -q $$n $(LBINDIR)/$$n > /dev/null;\
