@@ -124,7 +124,6 @@ fromaddr=nonsequitur@kardel.eu
 fromname="${name}-Mailer"
 from="\"$fromname\" <$fromaddr>"
 sendmail=/usr/sbin/sendmail
-headline="Non Sequitur $(date +%d.%m.%Y)"
 once=0
 noelderchk=0
 chkprevdays=40
@@ -262,8 +261,13 @@ do
 		esac
   shift
 done
-datepar=${1:-$(date +"%Y/%m/%d")}
+
+# These three may have been defined using
+# the -d option, so do only default them
+# if undefined
+datepar=${datepar:-$(date +"%Y/%m/%d")}
 stamp=${datepar:0:4}-${datepar:5:2}-${datepar:8:2}
+headline=${headline:-"Non Sequitur $(date +%d.%m.%Y)"}
 
 if [ $once = 1 ] && [ $noelderchk = 0 ]; then
   for ((d = $chkprevdays; d > 0; d--)); do
