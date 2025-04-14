@@ -19,7 +19,9 @@ fetchImage () {
 		imgurl=$(wget -q -O - https://www.gocomics.com/nonsequitur/${1}|$nsImgUrl)
 		((try++))
 		if [ $try -gt $maxtries ]; then exit 1;fi
-		echo "try $try (of $maxtries) in $try secs" >&2
+		if [ $try -gt 3 ]; then
+			echo "try $try (of $maxtries) in $try secs" >&2
+		fi
 		sleep $try
 	done
 	conttype=$(wget -q -S $imgurl 2>&1|awk -F': ' '/Content-Type:/{print $2}')
