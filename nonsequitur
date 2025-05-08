@@ -16,7 +16,13 @@ fetchImage () {
 	local imgurl=$(echo $page|$nsImgUrl)
 	while [ ${#imgurl} -gt 255 ]
 	do
-		imgurl=$(wget -q -O - https://www.gocomics.com/nonsequitur/${1}|$nsImgUrl)
+		url=https://www.gocomics.com/nonsequitur/${1}
+		imgurl=$(wget -q -O - $url | $nsImgUrl)
+		if [ "$imgurl" = "" ]; then
+			echo failed to find image url >&2
+			echo tried $url>&2
+			exit 1
+		fi
 		((try++))
 		if [ $try -gt $maxtries ]; then exit 1;fi
 		if [ $try -gt 3 ]; then
@@ -30,6 +36,7 @@ fetchImage () {
 	ext=${conttype/*\//}
 	if [ "$typ" != "image" ]; then
 		echo "got content of type \"$typ\" - no idea how to deal with that" >&2
+		echo "tried $imgurl" >&2
 		exit 2
 	else
 		ext=${ext/jpeg/jpg} # turn jpeg to jpg
