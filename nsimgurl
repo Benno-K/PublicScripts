@@ -11,11 +11,14 @@ my $p1=0,my $p2=0;
 for (my $i = 0, my $s=0; $i < length($line); $i++) {
 	if (substr($line, $i, length($scanfor)) eq $scanfor ) {
 		#		printf "%7d,%s\n",$i,substr($line,$i-220,60);
-		#		printf "%7d %s\n",$i,substr($line,$i,76);
+		printf STDERR "%7d %s\n",$i,substr($line,$i,80);
 		$p1=$i;
+		$p2++;
 	}
-		if (substr($line, $i, 1) eq '?' ) {
-			if (++$p2 > 0) {
+			if ($p2 > 0) {
+		# if (substr($line, $i, 1) eq '?' ) {
+		if (substr($line, $i, 1) eq '"' ) {
+			# if (++$p2 > 0) {
 				printf "%s\n",substr($line,$p1,$i-$p1);
 				exit;
 			};
