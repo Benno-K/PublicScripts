@@ -1,0 +1,182 @@
+#!/bin/bash
+
+#
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+#
+# Credits:
+# This script was heavily inspired by
+# https://gist.github.com/wadedugas/69e385bd1c8d27f0a1a885455361022b
+# (which is a fork of
+# https://gist.github.com/BigNerd/b3d79fd1b40b5667a5663eaa5fa9e80f)
+# which taught me, how to effectly access the log of
+# the fritzbox and how to do this in bash
+# I had never heard of data.lua and found it being
+# much more efficient than all what I've tried
+# before. Also I did not know "jd" which makes it
+# pretty easy to handle JSON data in a shell script.
+# If someone finds a documentation for data.lua
+# i would be eager to get it
+#
+filter () {
+	local sedpattern="${1}"
+	if [ -s "${logofyear}" ]; then
+		sed -n -E "/${sedpattern}/,\$p" |sed -e 1d
+	else
+		cat
+	fi
+}
+
+# Check for thhings we depend on (md5/md5sum is checked
+# elsewhere in here
+utils="awk base64 curl iconv jq sed rev"
+utilsmissing=0
+for util in $utils
+do
+	if ! which >/dev/null 2>&1 $util ; then
+		echo "Utility $util is not available" >&2
+		((utilsmissing++))
+	fi
+done
+if [ $utilsmissing -gt 0 ];then
+	cat <<-EOI
+	This script relies on the utilities
+	$utils
+	but at least one of it is unavailable.
+	Until you make them available I unfortunately
+	have to quit.
+	EOI
+	exit 1
+fi
+
+loghome=~/fblogs
+
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+outfil=log-${timestamp}
+txoutfil=$loghome/$outfil.txt
+comtxoutfil=$loghome/log-combined
+logofyear=$loghome/fblog-$(date +%Y).log
+loylastline="let grep/sed fail to find this"
+baseurl="http://fritz.box"
+
+# The selected Fritz!Box user needs the permissions to 
+# view/edit the configuration.
+
+# The username and password are not set in this
+# script by default
+# This script prompts you for them.
+#
+# To store "hidden" (but still NOT ENCRYPTED=UNSAFE!)
+# credentials use the following command
+# echo -n "fritz-username fritz-password" | rev | base64 | rev > ${credfil}
+# where credfil is ~/.updfblog-data as long as this
+# script is named updfblog. If you change it's name
+# it searches for a credentials file according to
+# tha name.
+# This method might be a bit safer as storing cleartext
+
+# You may specify hardcoded username and password
+# here using
+# 	user=fritzbox-account-username
+# and
+# 	pass=fritzbox-account-password
+# below, but hardcoding credentials is highly
+# discouraged and unsafe!
+user=
+pass=
+
+# Get credentials if not hardcoded above - either
+# from file or prompt for them
+if [[ -z "${user}" || -z "${pass}" ]];then
+	credfil=~/.$(basename $0).data
+	if [ ! -f "${credfil}" ];then
+		# No credentials file was found, prompt for username and password 
+		echo "Need credentials to log into $baseurl"
+		read -p "Username: " user
+		if [ -z "${user}" ]; then
+			echo "You did not enter a username, exiting"
+			exit 1
+		fi
+		read -p "Password: " -s pass
+		echo ""
+		if [ -z "${pass}" ]; then
+		 echo "You did not enter a password, exiting"
+		 exit 1
+		fi
+	else
+		eval $( rev ${credfil} | base64 -d | rev | awk '{printf "user=%s;pass=%s",$1,$2}')
+	fi
+fi
+
+# Messages matching this will be filtered out
+ignore="Anmeldung des Benutzers ${user} an der FRITZ\!Box-Benutzeroberfläche"
+
+# make sure $? reflects pipe command failures
+# and exit on errors
+set -e -o pipefail
+
+# get current session id and challenge
+resp=$(curl -s "$baseurl/login_sid.lua")
+
+if [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] ; then
+  # SID=0 => not logged in
+  if [[ "$resp" =~ \<BlockTime\>([0-9a-fA-F]+)\</BlockTime\> ]] ; then
+    blktim="${BASH_REMATCH[1]}"
+    if [[ "${blktim}" -gt "0" ]] ; then
+      echo 1>&2 "BlockTime=${blktim}, sleeping until unblocked"
+      sleep $(( ${blktim} + 1 ))
+			echo >&2 "You may now retry it."
+			exit 2
+    fi
+  fi
+  if [[ "$resp" =~ \<Challenge\>([0-9a-fA-F]+)\</Challenge\> ]] ; then
+		# Got a login challenge
+    challenge="${BASH_REMATCH[1]}"
+		# Calculate MD5 with whatever command we have
+    if which >/dev/null 2>&1 md5 ; then
+      MD5=$(echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code=UTF-16LE | md5 )
+    elif which >/dev/null 2>&1 md5sum ; then
+      MD5=$(echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code UTF-16LE | md5sum | cut -f1 -d ' ')
+    else
+      echo 1>&2 "Error: neither 'md5' nor 'md5sum' are installed"
+      exit 1
+    fi
+		# Prepare response for challenge
+    resp4challenge="${challenge}-${MD5}"
+		# Send it, get server's response
+		# this should return a session id
+    resp=$(curl -s -G -d "response=${resp4challenge}" -d "username=${user}" "${baseurl}/login_sid.lua")
+  fi
+fi
+
+if ! [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] && [[ "$resp" =~ \<SID\>([0-9a-fA-F]+)\</SID\> ]] ; then
+  # either SID was already non-zero authentication disabled) or login succeeded
+	# BASH_REMATH[1] contains the (first and in this
+	# case only) parenthesis expression of the
+	# last =~ operation, in this case what matched
+	# the (0+)
+  sessionid="${BASH_REMATCH[1]}"
+	if [ -r "${logofyear}" ]; then
+		loylastline=$(tail -1 "$logofyear")
+	fi
+	# FIXME why does \t not work instead of .*
+	sedpattern=$(echo "${loylastline}" | awk '{printf "^%s.*%s",$1,$2}')
+	curl -s -d "xhr=1&lang=de&page=log&sid=${sessionid}" -H "Content-Type: application/x-www-form-urlencoded" "${baseurl}/data.lua" | jq -r '.data.log[] | .date + "\t" + .time + "\t" + .msg' | grep -v "${ignore}" | tac | filter "${sedpattern}"|sed -e 1d >> ${logofyear}
+	# this is never reached in case of error occuring in
+	# above, because -e is set
+	if [ $? != 0 ];then
+		echo "something command in the quite long pipeline went wrong" <&2
+		echo "try again to run with \"bash -x $0\" to find out more" <&2
+		exit 1
+	fi
+else
+	# no session-id, no luck
+	echo "Login as $user failed." >&2
+fi
+exit
+# vim: set ts=2 sw=2 expandtab ft=bash:
