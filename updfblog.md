@@ -42,4 +42,4 @@ to read (and unfortunately change) the box's configuration. This requirement com
   -u --user <username> (of FRITZ!Box-user)
  ```
 
-Tested and developed using a 7590 running FRITZ!OS 8.02 on Raspbian GNU/Linux 12 (bookworm).
+Tested and developed on Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
