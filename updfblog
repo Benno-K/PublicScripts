@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-003
+	Version=1.0-004
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -62,15 +62,6 @@ usage () {
 Usage: (Version: $Version)
   $bn [option[,option...]]
   -b --box <hostname or IP of FRITZ!Box>
-  -d --dir <directory-to-hold-logfiles>
-  -n --name <file-basename> (of logfile, default:fblog)
-  -u --user <username> (of FRITZ!Box-user)
-  password options:
-  -p --pass <name>  can be
-          a) environment variable
-          b) a named pipe 
-          c) an executable file
-          that holds or delivers the password
   -c --creds <storefile> containg the credentials
           by default ~/.${bn}.data is checked
           overrides -u
@@ -80,6 +71,15 @@ Usage: (Version: $Version)
           default storefile is ~/.${bn}.data
           storing passwords in a file is potentially
           unsafe!
+  -d --dir <directory-to-hold-logfiles>
+  -n --name <file-basename> (of logfile, default:fblog)
+  -p --pass <name> can be
+          a) environment variable
+          b) a named pipe 
+          c) an executable file
+          that holds or delivers the password
+          of the FRITZ!Box user
+  -u --user <username> (of FRITZ!Box-user)
 EOI
 }
 
