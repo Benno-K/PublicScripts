@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-002
+	Version=1.0-003
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -76,7 +76,7 @@ Usage: (Version: $Version)
           overrides -u
   -C --save-credentials [<storefile>]
           store credentials in file
-					can be used together with -c
+          can be used together with -c
           default storefile is ~/.${bn}.data
           storing passwords in a file is potentially
           unsafe!
