@@ -25,7 +25,7 @@
 #
 # You may want to change of of these
 loghome=~/fblogs
-baseurl="http://fritz.box"
+boxname=fritz.box
 logfilnam=fblog
 
 # Filter function to either only deliver new or 
@@ -43,8 +43,47 @@ filter () {
 	fi
 }
 
-# Check for thhings we depend on (md5/md5sum is checked
-# elsewhere in here
+# Exit function
+ciao () {
+	local sts=$1
+	shift
+	if [ $sts != 0 ]; then
+		echo >&2 "$@"
+	else
+		echo "$@"
+	fi
+	exit $sts
+}
+
+# Display help function
+usage () {
+  cat <<EOI
+Usage:
+  $bn [option[,option...]]
+  -b --box <hostname or IP of FRITZ!Box>
+  -d --dir <directory-to-hold-logfiles>
+  -n --name <file-basename> (of logfile, default:fblog)
+  -u --user <username> (of FRITZ!Box-user)
+  password options:
+  -p --pass <name>  can be
+          a) environment variable
+          b) a named pipe 
+          c) an executable file
+          that holds or delivers the password
+  -c --creds <storefile> containg the credentials
+          by default ~/.${bn}.data is checked
+          overrides -u
+  -C --save-credentials [<storefile>]
+          store credentials in file
+					can be used together with -c
+          default storefile is ~/.${bn}.data
+          storing passwords in a file is potentially
+          unsafe!
+EOI
+}
+
+# Check for things we depend on (md5/md5sum is checked
+# elsewhere in here)
 utils="awk base64 curl iconv jq sed rev"
 utilsmissing=0
 for util in $utils
@@ -65,7 +104,66 @@ if [ $utilsmissing -gt 0 ];then
 	exit 1
 fi
 
+bn=$(basename $0)
+# Parse arguments
+while [ "${1:0:1}" = "-" ]
+do
+	case "$1" in
+		-b|--box)
+			shift
+			boxname=$1
+			;;
+		-u|--user)
+			shift
+			user=$1
+			;;
+		-C|--save-credentials)
+			onlysavecred=1
+			;;
+		-c|--creds)
+			shift
+			credfil="${1}"
+			;;
+		-p|--pass)
+			popt=${1} # needed for error msg
+			shift
+			cand=${1}
+			# assume it is a variable
+			eval $(echo pass=\$${cand})
+			# was it?
+			if [[ -z "${pass}" || "${pass:0:1}" = '$' ]]; then
+				# nope, is it a pipe?
+				if [[ -p "${cand}" ]]; then
+					# yes, so read one line
+					read -r pass < "${cand}"
+				# no pipe, is it an executable file
+				elif [[ -x "${cand}" ]]; then
+					# yes, then execute ot
+					pass=$(${cand})	
+					# pass=$("./xyz")	
+				else
+					# no var, no pipe, no exec - give up
+					echo >&2 "you cannot specify passwords with $popt"
+					ciao 5 "${cand} is not a variable, pipe, executable"
+				fi
+			fi
+			echo dbg:pass=$pass
+			ciao 99 stop
+			;;
+		-h|--help)
+			usage
+			exit 0
+			;;
+		*)
+			ciao 2 "unrecognized option: $1 - try ${bn} -h"
+			;;
+	esac
+	shift
+done
+[ $# != 0 ] && ciao 1 "don't want parameter(s): $@ - try ${bn} -h"
+
 # You are not intended to change these
+baseurl="http://${boxname}"
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 logofyear=$loghome/${logfilnam}-$(date +%Y).log
 loylastline="let grep/sed fail to find this"
@@ -93,22 +191,21 @@ loylastline="let grep/sed fail to find this"
 # 	pass=fritzbox-account-password
 # below, but hardcoding credentials is highly
 # discouraged and unsafe!
-user=
+user=${user:-} # if not set (by -u) do empty it
 pass=
-
-# Get credentials if not hardcoded above - either
-# from file or prompt for them
 if [[ -z "${user}" || -z "${pass}" ]];then
-	credfil=~/.$(basename $0).data
-	if [ ! -f "${credfil}" ];then
+	credfil=${credfil:-~/.$(basename $0).data}
+	if [[ ! -f "${credfil}" || ! -z "$user" ]];then
 		# No credentials file was found, prompt for username and password 
 		echo "Need credentials to log into $baseurl"
-		read -p "Username: " user
-		if [ -z "${user}" ]; then
-			echo "You did not enter a username, exiting"
-			exit 1
+		if [[ -z "${user}" ]];then
+			read -p "Username: " user
+			if [ -z "${user}" ]; then
+				echo "You did not enter a username, exiting"
+				exit 1
+			fi
 		fi
-		read -p "Password: " -s pass
+		read -p "Password for ${user}: " -s pass
 		echo ""
 		if [ -z "${pass}" ]; then
 		 echo "You did not enter a password, exiting"
@@ -117,6 +214,13 @@ if [[ -z "${user}" || -z "${pass}" ]];then
 	else
 		eval $( rev ${credfil} | base64 -d | rev | awk '{printf "user=%s;pass=%s",$1,$2}')
 	fi
+fi
+
+# if -C, then we should have user and password by now
+# so store it and exit
+if [ "${onlysavecred}" = 1 ]; then
+	echo -n "${user} ${pass}" | rev | base64 | rev > ${credfil}
+	exit 0
 fi
 
 # Messages matching this will be filtered out
