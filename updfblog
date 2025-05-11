@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-004
+	Version=1.0-005
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -72,6 +72,7 @@ Usage: (Version: $Version)
           storing passwords in a file is potentially
           unsafe!
   -d --dir <directory-to-hold-logfiles>
+  -h --help (shows this text)
   -n --name <file-basename> (of logfile, default:fblog)
   -p --pass <name> can be
           a) environment variable
