@@ -4,6 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
+	Version=1.0-002
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -58,7 +59,7 @@ ciao () {
 # Display help function
 usage () {
   cat <<EOI
-Usage:
+Usage: (Version: $Version)
   $bn [option[,option...]]
   -b --box <hostname or IP of FRITZ!Box>
   -d --dir <directory-to-hold-logfiles>
