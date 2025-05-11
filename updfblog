@@ -23,11 +23,22 @@
 # If someone finds a documentation for data.lua
 # i would be eager to get it
 #
+# You may want to change of of these
+loghome=~/fblogs
+baseurl="http://fritz.box"
+logfilnam=fblog
+
+# Filter function to either only deliver new or 
+# deliver all events
 filter () {
 	local sedpattern="${1}"
+	# if logfile exists
 	if [ -s "${logofyear}" ]; then
+		# only deliver new events (all lines after
+		# the pattern matches)
 		sed -n -E "/${sedpattern}/,\$p" |sed -e 1d
 	else
+		# deliver all events
 		cat
 	fi
 }
@@ -54,15 +65,10 @@ if [ $utilsmissing -gt 0 ];then
 	exit 1
 fi
 
-loghome=~/fblogs
-
+# You are not intended to change these
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-outfil=log-${timestamp}
-txoutfil=$loghome/$outfil.txt
-comtxoutfil=$loghome/log-combined
-logofyear=$loghome/fblog-$(date +%Y).log
+logofyear=$loghome/${logfilnam}-$(date +%Y).log
 loylastline="let grep/sed fail to find this"
-baseurl="http://fritz.box"
 
 # The selected Fritz!Box user needs the permissions to 
 # view/edit the configuration.
