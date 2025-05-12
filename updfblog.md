@@ -23,7 +23,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
  
  ### Command options (use -h to list)
  ```
- Usage: (Version: 1.0-017)
+ Usage: (Version: 1.0-019)
   updfblog [option[,option...]]
   -b --box <hostname or IP of FRITZ!Box>
   -c --creds <storefile> containg the credentials
