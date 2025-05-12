@@ -12,12 +12,14 @@ It is a good idea to run this script at regular intervals. Cron could do that fo
 ### Getting started
 
 - You need an account on the box with the permission
-to read (and unfortunately change) the box's configuration. This requirement comes from FRITZ!OS, I cannot change that
+to read (and unfortunately change, there is no read-only permission) the box's configuration. <br/> I highly recommend creating an account that is only used for this script having a strong[^1] password.
+[^1]: I suggest a mix of numbers, lowercase and uppercase letters and characters `+-=?~.:`, at least 20 characters long.
+
 - Create a directory where the logs should go. The default directory is "`fblogs`" in your home directory (`mkdir ~/fblogs` does that). If you prefer another name, go ahead, create it and use the `-d` option.
 
-### Messages not stored
+### Events ignored
 As each run of the script creates a log entry, the
-script ignores **all** logins of that user are **not** contained in the stored log file. Therefor it is recommended to create and use an account that is only used to fetch the log messages.
+script ignores **all** login-events of **that user**. Therefore it is recommended to create and use an account that is only used to fetch the log messages. If you do **not** want to suppress these logins, use `-D/--do-not-filter`.
  
  ### Command options (use -h to list)
  ```
@@ -44,6 +46,7 @@ script ignores **all** logins of that user are **not** contained in the stored l
           c) an executable file
           that holds or delivers the password
           of the FRITZ!Box user
-  -u --user <username> (of FRITZ!Box-user) ```
+  -u --user <username> (of FRITZ!Box-user)
+  ```
 
 Tested and developed on Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
