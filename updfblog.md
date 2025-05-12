@@ -52,4 +52,9 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
 ## How to get it
 Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/updfblog).
 
-Tested and developed on Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
+## Environment used
+
+Tested and developed on a Raspberry Pi Model B Rev. 1.1 running Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
+
+#### Contact 
+Contact me using github (Benno-K). If you do not have an account  there you can drop me a mail to `benno (at-sign) xyz .de` as well.
