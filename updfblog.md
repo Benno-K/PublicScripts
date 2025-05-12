@@ -49,4 +49,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
   -u --user <username> (of FRITZ!Box-user)
   ```
 
+## How to get it
+Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/updfblog).
+
 Tested and developed on Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
