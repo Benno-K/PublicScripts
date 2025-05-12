@@ -153,6 +153,8 @@ to /usr/local/bin so that
 every authorized user can
 invoke it.
 
+## updfblog
+See [updlog.md](updlog.md).
 ## zero-out-rootfs-freespace
 
 When using dd piped into gzip
