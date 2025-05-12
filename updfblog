@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-017
+	Version=1.0-019
 # (Please do not comment out above line)
 # 
 # This script is available for
@@ -171,25 +171,30 @@ do
 		# script. It does not make sense for anybody
 		# but me to use this.
 		-iv|-nv)
-			# unneeded as $Version is defined
-			# eval $(grep Version=1.0-010
-			minor="${Version/*-/}"
-			major=${Version/-*/}
-			# the following do-loop is a work-around
-			# for the following statement that should 
-			# remove any leading zeroes
-			# minor="${minor##+(0)}"
-			# that works in interactive bash
-			# but not in this script (with minor being 008)
-			while [ ${minor:0:1} = 0 ]
-			do
-				minor=${minor:1}
-			done
-			((minor++))
-			newver=$(printf "%s-%03d" $major $minor)
-			sed -i.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
-			echo "$bn V$newver"
-			exit 0
+			validpath=/home/pi/gitrepos/PublicScripts/updfblog
+			if [ $(realpath $0) == ${validpath} ]; then
+				# unneeded as $Version is defined
+				# eval $(grep Version=1.0-010
+				minor="${Version/*-/}"
+				major=${Version/-*/}
+				# the following do-loop is a work-around
+				# for the following statement that should 
+				# remove any leading zeroes
+				# minor="${minor##+(0)}"
+				# that works in interactive bash
+				# but not in this script (with minor being 008)
+				while [ ${minor:0:1} = 0 ]
+				do
+					minor=${minor:1}
+				done
+				((minor++))
+				newver=$(printf "%s-%03d" $major $minor)
+				sed -i.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
+				echo "$bn V$newver"
+				exit 0
+			else
+				ciao 2 "unrecognized option: $1 - try ${bn} -h"
+			fi
 			;;
 		-h|--help)
 			usage
