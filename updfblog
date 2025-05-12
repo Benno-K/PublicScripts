@@ -85,7 +85,7 @@ Usage: (Version: $Version)
           that holds or delivers the password
           of the FRITZ!Box user
   -u --user <username> (of FRITZ!Box-user)
-	-v --version  report own version number
+  -v --version  report own version number
 EOI
 }
 
