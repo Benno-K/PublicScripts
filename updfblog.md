@@ -23,7 +23,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
  
  ### Command options (use -h to list)
  ```
- Usage: (Version: 1.0-006)
+ Usage: (Version: 1.0-017)
   updfblog [option[,option...]]
   -b --box <hostname or IP of FRITZ!Box>
   -c --creds <storefile> containg the credentials
@@ -40,7 +40,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
           do not filter logins of the user used
           to log in this script
   -h --help (shows this text)
-  -n --name <file-basename> (of logfile, default:fblogs
+  -n --name <file-basename> (of logfile, default:fblog)
   -p --pass <name> can be
           a) environment variable
           b) a named pipe
@@ -48,6 +48,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
           that holds or delivers the password
           of the FRITZ!Box user
   -u --user <username> (of FRITZ!Box-user)
+  -v --version  report own version number
   ```
 
 ## How to get it
