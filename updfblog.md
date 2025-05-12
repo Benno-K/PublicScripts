@@ -15,7 +15,7 @@ It is a good idea to run this script at regular intervals. Cron could do that fo
 to read (and unfortunately change, there is no read-only permission) the box's configuration. <br/> I highly recommend creating an account that is only used for this script having a strong[^1] password.
 [^1]: I suggest a mix of numbers, lowercase and uppercase letters and characters `+-=?~.:`, at least 20 characters long.
 
-- Create a directory where the logs should go. The default directory is "`fblogs`" in your home directory (`mkdir ~/fblogs` does that). If you prefer another name, go ahead, create it and use the `-d` option.
+- Create a directory where the logs should go. The default directory is "`fblogs`" in your home directory (use `mkdir ~/fblogs` to create). If you prefer another name, go ahead, create it and use the `-d` option.
 
 ### Events ignored
 As each run of the script creates a log entry, the
@@ -40,7 +40,8 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
           do not filter logins of the user used
           to log in this script
   -h --help (shows this text)
-  -n --name <file-basename> (of logfile, default:fblog)  -p --pass <name> can be
+  -n --name <file-basename> (of logfile, default:fblog)
+    -p --pass <name> can be
           a) environment variable
           b) a named pipe
           c) an executable file
