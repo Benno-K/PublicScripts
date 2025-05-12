@@ -40,8 +40,8 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
           do not filter logins of the user used
           to log in this script
   -h --help (shows this text)
-  -n --name <file-basename> (of logfile, default:fblog)
-    -p --pass <name> can be
+  -n --name <file-basename> (of logfile, default:fblogs
+  -p --pass <name> can be
           a) environment variable
           b) a named pipe
           c) an executable file
