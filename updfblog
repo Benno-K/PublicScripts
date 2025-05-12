@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-007
+	Version=1.0-008
 # (Please do not comment out above line)
 # 
 # This script is available for
@@ -187,7 +187,7 @@ do
 			done
 			((minor++))
 			newver=$(printf "%s-%03d" $major $minor)
-			sed -i=.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
+			sed -i.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
 			echo "$bn V$newver"
 			exit 0
 			;;
