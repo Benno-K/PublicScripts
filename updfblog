@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-006
+	Version=1.0-005
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -84,12 +84,13 @@ Usage: (Version: $Version)
           that holds or delivers the password
           of the FRITZ!Box user
   -u --user <username> (of FRITZ!Box-user)
+	-v --version  report own version number
 EOI
 }
 
 # Check for things we depend on (md5/md5sum is checked
 # elsewhere in here)
-utils="awk base64 curl iconv jq sed rev"
+utils="awk base64 curl iconv jq printf sed rev"
 utilsmissing=0
 for util in $utils
 do
@@ -114,6 +115,10 @@ bn=$(basename $0)
 while [ "${1:0:1}" = "-" ]
 do
 	case "$1" in
+		-v|--version)
+			echo $Version
+			exit
+			;;
 		-D|--do-not-filter)
 			ignore="SomeTextThatWillHopefullyNeverAppearInAnEvent"
 			;;
@@ -150,7 +155,7 @@ do
 					read -r pass < "${cand}"
 				# no pipe, is it an executable file
 				elif [[ -x "${cand}" ]]; then
-					# yes, then execute ot
+					# yes, then execute it
 					pass=$(${cand})	
 					# pass=$("./xyz")	
 				else
@@ -159,8 +164,31 @@ do
 					ciao 5 "${cand} is not a variable, pipe, executable"
 				fi
 			fi
-			echo dbg:pass=$pass
-			ciao 99 stop
+			;;
+		# Hidden/undocumented option to increase
+		# the minor version number of/within this
+		# script. It does not make sense for anybody
+		# but me to use this.
+		-iv|-nv)
+			# unneeded as $Version is defined
+			# eval $(grep Version=1.0-010
+			minor="${Version/*-/}"
+			major=${Version/-*/}
+			# the following do-loop is a work-around
+			# for the following statement that should 
+			# remove any leading zeroes
+			# minor="${minor##+(0)}"
+			# that works in interactive bash
+			# but not in this script (with minor being 008)
+			while [ ${minor:0:1} = 0 ]
+			do
+				minor=${minor:1}
+			done
+			((minor++))
+			newver=$(printf "%s-%03d" $major $minor)
+			sed -i=.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
+			echo "$bn V$newver"
+			exit 0
 			;;
 		-h|--help)
 			usage
@@ -188,9 +216,9 @@ loylastline="let grep/sed fail to find this"
 # This script prompts you for them.
 #
 # To store "hidden" (but still NOT ENCRYPTED=UNSAFE!)
-# credentials use the following command
+# credentials use -C or the following command
 # echo -n "fritz-username fritz-password" | rev | base64 | rev > ${credfil}
-# where credfil is ~/.updfblog-data as long as this
+# where credfil is ~/.updfblog.data as long as this
 # script is named updfblog. If you change it's name
 # it searches for a credentials file according to
 # tha name.
@@ -203,9 +231,11 @@ loylastline="let grep/sed fail to find this"
 # 	pass=fritzbox-account-password
 # below, but hardcoding credentials is highly
 # discouraged and unsafe!
-user=${user:-} # if not set (by -u) do empty it
+# Clear $user (if not set by -u) and $pass
+user=${user:-}
 pass=
 
+# Now determine the credentials
 if [[ -z "${user}" || -z "${pass}" ]];then
 	credfil=${credfil:-~/.$(basename $0).data}
 	if [[ ! -f "${credfil}" || ! -z "$user" ]];then
@@ -228,6 +258,7 @@ if [[ -z "${user}" || -z "${pass}" ]];then
 		eval $( rev ${credfil} | base64 -d | rev | awk '{printf "user=%s;pass=%s",$1,$2}')
 	fi
 fi
+# Now we have the credentials
 
 # Messages like this will be filtered out (unless -D)
 ignore=${ignore:-"Anmeldung des Benutzers ${user} an der FRITZ\!Box-Benutzeroberfläche"}
@@ -249,6 +280,9 @@ resp=$(curl -s "$baseurl/login_sid.lua")
 if [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] ; then
   # SID=0 => not logged in
   if [[ "$resp" =~ \<BlockTime\>([0-9a-fA-F]+)\</BlockTime\> ]] ; then
+	# BASH_REMATCH[1] contains the (first and in this
+	# case only) parenthesis expression of the
+	# last =~ operation
     blktim="${BASH_REMATCH[1]}"
     if [[ "${blktim}" -gt "0" ]] ; then
       echo 1>&2 "BlockTime=${blktim}, sleeping until unblocked"
@@ -259,6 +293,9 @@ if [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] ; then
   fi
   if [[ "$resp" =~ \<Challenge\>([0-9a-fA-F]+)\</Challenge\> ]] ; then
 		# Got a login challenge
+		# BASH_REMATCH[1] contains the (first and in this
+		# case only) parenthesis expression of the
+		# last =~ operation
     challenge="${BASH_REMATCH[1]}"
 		# Calculate MD5 with whatever command we have
     if which >/dev/null 2>&1 md5 ; then
@@ -290,8 +327,11 @@ if ! [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] && [[ "$resp" =~ \<SID\>([0-9a-fA-F]+)
 	# FIXME why does \t not work instead of .*
 	sedpattern=$(echo "${loylastline}" | awk '{printf "^%s.*%s",$1,$2}')
 	curl -s -d "xhr=1&lang=de&page=log&sid=${sessionid}" -H "Content-Type: application/x-www-form-urlencoded" "${baseurl}/data.lua" | jq -r '.data.log[] | .date + "\t" + .time + "\t" + .msg' | grep -v "${ignore}" | tac | filter "${sedpattern}"|sed -e 1d >> ${logofyear}
-	# this is never reached in case of error occuring in
-	# above, because -e is set
+	# This is never reached in case of ERROR occuring in
+	# above, because -e is set, so the following code
+	# is NEVER executed, when an error occurs.
+	# It just sits here to prohibit silent failures
+	# in the case someone unsets -e (+e)
 	if [ $? != 0 ];then
 		echo "something command in the quite long pipeline went wrong" <&2
 		echo "try again to run with \"bash -x $0\" to find out more" <&2
