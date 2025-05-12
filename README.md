@@ -154,7 +154,7 @@ every authorized user can
 invoke it.
 
 ## updfblog
-See [updlog.md](updlog.md).
+See [updfblog.md](updfblog.md).
 ## zero-out-rootfs-freespace
 
 When using dd piped into gzip
