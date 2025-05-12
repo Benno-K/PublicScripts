@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-005
+	Version=1.0-006
 # 
 # This script is available for
 # public use under GPL V3 (see
@@ -24,7 +24,7 @@
 # If someone finds a documentation for data.lua
 # i would be eager to get it
 #
-# You may want to change of of these
+# Defaults
 loghome=~/fblogs
 boxname=fritz.box
 logfilnam=fblog
@@ -72,6 +72,9 @@ Usage: (Version: $Version)
           storing passwords in a file is potentially
           unsafe!
   -d --dir <directory-to-hold-logfiles>
+  -D --do-not-filter
+          do not filter logins of the user used
+          to log in this script
   -h --help (shows this text)
   -n --name <file-basename> (of logfile, default:fblog)
   -p --pass <name> can be
@@ -111,6 +114,9 @@ bn=$(basename $0)
 while [ "${1:0:1}" = "-" ]
 do
 	case "$1" in
+		-D|--do-not-filter)
+			ignore="SomeTextThatWillHopefullyNeverAppearInAnEvent"
+			;;
 		-b|--box)
 			shift
 			boxname=$1
@@ -125,6 +131,10 @@ do
 		-c|--creds)
 			shift
 			credfil="${1}"
+			;;
+		-d|--dir)
+			shift
+			loghome="${1}"
 			;;
 		-p|--pass)
 			popt=${1} # needed for error msg
@@ -195,6 +205,7 @@ loylastline="let grep/sed fail to find this"
 # discouraged and unsafe!
 user=${user:-} # if not set (by -u) do empty it
 pass=
+
 if [[ -z "${user}" || -z "${pass}" ]];then
 	credfil=${credfil:-~/.$(basename $0).data}
 	if [[ ! -f "${credfil}" || ! -z "$user" ]];then
@@ -218,15 +229,15 @@ if [[ -z "${user}" || -z "${pass}" ]];then
 	fi
 fi
 
+# Messages like this will be filtered out (unless -D)
+ignore=${ignore:-"Anmeldung des Benutzers ${user} an der FRITZ\!Box-Benutzeroberfläche"}
+
 # if -C, then we should have user and password by now
 # so store it and exit
 if [ "${onlysavecred}" = 1 ]; then
 	echo -n "${user} ${pass}" | rev | base64 | rev > ${credfil}
 	exit 0
 fi
-
-# Messages matching this will be filtered out
-ignore="Anmeldung des Benutzers ${user} an der FRITZ\!Box-Benutzeroberfläche"
 
 # make sure $? reflects pipe command failures
 # and exit on errors

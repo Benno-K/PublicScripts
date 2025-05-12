@@ -15,10 +15,13 @@ It is a good idea to run this script at regular intervals. Cron could do that fo
 to read (and unfortunately change) the box's configuration. This requirement comes from FRITZ!OS, I cannot change that
 - Create a directory where the logs should go. The default directory is "`fblogs`" in your home directory (`mkdir ~/fblogs` does that). If you prefer another name, go ahead, create it and use the `-d` option.
 
+### Messages not stored
+As each run of the script creates a log entry, the
+script ignores **all** logins of that user are **not** contained in the stored log file. Therefor it is recommended to create and use an account that is only used to fetch the log messages.
  
  ### Command options (use -h to list)
  ```
- Usage: (Version: 1.0-005)
+ Usage: (Version: 1.0-006)
   updfblog [option[,option...]]
   -b --box <hostname or IP of FRITZ!Box>
   -c --creds <storefile> containg the credentials
@@ -31,15 +34,16 @@ to read (and unfortunately change) the box's configuration. This requirement com
           storing passwords in a file is potentially
           unsafe!
   -d --dir <directory-to-hold-logfiles>
+  -D --do-not-filter
+          do not filter logins of the user used
+          to log in this script
   -h --help (shows this text)
-  -n --name <file-basename> (of logfile, default:fblog)
-  -p --pass <name> can be
+  -n --name <file-basename> (of logfile, default:fblog)  -p --pass <name> can be
           a) environment variable
           b) a named pipe
           c) an executable file
           that holds or delivers the password
           of the FRITZ!Box user
-  -u --user <username> (of FRITZ!Box-user)
- ```
+  -u --user <username> (of FRITZ!Box-user) ```
 
 Tested and developed on Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
