@@ -65,6 +65,7 @@ Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/
 ### Testing
 
 #### Computer
+|||
 |--------|------|
 |Device |Raspberry Pi Model B Rev. 1.1| 
 |OS        |Raspbian GNU/Linux 12 (bookworm)|
@@ -72,6 +73,7 @@ Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/
 |Box OS|FRITZ!OS 8.02|
 
 #### Smartphone
+| a | b |
 |---------|----|
 |Device   |Samsung Galaxy S24 Ultra|
 |Model No.|SM-S928B/DS|
