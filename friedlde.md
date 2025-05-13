@@ -98,5 +98,5 @@ Ich überlege, das Skript auch unter Windows 11 per WSL (Windows subsystem for L
 
 [^2]: Termux erschließt die Möglichkeiten des Android Betriebsystems für die Kommandozeile, beispielsweise das Nutzen von Skripten wie diesem. Termux läuft auf allen modernen Android-Systemen, es benötigt **keinerlei** root-Rechte. Siehe unter [https://termux.dev/](https://termux.dev/)
 
-#### Contact 
-Contact me using github (Benno-K). If you do not have an account  there, you can drop me a mail to `benno (at-sign) xyz .de` as well.
+#### Kontact 
+Am liebsten per github (Benno-K). Wer dort kein Konto hat, kann auch Mail an `benno (at-sign) xyz .de` senden.
