@@ -1,4 +1,6 @@
 ## friedl
+([Deutsche Version ist hier](friedlde.md))
+
 friedl stands for
 ```
 F
