@@ -52,7 +52,7 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
   ```
 
 ## How to get it
-Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/updfblog).
+Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/friedl).
 
 ## Environment used
 ### Development
