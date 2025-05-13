@@ -1,6 +1,8 @@
 #!/bin/bash
 
 #
+#
+# friedl stands for (FRItzboxEventlogDownLoader)
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
@@ -171,7 +173,7 @@ do
 		# script. It does not make sense for anybody
 		# but me to use this.
 		-iv|-nv)
-			validpath=/home/pi/gitrepos/PublicScripts/updfblog
+			validpath=/home/pi/gitrepos/PublicScripts/$bn
 			if [ $(realpath $0) == ${validpath} ]; then
 				# unneeded as $Version is defined
 				# eval $(grep Version=1.0-010

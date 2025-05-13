@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-TARGETS = extip extip6 myip myip6 ifip6 nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade ddfbset homeaddr f2bsts updfblog
+TARGETS = extip extip6 myip myip6 ifip6 nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade ddfbset homeaddr f2bsts friedl
 UTARGETS=nsimgurl
 
 LBINDIR = /usr/local/bin
