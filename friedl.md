@@ -1,5 +1,13 @@
 ## friedl
-friedl stands for  (**fri**tzbox**e**vent-log**d**own**l**oader)
+friedl stands for
+```
+F
+R
+I tzbox
+E ventlog
+D own
+L oader
+```
 
 It is a bash-script to maintain a local copy of all events logged on your FRITZ!Box.
 This script downloads the event messages from a
@@ -83,6 +91,8 @@ Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/
 |App         |Termux 0.118.2[^2]|
 |Box      |FRITZ!Box 7590|
 |Box OS|FRITZ!OS 8.02|
+
+I'm also thinking about testing it on Windows 11 using WSL (Windows subsystem for Linux) running Debian Linux (12, bookworm).
 
 [^2]: Termux opens you the power of the Android operating system, e.g. to run bash-scripts like this tool. To use Termux it is **not** required to have a rooted device. See [https://termux.dev/](https://termux.dev/)
 
