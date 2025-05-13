@@ -90,6 +90,9 @@ which will invoke /usr/sbin/nologin every day at 20:30 as user pi
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases
 
+## friedl
+See [friedl.md](friedl.md).
+
 ## kpclean
 Clean out a directory where
 Keepass stores its database.
@@ -153,8 +156,6 @@ to /usr/local/bin so that
 every authorized user can
 invoke it.
 
-## updfblog
-See [updfblog.md](updfblog.md).
 ## zero-out-rootfs-freespace
 
 When using dd piped into gzip
