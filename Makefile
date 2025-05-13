@@ -30,6 +30,7 @@ install: $(TARGETS) $(UTARGETS)
 
 friedldoc:
 	@ssh s24 "cat st/download/friedl.md" | diff 2>&1 >/dev/null -q - friedl.md;if [ $$? != 0 ]; then scp s24:st/download/friedl.md .;fi
+	@ssh s24 "cat st/download/friedlde.md" | diff 2>&1 >/dev/null -q - friedlde.md;if [ $$? != 0 ]; then scp s24:st/download/friedlde.md .;fi
 
 copyright: $(TARGETS)
 	crnupdate $(TARGETS)
