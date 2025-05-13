@@ -1,12 +1,17 @@
 #!/bin/bash
 
+# friedl stands for
+# 	F
+#   R
+#   I(tzbox)
+#   E(ventlog)
+#   D(own)
+#   L(oader)
 #
-#
-# friedl stands for (FRItzboxEventlogDownLoader)
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-021
+	Version=1.0-022
 # (Please do not comment out above line)
 # 
 # This script is available for
@@ -191,7 +196,7 @@ do
 				done
 				((minor++))
 				newver=$(printf "%s-%03d" $major $minor)
-				sed -i.backup "1,8 s/\tVersion=.*$/\tVersion=${newver}/" $0
+				sed -i.backup "1,28 s/\tVersion=.*$/\tVersion=${newver}/" $0
 				echo "$bn V$newver"
 				exit 0
 			else
