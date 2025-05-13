@@ -1,5 +1,7 @@
-## updfblog
-Script to maintain a local copy of all events logged on your FRITZ!Box.
+## friedl
+friedl stands for  (**fri**tzbox**e**vent-log**d**own**l**oader)
+
+It is a bash-script to maintain a local copy of all events logged on your FRITZ!Box.
 This script downloads the event messages from a
 FRITZ!Box and maintains a local file containing all
 events. It creates one such file per year.
@@ -8,9 +10,7 @@ events. It creates one such file per year.
 It connects to your FRITZ!Box and asks for the log messages. Then it stores them in a local logfile. When called the next time, it checks which messages are already contained in the logfile and appends any new messages to the logfile.
 It is a good idea to run this script at regular intervals. Cron could do that for you.
 
-
 ### Getting started
-
 - You need an account on the box with the permission
 to read (and unfortunately change, there is no read-only permission) the box's configuration. <br/> I highly recommend creating an account that is only used for this script having a strong[^1] password.
 [^1]: I suggest a mix of numbers, lowercase and uppercase letters and characters `+-=?~.:`, at least 20 characters long.
@@ -56,6 +56,7 @@ Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/
 
 ## Environment used
 ### Development
+|Computer||
 |--------|------|
 |Device |Raspberry Pi Model B Rev. 1.1| 
 |OS        |Raspbian GNU/Linux 12 (bookworm)|
@@ -64,16 +65,16 @@ Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/
 
 ### Testing
 
-#### Computer
-|||
+|Computer||
 |--------|------|
 |Device |Raspberry Pi Model B Rev. 1.1| 
 |OS        |Raspbian GNU/Linux 12 (bookworm)|
 |Box      |FRITZ!Box 7590|
 |Box OS|FRITZ!OS 8.02|
 
-#### Smartphone
-| a | b |
+<br/>
+
+|Smartphone||
 |---------|----|
 |Device   |Samsung Galaxy S24 Ultra|
 |Model No.|SM-S928B/DS|
