@@ -4,7 +4,7 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-	Version=1.0-019
+	Version=1.0-021
 # (Please do not comment out above line)
 # 
 # This script is available for
@@ -95,7 +95,7 @@ utils="awk base64 curl iconv jq printf sed rev"
 utilsmissing=0
 for util in $utils
 do
-	if ! which >/dev/null 2>&1 $util ; then
+	if ! type >/dev/null 2>&1 $util ; then
 		echo "Utility $util is not available" >&2
 		((utilsmissing++))
 	fi
@@ -267,7 +267,7 @@ fi
 # Now we have the credentials
 
 # Messages like this will be filtered out (unless -D)
-ignore=${ignore:-"Anmeldung des Benutzers ${user} an der FRITZ\!Box-Benutzeroberfläche"}
+ignore=${ignore:-"Anmeldung des Benutzers ${user} an der FRITZ!Box-Benutzeroberfläche"}
 
 # if -C, then we should have user and password by now
 # so store it and exit
@@ -304,9 +304,9 @@ if [[ "$resp" =~ \<SID\>(0+)\</SID\> ]] ; then
 		# last =~ operation
     challenge="${BASH_REMATCH[1]}"
 		# Calculate MD5 with whatever command we have
-    if which >/dev/null 2>&1 md5 ; then
+    if type >/dev/null 2>&1 md5 ; then
       MD5=$(echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code=UTF-16LE | md5 )
-    elif which >/dev/null 2>&1 md5sum ; then
+    elif type >/dev/null 2>&1 md5sum ; then
       MD5=$(echo -n "${challenge}-${pass}" | iconv --from-code=UTF-8 --to-code UTF-16LE | md5sum | cut -f1 -d ' ')
     else
       echo 1>&2 "Error: neither 'md5' nor 'md5sum' are installed"

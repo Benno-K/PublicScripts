@@ -55,8 +55,33 @@ script ignores **all** login-events of **that user**. Therefore it is recommende
 Download it from [here](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/updfblog).
 
 ## Environment used
+### Development
+|--------|------|
+|Device |Raspberry Pi Model B Rev. 1.1| 
+|OS        |Raspbian GNU/Linux 12 (bookworm)|
+|Box      |FRITZ!Box 7590|
+|Box OS|FRITZ!OS 8.02|
 
-Tested and developed on a Raspberry Pi Model B Rev. 1.1 running Raspbian GNU/Linux 12 (bookworm) using a FRITZ!Box 7590 running FRITZ!OS 8.02.
+### Testing
+
+#### Computer
+|--------|------|
+|Device |Raspberry Pi Model B Rev. 1.1| 
+|OS        |Raspbian GNU/Linux 12 (bookworm)|
+|Box      |FRITZ!Box 7590|
+|Box OS|FRITZ!OS 8.02|
+
+#### Smartphone
+|---------|----|
+|Device   |Samsung Galaxy S24 Ultra|
+|Model No.|SM-S928B/DS|
+|OS          | Android 14 (Samsung UI 6.1)
+|kernel    | 6.1.75-android14-11-29543898-abS928BXXS4AXKA|
+|App         |Termux 0.118.2[^2]|
+|Box      |FRITZ!Box 7590|
+|Box OS|FRITZ!OS 8.02|
+
+[^2]: Termux opens you the power of the Android operating system, e.g. to run bash-scripts like this tool. To use Termux it is **not** required to have a rooted device. See [https://termux.dev/](https://termux.dev/)
 
 #### Contact 
-Contact me using github (Benno-K). If you do not have an account  there you can drop me a mail to `benno (at-sign) xyz .de` as well.
+Contact me using github (Benno-K). If you do not have an account  there, you can drop me a mail to `benno (at-sign) xyz .de` as well.
