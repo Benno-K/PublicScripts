@@ -22,7 +22,7 @@ Dies kann man per cron auch regelmäßig automatisch erledigen lassen.
 ### Los geht's
 mit
 - einem Benutzerkonto auf der FRITZ!Box mit der Berechtigung die Konfiguration zu lesen (welche leider auch die Schreibberechtigung beinhaltet). Empfohlen sei ein eigenes Konto für diesen Zweck das zudem mit einem guten[^1]  Kennwort gesichert sein sollte.
-[^1]: Ich schlage einen Mix aus Nummern,Groß- und Kleinbuchstaben und den Zeichen `+-=?~.:` vor, bei einer Länge von mindestens 20 Zeichen.
+[^1]: Ich schlage einen Mix aus Nummern, Groß- und Kleinbuchstaben und den Zeichen `+-=?~.:` vor, bei einer Länge von mindestens 20 Zeichen.
 
 - einem Verzeichnis in welchem die Ereignis-Dateien gespeichert werden sollen. Die Voreinstellung ist "`fblogs`" im Heimatverzeichnis des Nutzers (das ist mit `mkdir ~/fblogs` gleich getan to). Wer einen anderen Speicherort bevorzugt, kann die Option `-d` verwenden.
 
