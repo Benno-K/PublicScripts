@@ -89,7 +89,7 @@ which will invoke /usr/sbin/nologin every day at 20:30 as user pi
 ## fritzip, extip, extip4, extip6
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases. 
-See [myip](myip.md).
+See [fritzip](myip.md).
 
 ## friedl
 See [friedl](friedl.md).
@@ -124,7 +124,9 @@ to find out how to specify.
 Get your computers (first global) IP address.
 Can return IPv4 or IPv6, depending on your request
 (-4 or -6, myip4 or myip6)
-See also [myip.md](myip.md).
+See 
+[myip.md](myip.md)
+and possibly also [fritzip.md](fritzip.md).
 
 ## nonsequitur
 
