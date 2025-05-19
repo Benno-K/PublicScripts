@@ -86,12 +86,13 @@ the line
 
 which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
-## extip
+## fritzip, extip, extip4, extip6
 Script to determine the external IP
-address of your FRITZ!box, which is your hosts IP as well in most cases
+address of your FRITZ!box, which is your hosts IP as well in most cases. 
+See [myip](myip.md).
 
 ## friedl
-See [friedl.md](friedl.md).
+See [friedl](friedl.md).
 
 ## kpclean
 Clean out a directory where
@@ -119,12 +120,11 @@ See
 
 to find out how to specify.
 
-## myip
-Simple script using curl and ipify.org
-to determine own external IP address
-If you are connected to the Internet
-using a FRITZ!box I would recommend the extip script over this script as 
-it does not depend on remote servers
+## myip, myip4, myip6
+Get your computers (first global) IP address.
+Can return IPv4 or IPv6, depending on your request
+(-4 or -6, myip4 or myip6)
+See also [myip.md](myip.md).
 
 ## nonsequitur
 
