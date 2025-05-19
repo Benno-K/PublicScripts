@@ -1,6 +1,6 @@
 # Get your FRITZ!Box's external IP-address<br/>fritzip
 
-You can simple use `fritzip` to get the external IP-address of your FRITZ!Box. It must be configured to answer UPNP requests, which is the default but may have been disabled by some paranoid FRITZ!Box-admin.
+You can simple use `fritzip` to get the external IP-address of your FRITZ!Box. It must be configured to answer UPNP requests, which is the default  but may have been disabled by some paranoid FRITZ!Box admin.
 
 ## Commands to use
 
