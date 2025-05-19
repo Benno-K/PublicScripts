@@ -16,7 +16,7 @@ For **IPv4** the external address of *any internal server* is **identical** to *
 The reason for this is that one only gets **one single** IPv4 address per connection, so network address translation (NAT) is done by the router forwarding the traffic to the internal servers. [^2].
 [^2]:This kind of stuff must be configured in the router. A more detailed explanation is out of scope here.
 
-For **IPv6** the external address(es) of *your internal servers* do **differ** from *the fritzbox''s IP*.
+For **IPv6** the external address(es) of *your internal servers* do **differ** from *the fritzbox's IP*.
 The reason for that is that one gets **a range of** IPv6 per connection, so the router can forward the traffic directly to the internal server(s). [^3].
 [^3]:This kind of stuff also must be configured in the router. A more detailed explanation is out of scope here.
 
