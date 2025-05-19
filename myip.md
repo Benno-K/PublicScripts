@@ -32,7 +32,7 @@ where myip resides (no sudo, no links).
 ```
 
 ## Remark
-Because not explicitly handled/forbidden in the code you might even call
+Because not explicitly handled/forbidden in the code, you might even call
  
   - `myip4 -4`
   - `myip4 -6`
