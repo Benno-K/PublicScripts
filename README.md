@@ -133,7 +133,7 @@ and possibly also [fritzip.md](fritzip.md).
 
 Script to fetch and store a specific cartoon,
 named "Non Sequitur" by Wiley Miller,
-from a website. Because the website was redesigned witb some tool, it becsme quite complex and it's HTML
+from a website. Because the website was redesigned witb some tool, it became quite complex and it's HTML
 is hard to read and understand. 
 Somehow I managed to figure out how 
 to retrieve the URL of the cartoon 
