@@ -26,7 +26,7 @@ E. g. to reach one and the same webserver via both  protocol versions, you need 
 
 [^4]:Assume the DNS-name is `mysrv.dunno.com`, the <br/>**fritzbox** has <br/>IPv4 of `79.xxx.xx.186` and the <br/>IPv6 `2003:...:fe1f:5704` and your <br/>**server** has <br/>IPv6  `2003:...:fe06:1849`. <br/>Your name `mysrv.dunno.com` then needs to point to `79.xxx.xx.186` and `2003:...:fe06:1849`.
 And if this is not already confusing enough, if you want to use `fritzbox.dunno.com` at the same time, you'd need to point that to `79.xxx.xx.186` and `2003:...:fe06:5704` (of course IPv4 requires the services on fritzbox and server to use different ports).<br/>
-To give you another headache, you could try to obtain a SSL-certificate for `fritzbox.dunno.com` using the computer hosting `mysrv.dunno.com` where the challenge-response mechanism fails to  upload the challenge-file to `fritzbox.dunno.com` (which does not serve any files).
+To give you another headache, you could try to obtain a SSL-certificate for `fritzbox.dunno.com` using the computer hosting `mysrv.dunno.com` where the challenge-response mechanism fails to  upload the challenge-file to `fritzbox.dunno.com` (which does not serve files in the path required for the response at all).
 
 
 ### Conclusion
