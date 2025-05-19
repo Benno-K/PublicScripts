@@ -92,6 +92,7 @@ address of your FRITZ!box, which is your hosts IP as well in most cases.
 See [fritzip](myip.md).
 
 ## friedl
+Keep a copy of all events logged on a FRITZ!Box.
 See [friedl](friedl.md).
 
 ## kpclean
