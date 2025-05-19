@@ -11,7 +11,7 @@ So to get the IP-address you can call
 - `myip -6` or `myip6` for IPv6
 
 ## Behind a FRITZ!Box
-If your computer is behind a FRITZ!Box you may also want to find your computers external IP-address. See [`fritzip`](fritzip.md) for this purpose.
+If your computer is behind a FRITZ!Box you may also want the external IP-address of it. See [`fritzip`](fritzip.md) for this purpose.
 
 ## Creating the links
 For your convenience there is an (otherwise) undocumented feature
