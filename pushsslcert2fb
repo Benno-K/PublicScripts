@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # Upload a SSL/TLS cert to FRITZbox
@@ -29,51 +30,51 @@
 # in cleartext which is a very bad idea. So
 # creating an unprotected key file is the better 
 # idea!
-USERNAME="logfetch"
-CERTNAME="fbx.kardel.eu"
-CERTPATH="/root/.getssl/${CERTNAME}"
-CERTPASSWORD=""
-HOST=http://fritz.box
-KEYFILE=${CERTNAME}.key
-CHAINFILE=chain.crt
-CERTFILE=${CERTNAME}.crt
+username="logfetch"
+certname="fbx.kardel.eu"
+certpath="/root/.getssl/${certname}"
+certpass=""
+host=http://fritz.box
+keyyfil=${certname}.key
+chainfil=chain.crt
+certfil=${certname}.crt
 # Login credentials (encrypted
 # password of user above on
 # FRITZ!box - saved with
 # script fbpwdsave)
-credfil=~pi/.fblogcred.$USERNAME
+credfil=~pi/.fblogcred.$username
 # Define variable keycc
 . ~pi/.fblogsrc
 # contains sth. like this
 # keycc="UmVnbXN0cmllcnVuZ3Nwcm96ZXNzOdfCpysK"
 
 # login to the box and get a valid SID
-CHALLENGE=`wget -q -O - $HOST/login_sid.lua | sed -e 's/^.*<Challenge>//' -e 's/<\/Challenge>.*$//'`
-HASH="`echo -n $CHALLENGE-$(ccat -K "$keycc" $credfil) | iconv -f ASCII -t UTF16LE |md5sum|awk '{print $1}'`"
-SID=`wget -q -O - "$HOST/login_sid.lua?sid=0000000000000000&username=$USERNAME&response=$CHALLENGE-$HASH"| sed -e 's/^.*<SID>//' -e 's/<\/SID>.*$//'`
+challenge=$(wget -q -O - $host/login_sid.lua | sed -e 's/^.*<Challenge>//' -e 's/<\/Challenge>.*$//')
+hash="$(echo -n $challenge-$(ccat -K "$keycc" $credfil) | iconv -f ASCII -t UTF16LE |md5sum|awk '{print $1}')"
+sid=$(wget -q -O - "$host/login_sid.lua?sid=0000000000000000&username=$username&response=$challenge-$hash"| sed -e 's/^.*<SID>//' -e 's/<\/SID>.*$//')
 
 # generate our upload request
-BOUNDARY=$(mktemp -u "Boundary-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+boundary=$(mktemp -u "Boundary-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
 # ATTENTION: Lines must be terminated with CRLF (not only LF!)
-POST=$(awk '{printf "%s\r\n",$0}' <<EOI
---$BOUNDARY
+postdata=$(awk '{printf "%s\r\n",$0}' <<EOI
+--$boundary
 Content-Disposition: form-data; name="sid"
 
-$SID
---$BOUNDARY
+$sid
+--$boundary
 
 Content-Disposition: form-data; name="BoxCertPassword"
 
-$CERTPASSWORD
---$BOUNDARY
+$certpass
+--$boundary
 
 Content-Disposition: form-data; name="BoxCertImportFile"; filename="BoxCert.pem"
 Content-Type: application/octet-stream
 
-$(cat $CERTPATH/$CERTFILE)
-$(cat $CERTPATH/$KEYFILE)
-$(cat $CERTPATH/$CHAINFILE)
---$BOUNDARY--
+$(cat $certpath/$certfil)
+$(cat $certpath/$keyyfil)
+$(cat $certpath/$chainfil)
+--$boundary--
 EOI
 )
 
@@ -81,7 +82,7 @@ exitwith=0
 # upload the certificate to the box
 # if the cert is valid it takes about
 # 40 seconds for the upload to complete!
-wget -q -O - $HOST/cgi-bin/firmwarecfg --header="Content-type: multipart/form-data boundary=$BOUNDARY" --post-data "$POST" | grep SSL
+wget -q -O - $host/cgi-bin/firmwarecfg --header="Content-type: multipart/form-data boundary=$boundary" --post-data "$postdata" | grep SSL
 if [ $? != 0 ]; then
   echo "Failed to upload certificate to FRITZ!box"
   exitwith=1
