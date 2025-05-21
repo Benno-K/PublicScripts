@@ -1,5 +1,0 @@
-#!/bin/bash
-# See API description at
-# https://ipify.org
-# this works with IP V6
-curl -s https://api64.ipify.org?format=json | awk -F '"' '{print $4}'
