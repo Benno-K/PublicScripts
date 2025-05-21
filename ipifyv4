@@ -1,5 +1,5 @@
 #!/bin/bash
-Y# Print own external IP
+# Print own external IP
 
 # See API description at
 # https://ipify.org
