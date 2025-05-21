@@ -1,0 +1,7 @@
+#!/bin/bash
+Y# Print own external IP
+
+# See API description at
+# https://ipify.org
+# this works with IP V6
+curl -s https://api.ipify.org?format=json | awk -F '"' '{print $4}'
