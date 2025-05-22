@@ -39,13 +39,42 @@ chainfil=chain.crt
 certfil=${certname}.crt
 # Login credentials (encrypted
 # password of user above on
-# FRITZ!box - saved with
+# FRITZ!box - this script will ask for it and
+# store the password if not already stored
 # script fbpwdsave)
 credfil=~pi/.fblogcred.$username
-# Define variable keycc
-. ~pi/.fblogsrc
 # contains sth. like this
 # keycc="UmVnbXN0cmllcnVuZ3Nwcm96ZXNzOdfCpysK"
+#
+# IMPORTANT: The method to save and store
+# the credentials are better than cleartext but
+# not absolutely safe, as both secrets needed to
+# retrieve the credentials are stored in files
+# on your system. To make it safer you must store
+# either $rcfil or $credfil on external device
+# that is secured (e. g. by fingerprint).
+# 
+# Define variable keycc, create pwdstore if needed
+rcfil=~pi/.fblogsrc
+if [ -e $rcfil ]; then
+	. $rcfil
+else
+ x="XXXXX"     # want to have 75 "X" for mktemp: 5
+ x="$x$x$x$x"  # 20
+ x="$x$x$x"    # 75
+ keycc=$(mktemp -u "$x") # create 75 byte random string
+ echo keycc="'${keycc}'" > $rcfil
+ chmod 600 $rcfil
+fi
+
+if [ ! -e $credfil ]; then
+	while [ ${#sec} -lt 1 ]
+	do
+		read -rsp "Password for $username: " sec
+	done
+	echo $sec|ccencrypt -K "$keycc" > $credfil
+	chmod 600 $credfil
+fi
 
 # login to the box and get a valid SID
 challenge=$(wget -q -O - $host/login_sid.lua | sed -e 's/^.*<Challenge>//' -e 's/<\/Challenge>.*$//')
