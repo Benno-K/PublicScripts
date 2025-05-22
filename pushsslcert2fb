@@ -67,13 +67,14 @@ else
  chmod 600 $rcfil
 fi
 
-if [ ! -e $credfil ]; then
+if [ ! -e $credfil ] || [ "$1" = "-pass" ]; then
 	while [ ${#sec} -lt 1 ]
 	do
 		read -rsp "Password for $username: " sec
 	done
 	echo $sec|ccencrypt -K "$keycc" > $credfil
 	chmod 600 $credfil
+	[ "$1" = "-pass" ] && exit
 fi
 
 # login to the box and get a valid SID
