@@ -54,6 +54,30 @@ credfil=~pi/.fblogcred.$username
 # either $rcfil or $credfil on external device
 # that is secured (e. g. by fingerprint).
 # 
+# Parse options
+while [ "${1:0:1}" = "-" ]
+do
+	case $1 in
+		--pass|-p)
+			secset=y
+			;;
+		--user|-u)
+			shift
+			username=$1
+			credfil=~pi/.fblogcred.$username
+			;;
+		*)
+			echo >&2 "illegal option \"$1\""
+			exit 1
+			;;
+	esac
+	shift
+done
+if [ "$1" != "" ]; then
+	echo >&2 "illegal argument(s} \"$@\""
+	exit 2
+fi
+
 # Define variable keycc, create pwdstore if needed
 rcfil=~pi/.fblogsrc
 if [ -e $rcfil ]; then
@@ -67,14 +91,14 @@ else
  chmod 600 $rcfil
 fi
 
-if [ ! -e $credfil ] || [ "$1" = "-pass" ]; then
+if [ ! -e $credfil ] || [ $secset ]; then
 	while [ ${#sec} -lt 1 ]
 	do
 		read -rsp "Password for $username: " sec
 	done
 	echo $sec|ccencrypt -K "$keycc" > $credfil
 	chmod 600 $credfil
-	[ "$1" = "-pass" ] && exit
+	[ $secset ] && exit
 fi
 
 # login to the box and get a valid SID
