@@ -95,6 +95,7 @@ if [ ! -e $credfil ] || [ $secset ]; then
 	while [ ${#sec} -lt 1 ]
 	do
 		read -rsp "Password for $username: " sec
+		echo
 	done
 	echo $sec|ccencrypt -K "$keycc" > $credfil
 	chmod 600 $credfil
