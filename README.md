@@ -190,6 +190,14 @@ I have included it in the
 of my personal account.
 It has been working perfectly for about a decade now.
 
+## shredLenovoWSg
+Perl script to shred specific unwanted mails in
+my IMAP INBOX. (I subscribed getting some 
+notifications about new versions regarding my
+purchase but got annoyed of getting daily
+notified about changes in the Safety and 
+Warranty manual.)
+
 ## diskusage
 
 Checks the usage of some file-systems
