@@ -23,10 +23,10 @@ my $cfil = $ENV{"HOME"}.'/.' . basename($0) . 'rc';
 # (echo -n USERNAME |rev|base64;echo -n PASSWORD |rev|base64) > CREDENTIAL-FILE
 if ( open(CF,"<$cfil") ) 
 	{
-	$user = <CF>;chomp($user);
-	$user = reverse(decode_base64($user));
-	$secr = <CF>;;chomp($secr);
-	$secr = reverse(decode_base64($secr));
+	$user   = <CF>;chomp($user);
+	$user   = reverse(decode_base64($user));
+	$secr   = <CF>;;chomp($secr);
+	$secr   = reverse(decode_base64($secr));
 	$server = <CF>;;chomp($server);
 	$server = reverse(decode_base64($server));
 	close CF;
