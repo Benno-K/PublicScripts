@@ -15,7 +15,7 @@ use MIME::Base64;
 use Mail::IMAPClient;
 
 my $user = 'you	';
-my $server = 'mx.freenet.de';
+my $server = 'my.freenet.de';
 my $secr = 'secret';
 my $cfil = $ENV{"HOME"}.'/.' . basename($0) . 'rc';
 # create encoded credential file using
@@ -27,6 +27,8 @@ if ( open(CF,"<$cfil") )
 	$user = reverse(decode_base64($user));
 	$secr = <CF>;;chomp($secr);
 	$secr = reverse(decode_base64($secr));
+	$server = <CF>;;chomp($server);
+	$server = reverse(decode_base64($server));
 	close CF;
 	}
 
