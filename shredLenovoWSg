@@ -1,0 +1,74 @@
+#!/usr/bin/perl
+
+# delete all 
+#		'Lenovo Support Subscription Update' msgs from
+#   concerning the 
+#		'Safety and Warranty Guide'
+#   from folder INBOX
+# exit status is equal to the number of deleted msgs
+
+use strict;
+use warnings;
+use File::Basename;
+use MIME::Base64;
+
+use Mail::IMAPClient;
+
+my $user = 'you	';
+my $server = 'mx.freenet.de';
+my $secr = 'secret';
+my $cfil = $ENV{"HOME"}.'/.' . basename($0) . 'rc';
+# create encoded credential file using
+# shell:
+# (echo -n USERNAME |rev|base64;echo -n PASSWORD |rev|base64) > CREDENTIAL-FILE
+if ( open(CF,"<$cfil") ) 
+	{
+	$user = <CF>;chomp($user);
+	$user = reverse(decode_base64($user));
+	$secr = <CF>;;chomp($secr);
+	$secr = reverse(decode_base64($secr));
+	close CF;
+	}
+
+my $imap = Mail::IMAPClient->new(
+    Server   => $server,
+    User     => $user,
+    Password => $secr,
+		Ssl      => 1,
+    Uid      => 9,
+);
+
+unless ($imap) {
+    die "Could not connect to server: $@";
+}
+
+#my @folders = $imap->folders;
+
+$imap->select('INBOX');
+
+my $victims = 0;
+my @messages = $imap->search('ALL');
+foreach my $msg (@messages) {
+    my $subject = $imap->subject($msg);
+		if ($subject eq 'Lenovo Support Subscription Update') {
+			my $raw = $imap->message_string($msg)
+			    or die $imap->LastError;
+			if ( $raw =~ m/Safety and Warranty Guide/ ) {
+				my $del =  $imap->delete_message($msg)
+						or die $imap->LastError;
+				$victims++;
+			}
+				
+#		} else {
+#		  printf "ignoring: %s..\n",substr($subject,0,10);
+		}
+}
+
+$imap->expunge('INBOX')
+	or die "expunge failed: ".$imap->LastError;
+
+unless ($imap->logout) {
+    die "Could not log out: $@";
+}
+
+exit($victims);
