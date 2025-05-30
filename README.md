@@ -212,10 +212,12 @@ of my personal account.
 
 It has been working perfectly for about a decade now.
 
-Better make sure that invocation can be temporarily disabled;Example:
+Better make sure that invocation can be temporarily disabled
+### Example
+```
 if  [ ! -r ~/noscreenify ] && [ ! -r /etc/noscreenify ]; then  /usr/local/bin/screenify;[ $? > 9 ] && exit 0
 fi
-
+```
 ## shredLenovoWSg
 Perl script to shred specific unwanted mails in
 my IMAP INBOX. (I subscribed getting some 
