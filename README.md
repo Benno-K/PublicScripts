@@ -207,12 +207,13 @@ later, you will just get your previous session as if nothing
 happened.
 I use this on all my computers. 
 I have included it in the 
-~/.profile of the user root and
-of my personal account.
+`/etc/profile`
+of my systems.
 
 It has been working perfectly for about a decade now.
 
 Better make sure that invocation can be temporarily disabled
+in the rare cause of a malfunctioning screenify. Otherwise you might lock out yourself.
 ### Example
 ```
 if  [ ! -r ~/noscreenify ] && [ ! -r /etc/noscreenify ]; then  /usr/local/bin/screenify;[ $? > 9 ] && exit 0
