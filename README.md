@@ -87,7 +87,7 @@ the line
 which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
 ## ddnstool
-Manage your dynamic DNS entried.
+Manage your dynamic DNS entries.
 See [here](ddnstool.md)
 
 ## diskusage
