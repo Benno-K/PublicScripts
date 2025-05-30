@@ -148,7 +148,7 @@ while keeping all copies of
 a number of months (default 3)
 
 See 
->keyclean -help
+>kpclean -help
 
 to find out how to specify.
 
@@ -157,14 +157,14 @@ Get your computers (first global) IP address.
 Can return IPv4 or IPv6, depending on your request
 (-4 or -6, myip4 or myip6)
 See 
-[myip.md](myip.md)
-and possibly also [fritzip.md](fritzip.md).
+[myip](myip.md)
+and possibly also [fritzip](fritzip.md).
 
 ## nonsequitur
 
-Script to fetch and store a specific cartoon,
-named "Non Sequitur" by Wiley Miller,
-from a website. Because the website was redesigned witb some tool, it became quite complex and it's HTML
+Script to fetch and store a specific cartoon by Wiley Miller,
+named "Non Sequitur"
+from a website. Because the website was redesigned with some tool, it became quite complex and it's HTML
 is hard to read and understand. 
 Somehow I managed to figure out how 
 to retrieve the URL of the cartoon 
@@ -198,9 +198,9 @@ Run any interactive session, that is not already running in it, in a screen-sess
 
 If there are disconnected sessions, re-connect instead of creating new.
 
-Meant to be sourced during login
+Meant to be run during login
 so that every login runs in a 
-screen. The advantage is that the screen session will survive 
+screen. The advantage is that the screen session will survive
 interruptions of your connection.
 If the connection is re-established 
 later, you will just get your previous session as if nothing 
@@ -209,7 +209,12 @@ I use this on all my computers.
 I have included it in the 
 ~/.profile of the user root and
 of my personal account.
+
 It has been working perfectly for about a decade now.
+
+Better make sure that invocation can be temporarily disabled;Example:
+if  [ ! -r ~/noscreenify ] && [ ! -r /etc/noscreenify ]; then  /usr/local/bin/screenify;[ $? > 9 ] && exit 0
+fi
 
 ## shredLenovoWSg
 Perl script to shred specific unwanted mails in
