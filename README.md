@@ -86,6 +86,33 @@ the line
 
 which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
+## ddnstool
+Manage your dynamic DNS entried.
+See [here](ddnstool.md)
+
+## diskusage
+Checks the usage of some file-systems
+for changes. Actually it does 
+mainly a "df -h" stores the
+reuslt. Sends mail if result
+of check id dofferent from 
+last run. Should be used to
+get alarmed for filesystems
+where you do not expect 
+changes. To be run as cron-job
+but not too frequently (you
+may not want to get an email
+just because some program 
+creates 1% growth per minute
+while it runs for ten.
+
+Just because it suits my needs,
+the default filesystems checked
+when you don't pass any as arguments,
+
+are: / /boot /ssd /data"
+
+
 ## fritzip, extip, extip4, extip6
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases. 
@@ -94,6 +121,10 @@ See [fritzip](myip.md).
 ## friedl
 Keep a copy of all events logged on a FRITZ!Box.
 See [friedl](friedl.md).
+
+## ghrelease
+Add github token to github
+config files
 
 ## kpclean
 Clean out a directory where
@@ -159,17 +190,7 @@ to /usr/local/bin so that
 every authorized user can
 invoke it.
 
-## zero-out-rootfs-freespace
-
-When using dd piped into gzip
-for backing up filesystems that are actually used, it pays to fill the
-filesystems with zeroes, because these are compressed down to only a few zeroes.
-I do this once a week for thr root 
-filesystem of my raspberry pi.
-Should run when no one is logged in
-because it **really** slows down the system.
-
-## screenify.sh
+# screenify.sh
 
 See "man screen" to learn about the screen command 
 
@@ -198,45 +219,14 @@ purchase but got annoyed of getting daily
 notified about changes in the Safety and 
 Warranty manual.)
 
-## ddnstool
-Manage your dynamic DNS entried.
-See [here](ddnstool.md)
-
-## diskusage
-Checks the usage of some file-systems
-for changes. Actually it does 
-mainly a "df -h" stores the
-reuslt. Sends mail if result
-of check id dofferent from 
-last run. Should be used to
-get alarmed for filesystems
-where you do not expect 
-changes. To be run as cron-job
-but not too frequently (you
-may not want to get an email
-just because some program 
-creates 1% growth per minute
-while it runs for ten.
-
-Just because it suits my needs,
-the default filesystems checked
-when you don't pass any as arguments,
-
-are: / /boot /ssd /data"
-
-
-## testmail
-Sends a timestamped test
-email. 
-
 ### Parameters:
 - Recipient
 If not specified it will be
 prompted.
 
-## ghrelease
-Add github token to github
-config files
+## testmail
+Sends a timestamped test
+email. 
 
 ## upgchk
 
@@ -246,6 +236,17 @@ Keep in mind that it might be necessary to update
 the apt-cache (apt update). You can use -u to
 initiate such an update (using sudo if not ran
 as root}.
+
+
+## zero-out-rootfs-freespace
+
+When using dd piped into gzip
+for backing up filesystems that are actually used, it pays to fill the
+filesystems with zeroes, because these are compressed down to only a few zeroes.
+I do this once a week for the root 
+filesystem of my raspberry pi.
+Should run when no one is logged in
+because it **really** slows down the system.
 
 ```
 usage:  [-t [ # ]][ recipient [ mail-prog ]]
