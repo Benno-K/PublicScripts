@@ -198,8 +198,11 @@ purchase but got annoyed of getting daily
 notified about changes in the Safety and 
 Warranty manual.)
 
-## diskusage
+## ddnstool
+Manage your dynamic DNS entried.
+See [here](ddnstool.md)
 
+## diskusage
 Checks the usage of some file-systems
 for changes. Actually it does 
 mainly a "df -h" stores the
