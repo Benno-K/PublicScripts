@@ -1,0 +1,516 @@
+#!/bin/bash
+
+# (no user servicable parts inside ;-)
+# all params are defined in ~/.ddnscr
+# create with ddnstool -c
+# no need to edit anything in this script
+#
+# Do dynamic DNS updates for IPv4 and IPv6
+# but do only send requests to the DDNS-server
+# when the address has changed.
+# This achieved by looking up the IPs before
+# attempting to change. If there is no change,
+# no attemps will be made
+
+# File containing one DNS-name per line which's 
+# DNS-entries should be upated (if changed)
+rcfil=~/.ddnsnames
+
+# File containing credentials line by line
+#  fritzbox
+#  dns-server
+#  ddns-server
+#  username
+#  p*ssw*rd
+#  all encoded, created using the -c option
+#
+crfil=~/.ddnsrc
+
+[ ! -r $crfil ] && echo >&2 "cannot open required $crfil"&& exit 1
+read -r -d '' <$crfil fb s1 s2 ue pe
+fritzbox=$(echo $fb|rev|base64 -d|rev)
+dns=$(echo $s1|rev|base64 -d|rev)
+ddns=$(echo $s2|rev|base64 -d|rev)
+u=$(echo $ue|rev|base64 -d|rev)
+p=$(echo $pe|rev|base64 -d|rev)
+
+creddbg () {
+	cat<<-EOI
+	$fritzbox
+	$dns
+	$ddns
+	$u
+	$p
+	EOI
+	exit 66
+}
+
+crinit () {
+	# Hide and seek
+	pprompt="PaXXwYrd: "
+	pprompt=${pprompt//X/s}
+	pprompt=${pprompt//Y/o}
+	read -p "FRITZ!Box name or IP: " fritzbox
+	read -p "DNS server: " dns
+	read -p "DynDNS server: " ddns
+	read -p "Username: " u
+	read -sp "$pprompt" s; echo
+	echo -n $fritzbox | rev | base64 | rev > ~/.ddnsrc
+	echo -n $dns | rev | base64 | rev >> ~/.ddnsrc
+	echo -n $ddns | rev | base64 | rev >> ~/.ddnsrc
+	echo -n $u | rev | base64 | rev >> ~/.ddnsrc
+	echo -n $s | rev | base64 | rev >> ~/.ddnsrc
+	exit
+}
+
+abusechk () {
+	# call this like this
+	#		abusechk mode ddns-server ddns-user limit
+	#	where mode is chk,inc,clr (check,increment,clear)
+	#	return 0 when below or equal limit, otherwise
+	# return failcount
+	# like
+	#		abusechk inc ddns user 3
+	#		abusechk inc ddns-server user 3
+	#		abusechk chk ddns user 3
+	#		abusechk clr ddns user
+	local mode=$1
+	local ddns=$2
+	local user=$3
+	local limit=$4
+	# echo dbg:$mode,$ddns,$user,$limit
+	local suffix=$(echo -n "$ddns-$user"|rev|base64)
+	local abfil=$(realpath ~/.$bn-abuse-$suffix)
+	if [ -r $abfil ]; then
+		read fails <$abfil
+	else
+		fails=0
+	fi
+	case "$mode" in
+		chk)
+			if [ $fails -le $abuselimit ]; then
+				fails=0
+			fi
+			;;
+		inc)
+			((fails++))
+			echo $fails > $abfil
+			;;
+		clr)
+			rm -f $abfil
+			fails=0
+			;;
+	esac
+	return $fails;
+}
+
+# My own basename - how this script is called
+bn=$(basename $0)
+
+# log & dry: empty to disable, any string to enable
+log=
+dry=
+
+# Mode (update or ipwatch, default = update)
+mode=update
+
+# Interval in sec between checks for change of IPs
+# can be modified with -i, default is here
+interval=5
+
+# how many ABUSE responses before no longer trying
+# to update
+abuselimit=3
+
+# function to get own IPv6
+myip6 () {
+	# List my ips, return the first address not being a
+	# ULA (unique local address, they start with fd)
+	ip a|awk '/inet6 [^f][^d].* scope global/{print substr($2,1,index($2,"/")-1);exit}'
+}
+
+# function to get external IP of FRITZ!Box
+fritzip () {
+	# print external IP
+	#  args:
+	#   #1 name or IP of FRITZ!Box
+	#   #2 undefined = IPv4 is returned
+	#   #2 defined as 6 = IPv6 is returned
+
+	local fritzbox=$1
+	shift
+	# for the request
+	# just ignore 4 as it is the default anyway
+	if [ "$1" = 4 ]; then
+		shift
+	fi
+	if [ "$1" = 6 ]; then
+		# for IPv4
+		item="X_AVM_DE_GetExternalIPv6Address"
+		shift
+	else
+		# for IPv4
+		item="GetExternalIPAddress"
+	fi
+	# to keep the request below human readable, we
+	# define some URLs and the UPNP service URN
+	# to use these vars in the request
+	local encurl="http://schemas.xmlsoap.org/soap/encoding/"
+	local xmlnsurl="http://schemas.xmlsoap.org/soap/envelope/"
+	local svcurn="urn:schemas-upnp-org:service" 
+	# put the SOAP request into $soaprequest
+	read -r -d '' soaprequest <<-EOI
+	<?xml version="1.0" encoding="utf-8" ?>
+	<s:Envelope 
+	 s:encodingStyle="$encurl" 
+	 xmlns:s="$xmlnsurl">
+	  <s:Body>
+	    <u:GetExternalIPAddress 
+			 xmlns:u="$svcurn:WANIPConnection:1" 
+			 />
+	  </s:Body>
+	</s:Envelope>
+		EOI
+	
+		extip=$(curl -s $1 \
+			"http://${fritzbox}:49000/igdupnp/control/WANIPConn1" \
+			-H "Content-Type: text/xml; charset="utf-8"" \
+			-H "SoapAction:urn:schemas-upnp-org:service:WANIPConnection:1#${item}" \
+			-d "$soaprequest"| \
+			# response parsing per sed:
+			# delete lines 1-4,6 leaves us with line 5 that
+			# contains the IP in the XML-element
+			# <NewIPAddress> or <NewIPv6Address>
+			sed -E '1,4d;6,$d;s/.*Address>(.*)<\/.*/\1/')
+		 # If success then echo IP
+		 if ( [ $? = 0 ] && [[ "${extip}" =~ ^[0-9a-f:.]+$ ]] ); then
+			echo $extip
+		 else
+		  local sts=$?
+			echo >&2 "failed to get IP of $1"
+			echo >&2 "  got \"$extip\" as answer"
+			exit $sts
+	fi	
+	exit
+}
+
+
+# Function to log history
+loghist () {
+	date +"%Y%m%d %H%M%S: $@" >> $hfile
+}
+# Function leave with error message written to stderr
+die () {
+	local est=$1
+	shift
+  echo >&2 "$@"
+	exit $est
+}
+
+# display warning on stderr
+warn () {
+  [ ! $hlog ] && echo >&2 "warning: $@"
+	[ $hlog ] && loghist "warning: $@"
+}
+
+# Update DynDNS record
+#  first check existing definiition
+#  only request to set if IP changed
+ddnsupd () {
+		local ipnew=$1
+		local name=$2
+		local ip
+		local v=0
+		[ $hlog ] && [ $detailedhlog ] && loghist "request for $name $ipnew"
+		if [[ $ipnew =~ "." ]]; then
+			# new IP is IPv4
+			v=4
+			ip=$(host $name $dns | grep ' has address ') || warn "could not resolve IPv4 for $name from DNS (server:$dns)"
+			[ "$ip" = "" ] && return
+			ip=${ip//* }
+		elif [[ $ipnew =~ ":" ]]; then
+			# new IP is IPv6
+			v=6
+			ip=$(host $name $dns | grep ' has IPv6 address ') || warn "could not resolve IPv6 for $name from DNS (server:$dns)" # && return
+		#echo dbg:ddnsupd.1 6 v$v $?
+			ip=${ip//* }
+		else
+			 # new IP is garbage (or empty?)
+			 warn "cannot get any IP for $ipnew from DNS (server:$dns)"
+		fi
+		# No need to update - IP identical - so return now
+		[ "$ip" = "$ipnew" ] &&[ ! $force ] && return
+		# If DDNS-server already gives ABUSE responses for
+		# our request, we have to stop sending requests to
+		# this ddns-server and account. If so, don't 
+		# try again (but silently) as the abuses have
+		# already been logged
+		abusechk chk $ddns $u $abuselimit
+		[ $? != 0 ] && return
+		# Need to update, so request it
+		if [ ! $dry ]; then
+			[ $hlog ] && loghist "asking $ddns to update $name"
+			local rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+			# evaluate response and act accordingly
+			case ${rsp// *} in
+				good)
+					[ $hlog ] && loghist " responded with: $rsp"
+					[ $log ] && echo "${rsp// *}: new IPv$v address set for $name: $ip"
+					# reset abuse counter on success
+					# otherwise values below limit
+					# could accumulated over long period of time
+					abusechk clr $ddns $u
+					;;
+				nochg)
+					[ $hlog ] && loghist " responded with: $rsp"
+					[ $log ] && echo "${rsp// *}: no new IPv$v for $name"
+					# reset abuse counter on success
+					# otherwise values below limit
+					# could accumulated over long period of time
+					abusechk clr $ddns $u
+					;;
+				abuse)
+					abusechk inc $ddns $u $abuselimit
+					[ $hlog ] && loghist " abuse claimed by $ddns for $name ($u)"
+					[ $log ] && echo >&2 negative answer code for $name: ${rsp// *}
+					[ $log ] && echo >&2 "-> " $rsp
+					;;
+				*)
+					[ $hlog ] && loghist " failure with: \"$rsp\"\n for $name"
+					[ $log ] && echo >&2 negative answer code for $name: ${rsp// *}
+					[ $log ] && echo >&2 "-> " $rsp
+					;;
+			esac
+		else
+			echo "dry: curl -${v} -s -u $u:$p \"https://${ddns}/nic/update?hostname=$name\""
+		fi
+}
+
+# default: no logging, no forcing, loop forever (-w)
+log=
+force=
+leaveloop=
+
+# parse options
+while [ "${1:0:1}" = "-" ]
+do
+	case $1 in
+		-ra|-reset-abuse-counter)
+			osuffix=$(echo -n "$ddns-$u"|rev|base64)
+			oabfil=$(realpath ~/.$bn-abuse-$osuffix)
+			rm -iv $oabfil
+			exit
+			;;
+		-a|-abuse-limit)
+			shift
+			abuselimit=$1
+			;;
+		-c|-crinit)
+			crinit
+			exit
+			;;
+		-1|-once)
+			leaveloop=yes
+			;;
+		-i|-interval)
+			reincpars="$reincpars$1 "
+			shift
+			interval=$1
+			;;
+		-w|-watchip)
+			mode=watchip
+			;;
+		-force|-f)
+			reincpars="$reincpars$1 "
+			force=y
+			;;
+		-log|-l)
+			reincpars="$reincpars$1 "
+			log=y
+			;;
+		-la|--log-attempts)
+			detailedhlog=y
+			log=y
+			;;
+		-lh|-log-history)
+			hlog=y
+			if [ "${2:0:1}" = "-" ] ||
+			   [ "${2:0:1}" = "" ]; then
+				hfile=~/${bn}-history.log
+			else
+				shift
+				hfile=$1
+			fi
+			;;
+		-dry|-3)
+			reincpars="$reincpars$1 "
+			dry=echo
+			p=?????
+			;;
+		-ha|--help-abuse)
+		  less <<-EOI
+			DDNS response "abuse"
+			 DynDNS servers usually monitor their usage
+			 and reject requests they categorize as
+			 abuse with the response "abuse". If - for
+			 whatever reason - you get this response,
+			 it is usually a very good idea to stop
+			 all further requests and analyze the cause,
+			 as all requests including correct ones 
+			 from your address will be counted as abuse.
+			 The remedy is to stop sending requests as
+			 the server will remove you from the abusers
+			 list after a while when you do not send any
+			 more requests.
+			 By default ddnstool stops sending requests
+			 to a particular DDNS-account, after the 3rd abuse
+			 response.
+				  Usage: ${bn} [options] [name ..]
+			    -a|-abuse-limit <integer value>
+			      Set limit after how many abuse responses
+			      no more requests are sent.
+			      If this limit is reached, manual 
+			      intervention is required. ddnstool will
+			      no longer send requests until manually
+			      reset by -ra
+			    -ra|-reset-abuse-counter
+			     reset the abuse counter to zero
+			EOI
+			exit
+			;;
+		-h|--help)
+		  less <<-EOI
+		  Usage: ${bn} [options] [name ..]
+		   Options:
+		    -1|-once
+		      For use with -w: do not loop
+		    -a|-abuse-limit <integer value>
+		      for information about "abuse" responses
+		      and options use -ha or -help-abuse
+		      default is 3
+		    -c|-crinit
+		      Initialize ~/.ddnscr, the creditals file.
+		      It holds the name or IP of your
+		       - fritzbox
+		       - dns-server
+		       - DynDNS-server
+		      and of that DynDNS-server
+		       - the username and
+		       - the password
+		      For all this you will be prompted.
+		    -i|-interval
+		      For use with -w: seconds to wait before re-checking
+		     Default: 5
+		    -dry|-3
+		      Dry run. Only print what was detected and what
+		      would be done.
+		    -f|-force
+		      Send a request to the DDNS server, even if
+		      the name already points to requested IP.
+		      Normally no update is requested if the IP is
+		      unchanged. Ignored with -w.
+		    -l|-log
+		      Be a bit verbose, otherwise script will not produce
+		      any output in normal operation.
+		    -la|--log-attempts
+		      Log all attempts too, implies -lh
+		      Ignored with -w to avoid huge history-logs
+		    -lh|-log-history [log-history-file]
+		      Log all requests and their results in a history
+		      file. You can specify a filename directly after
+		      the option. If you don't, the default name
+		      is ~/${bn}-history.log
+		    -ra|-reset-abuse-counter
+		      for information about "abuse" responses
+		      and options use -ha or -help-abuse
+		    -w|-watchip
+		     Check whether the IPv4 or IPv6 has changed, if so
+		     update DDNS
+			EOI
+			exit
+			;;
+		*)
+			die 1 "invalid option $1: see -h"
+			;;
+		esac
+	shift
+done
+
+# Names passed ?
+if [ $# = 0 ]; then
+	# No names passed, so read them from file
+	if [ -r $rcfil ]; then
+		[ $log ] && echo "reading names from $rcfil"
+		names=$(cat $rcfil)
+	else
+		echo >&2 "cannot open $rcfil"
+		exit 2
+	fi
+else
+	names=$@
+fi
+
+case $mode in
+	update)
+		# if an idiot specifies -f with -w do what you
+		# best do with idiots: just ignore
+		force=
+		myv4=$(fritzip ${fritzbox})
+		myv6=$(myip6)
+		for name in $names
+		do
+			[ $log ] && echo "now working on $name"
+			ddnsupd $myv4 $name
+			ddnsupd $myv6 $name
+		done
+		;;
+	watchip)
+		iprcfil=~/.${bn}-ipstore
+		detailedhlog= # -w is bad with -la (huge logs)
+
+		while [ ! $leave ]
+		do
+			if [ $leaveloop ]; then
+				leave=yes
+			fi
+			if [ -r $iprcfil ]; then
+				read -r lastv4 lastv6 < $iprcfil
+				lastIPs="$lastv4 $lastv6"
+			else
+				lastIPs="? ?"
+			fi
+			ipv4=$(fritzip ${fritzbox})
+			ipv6=$(myip6)
+			IPs="$ipv4 $ipv6"
+			if [ "${IPs}" != "${lastIPs}" ];then
+				lastv4=${lastIPs// *}
+				lastv6=${lastIPs//* }
+				if [ "$ipv4" != "$lastv4" ]; then
+					[ $log ] && echo "IPv4 changed to $ipv4 (from $lastv4)"
+					for name in $names
+					do
+						[ $log ] && echo starting ddnsupd $ipv4 $nsme
+						ddnsupd $ipv4 $name
+					done
+				fi
+				if [ "$ipv6" != "$lastv6" ]; then
+					[ $log ] && echo "IPv6 changed to $ipv6 (from $lastv6)"
+					for name in $names
+					do
+						[ $log ] && echo starting ddnsupd $ipv6 $nsme
+						ddnsupd $ipv6 $name
+					done
+				fi
+			fi
+			echo $IPs > $iprcfil
+			if [ ! $leave ]; then
+				[ $log ] && echo sleeping ${interval}s
+				sleep $interval
+			fi
+		done
+		;;
+	*)
+		echo >&2 "mmode $mode not implemented"
+		;;
+esac
+exit
