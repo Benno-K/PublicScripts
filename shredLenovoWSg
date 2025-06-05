@@ -60,6 +60,11 @@ foreach my $msg (@messages) {
 						or die $imap->LastError;
 				$victims++;
 			}
+			if ( $raw =~ m/Generic Safety and Compliance Notices/ ) {
+				my $del =  $imap->delete_message($msg)
+						or die $imap->LastError;
+				$victims++;
+			}
 				
 #		} else {
 #		  printf "ignoring: %s..\n",substr($subject,0,10);
