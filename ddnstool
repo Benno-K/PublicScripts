@@ -269,6 +269,13 @@ ddnsupd () {
 					# could accumulated over long period of time
 					abusechk clr $ddns $u
 					;;
+				"")
+					# NO RESPONSE at all
+					# FIXME
+					# would be good to retry
+					[ $hlog ] && loghist " failure: no response for $name"
+					[ $log ] && echo >&2 empty nswer code for $name: ${rsp// *}
+					;;
 				abuse)
 					abusechk inc $ddns $u $abuselimit
 					[ $hlog ] && loghist " abuse claimed by $ddns for $name ($u)"
