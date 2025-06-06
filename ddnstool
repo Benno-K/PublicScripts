@@ -122,6 +122,9 @@ interval=5
 # to update
 abuselimit=3
 
+# retry limit for curl giving back ""
+maxretry=3
+
 # function to get own IPv6
 myip6 () {
 	# List my ips, return the first address not being a
@@ -250,7 +253,21 @@ ddnsupd () {
 		# Need to update, so request it
 		if [ ! $dry ]; then
 			[ $hlog ] && loghist "asking $ddns to update $name"
-			local rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+			local rsp
+			local tries=1
+			# in rare cases it occured that curl failed silently
+			# (that is the price for -s) and returned ""
+			# if that happens retry a number of times
+			# currently this is logged for my curiosity
+			rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+			while [ "$rsp" == "" ] && [ $tries -le $maxretry ]
+			do
+				[ $hlog ] && loghist " failure: no response for $name in try $tries - will retry"
+				[ $log ] && echo >&2 empty answer code for $name try $tries
+				sleep $tries
+				((tries++))
+				rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+			done
 			# evaluate response and act accordingly
 			case ${rsp// *} in
 				good)
@@ -270,11 +287,9 @@ ddnsupd () {
 					abusechk clr $ddns $u
 					;;
 				"")
-					# NO RESPONSE at all
-					# FIXME
-					# would be good to retry
+					# NO RESPONSE at all after retries
 					[ $hlog ] && loghist " failure: no response for $name"
-					[ $log ] && echo >&2 empty nswer code for $name: ${rsp// *}
+					[ $log ] && echo >&2 empty final answer code for $name
 					;;
 				abuse)
 					abusechk inc $ddns $u $abuselimit
