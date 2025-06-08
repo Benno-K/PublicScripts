@@ -261,9 +261,9 @@ ddnsupd () {
 			local rsp
 			# if $ddns is IPv6, cry out loud
 			if [[ ${ddns} =~ :|[0-9]\.[0-9]\.[0-9]\.[0-9] ]]; then
-				[ $hlog ] && loghist " failure: DDNS server must be a FQDN not an address because of SSL/TLS certs alomost never are issued for IP addresses"
+				[ $hlog ] && loghist " failure: DDNS server must be a FQDN not an address because of SSL/TLS certs almost never are issued for IP addresses"
 				[ $hlog ] && loghist " your DDNS: ${ddns}" 
-				[ $log ] && echo >&2  "DDNS server must be a FQDN not an address because of SSL/TLS certs alomost never are issued for IP addresses"
+				[ $log ] && echo >&2  "DDNS server must be a FQDN not an address because of SSL/TLS certs almost never are issued for IP addresses"
 				[ $log ] && echo >&2 " your DDNS: ${ddns}" 
 				exit 8
 			fi
