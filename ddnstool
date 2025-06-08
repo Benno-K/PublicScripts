@@ -26,13 +26,15 @@ rcfil=~/.ddnsnames
 #
 crfil=~/.ddnsrc
 
-[ ! -r $crfil ] && echo >&2 "cannot open required $crfil"&& exit 1
-read -r -d '' <$crfil fb s1 s2 ue pe
-fritzbox=$(echo $fb|rev|base64 -d|rev)
-dns=$(echo $s1|rev|base64 -d|rev)
-ddns=$(echo $s2|rev|base64 -d|rev)
-u=$(echo $ue|rev|base64 -d|rev)
-p=$(echo $pe|rev|base64 -d|rev)
+readrc () {
+	[ ! -r $crfil ] && echo >&2 "cannot open required $crfil"&& exit 1
+	read -r -d '' <$crfil fb s1 s2 ue pe
+	fritzbox=$(echo $fb|rev|base64 -d|rev)
+	dns=$(echo $s1|rev|base64 -d|rev)
+	ddns=$(echo $s2|rev|base64 -d|rev)
+	u=$(echo $ue|rev|base64 -d|rev)
+	p=$(echo $pe|rev|base64 -d|rev)
+}
 
 creddbg () {
 	cat<<-EOI
@@ -51,15 +53,15 @@ crinit () {
 	pprompt=${pprompt//X/s}
 	pprompt=${pprompt//Y/o}
 	read -p "FRITZ!Box name or IP: " fritzbox
-	read -p "DNS server: " dns
-	read -p "DynDNS server: " ddns
+	read -p "DNS server name or IP: " dns
+	read -p "DynDNS server name (NOT IP!): " ddns
 	read -p "Username: " u
 	read -sp "$pprompt" s; echo
-	echo -n $fritzbox | rev | base64 | rev > ~/.ddnsrc
-	echo -n $dns | rev | base64 | rev >> ~/.ddnsrc
-	echo -n $ddns | rev | base64 | rev >> ~/.ddnsrc
-	echo -n $u | rev | base64 | rev >> ~/.ddnsrc
-	echo -n $s | rev | base64 | rev >> ~/.ddnsrc
+	echo -n $fritzbox | rev | base64 | rev > $crfil
+	echo -n $dns | rev | base64 | rev >> $crfil
+	echo -n $ddns | rev | base64 | rev >> $crfil
+	echo -n $u | rev | base64 | rev >> $crfil
+	echo -n $s | rev | base64 | rev >> $crfil
 	exit
 }
 
@@ -78,7 +80,6 @@ abusechk () {
 	local ddns=$2
 	local user=$3
 	local limit=$4
-	# echo dbg:$mode,$ddns,$user,$limit
 	local suffix=$(echo -n "$ddns-$user"|rev|base64)
 	local abfil=$(realpath ~/.$bn-abuse-$suffix)
 	if [ -r $abfil ]; then
@@ -175,6 +176,11 @@ fritzip () {
 	</s:Envelope>
 		EOI
 	
+		# If fritzbox is an IPv6 we need to enclose it
+		# in square brackets for curl
+		if [[ ${fritzbox} =~ ^([0-9a-fA-F]*:){6,7}[0-9a-fA-F]*$ ]]; then
+			fritzbox="[${fritzbox}]"
+		fi
 		extip=$(curl -s $1 \
 			"http://${fritzbox}:49000/igdupnp/control/WANIPConn1" \
 			-H "Content-Type: text/xml; charset="utf-8"" \
@@ -186,7 +192,7 @@ fritzip () {
 			# <NewIPAddress> or <NewIPv6Address>
 			sed -E '1,4d;6,$d;s/.*Address>(.*)<\/.*/\1/')
 		 # If success then echo IP
-		 if ( [ $? = 0 ] && [[ "${extip}" =~ ^[0-9a-f:.]+$ ]] ); then
+		 if ( [ $? = 0 ] && [[ "${extip}" =~ ^[0-9a-fA-F:.]+$ ]] ); then
 			echo $extip
 		 else
 		  local sts=$?
@@ -235,14 +241,13 @@ ddnsupd () {
 			# new IP is IPv6
 			v=6
 			ip=$(host $name $dns | grep ' has IPv6 address ') || warn "could not resolve IPv6 for $name from DNS (server:$dns)" # && return
-		#echo dbg:ddnsupd.1 6 v$v $?
 			ip=${ip//* }
 		else
 			 # new IP is garbage (or empty?)
 			 warn "cannot get any IP for $ipnew from DNS (server:$dns)"
 		fi
 		# No need to update - IP identical - so return now
-		[ "$ip" = "$ipnew" ] &&[ ! $force ] && return
+		[ "$ip" = "$ipnew" ] && [ ! $force ] && return
 		# If DDNS-server already gives ABUSE responses for
 		# our request, we have to stop sending requests to
 		# this ddns-server and account. If so, don't 
@@ -254,7 +259,14 @@ ddnsupd () {
 		if [ ! $dry ]; then
 			[ $hlog ] && loghist "asking $ddns to update $name"
 			local rsp
-			local tries=1
+			# if $ddns is IPv6, cry out loud
+			if [[ ${ddns} =~ :|[0-9]\.[0-9]\.[0-9]\.[0-9] ]]; then
+				[ $hlog ] && loghist " failure: DDNS server must be a FQDN not an address because of SSL/TLS certs alomost never are issued for IP addresses"
+				[ $hlog ] && loghist " your DDNS: ${ddns}" 
+				[ $log ] && echo >&2  "DDNS server must be a FQDN not an address because of SSL/TLS certs alomost never are issued for IP addresses"
+				[ $log ] && echo >&2 " your DDNS: ${ddns}" 
+				exit 8
+			fi
 			# in rare cases it occured that curl failed silently
 			# (that is the price for -s) and returned ""
 			# if that happens retry a number of times
@@ -327,9 +339,21 @@ do
 			shift
 			abuselimit=$1
 			;;
-		-c|-crinit)
-			crinit
-			exit
+		-c|-crinit|-tm)
+			if [ "$1" = "-tm" ]; then
+				crfil=~/.ddnsrc.tm
+				if [ -r $crfil ]; then
+					readrc
+				else
+					crinit
+					exit
+				fi
+			else
+				crinit
+				exit
+			fi
+			;;
+		-tm) # Testmode
 			;;
 		-1|-once)
 			leaveloop=yes
@@ -458,6 +482,9 @@ do
 	shift
 done
 
+# Read resources
+readrc
+
 # Names passed ?
 if [ $# = 0 ]; then
 	# No names passed, so read them from file
@@ -474,9 +501,6 @@ fi
 
 case $mode in
 	update)
-		# if an idiot specifies -f with -w do what you
-		# best do with idiots: just ignore
-		force=
 		myv4=$(fritzip ${fritzbox})
 		myv6=$(myip6)
 		for name in $names
