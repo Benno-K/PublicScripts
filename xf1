@@ -1,0 +1,10 @@
+#!/bin/bash
+    cat <<-EOI
+    test
+	EOI
+exit
+
+
+			
+
+# vim: ts=4 sw=4
