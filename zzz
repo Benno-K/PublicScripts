@@ -1,8 +1,0 @@
-COMMIT_MSG_FILE=$1
-COMMIT_SOURCE=$2
-SHA1=$3
-/usr/bin/perl -i.bak -ne 'print unless(m/^. Please enter the commit message/..m/^#$/)' "$COMMIT_MSG_FILE"
-if test -z "$COMMIT_SOURCE"
-then
-  /usr/bin/perl -i.bak -pe 'print "$COMMIT_SOURCE: \n" if !$first_line++' "$COMMIT_MSG_FILE"
-fi
