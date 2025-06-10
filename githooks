@@ -1,0 +1,115 @@
+#!/bin/bash
+#
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+#
+# Purpose: check whether all files in gr/hooks are
+#          linked to the repo's hooks directory
+#          to get it executed when using git
+#          ask to for each script and within that
+#          for each repo
+
+# Specify where things are located
+hookmasterabs=~/gr/
+hookmasterrel=../../../hooks
+hooksrc=$hookmasterabs/hooks
+
+# go for all hook-scripts in all repos
+hooktops=$(find $hookmasterabs -maxdepth 3 -name hooks)
+for hooktop in  $hooktops
+	do
+		if [[ $hooktop =~ .git ]]; then
+			# remember all hook directories, except ..
+			lnkdirs="$lnkdirs$hooktop "
+		else
+			# .. those directly below gr/hooks
+			# which are the target for the links
+			hookscripts=$(echo $hooksrc/*)
+		fi
+	done
+# so script by script
+for hookscript in $hookscripts
+	do
+		hsbn=$(basename $hookscript)
+		# remember the inode of the hookscript target
+		hsinode=$(stat -c %i $(realpath $hookscript))
+		# Script name	
+		echo "$hsbn"
+		# ask whether to check it
+		checkit=
+		while ! [[ "$checkit" =~ j|y|n ]]
+		do
+			read -p "check it (y/n)? " checkit
+		done
+		[ $checkit = n ] && continue
+		# now for every <repo>/.git/hooks ..
+		for lnkdir in $lnkdirs
+		do
+			# .. this would be the name of the
+			# hook script in the repo
+			hsinrepo=$(echo $lnkdir/$hsbn)
+			# isolate the repo name
+			repo=$(basename $(dirname $(dirname $(dirname $hsinrepo))))
+			# does it exist
+			if [ -e $hsinrepo ]; then
+				# yes, is it a softlink
+				if [ -L $hsinrepo ]; then
+				  # yes, get it's inode
+					curinode=$(stat -c %i $(realpath $(dirname $hsinrepo)/$(readlink $hsinrepo)))
+					# compare inode to the inode of target
+					if [ $curinode != $hsinode ]; then
+						# if not identical this means there
+						# is a link NOT pointing to target
+						echo " $repo/$hsbn is linked ELSEWHERE"
+					fi
+				else
+					# not a softlink!
+					echo " $repo/$hsbn is a FILE (not linked)"
+					# not needed: curinode=$(stat -c %i $lnkdir/$lnkfil)
+				fi
+			else
+				# there is no such hook in repo
+				# care about missing hooks?
+				if [ "$1" = "-m" ]; then
+					# do report it
+					echo " $repo/$hsbn is MISSING"
+					# and ask whether to create the link or not
+					while ! [[ "$linkit" =~ j|y|n|q|a ]]
+					do
+						read -p "Link it ([n]/y/q/a)? " linkit
+						[ "$linkit" = "" ] && linkit=n
+					done
+					case $linkit in
+						# positive, go and create
+						j|y|a)
+							(cd $lnkdir;ln -s $hookmasterrel/$hsbn $hsbn)||echo <&2 "failed to create link!"
+							 # make ask for the next
+							 [ $linkit != a ] && linkit=
+							;;
+						# no further questions asked but all
+						# repos with missing hooks will be
+						# reported
+						q)
+							;;
+						n)
+							# don't create link, but ..
+							# .. do ask for the next
+							linkit=
+							;;
+						*)
+						  # ask again, ignore wrong answer
+							linkit=
+							;;
+						esac
+				fi
+			fi
+		done
+	done
+exit

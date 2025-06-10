@@ -126,6 +126,10 @@ See [friedl](friedl.md).
 Add github token to github
 config files
 
+## githooks
+Manage git hook scripts. See comments in the script for
+more information.
+
 ## kpclean
 Clean out a directory where
 Keepass stores its database.
