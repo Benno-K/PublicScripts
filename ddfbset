@@ -28,10 +28,10 @@ DDNS_SERVER=dyndns.strato.com
 # get what to send from commandline
 case $1 in
 	-to-server|-s|s)
-		ipv6=$(ifip6)
+		ipv6=$(myip -6)
 		;;
 	-to-fritzbox|-f|f)
-		ipv6=$(extip6)
+		ipv6=$(fritzip -6)
 		;;
 	"")
 		echo "usage: $0 -to-server|-to-fritzbox" >&2
