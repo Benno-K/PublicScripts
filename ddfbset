@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# YOUR PROVIDER'S DYNDNS SERVER NAME HERE
+DDNS_SERVER=dyndns.strato.com
+
 # Enter DynDNS name for FritzBOX
 #  * to obtain a new certificate with getssl 
 #	   it must point to server2's IPv6
@@ -48,7 +51,7 @@ trg="fbx.kardel.eu"
 . ~/.config/ddcreds # must define login and password
 
 # build URL
-url="${login}:${password}@dyndns.strato.com/nic/update?hostname=${trg}&myip=$(extip),${ipv6}"
+url="${login}:${password}@${DDNS_SERVER}/nic/update?hostname=${trg}&myip=$(extip),${ipv6}"
 # and go
 curl -s ${url}
 exit
