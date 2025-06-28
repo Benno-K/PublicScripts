@@ -278,7 +278,7 @@ ddnsupd () {
 				[ $log ] && echo >&2 empty answer code for $name try $tries
 				sleep $tries
 				((tries++))
-				rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+				rsp=$(curl 2>${hfile} -${v} -u $u:$p "https://${ddns}/nic/update?hostname=$name")
 			done
 			# evaluate response and act accordingly
 			case ${rsp// *} in
