@@ -331,7 +331,6 @@ do
 	case $1 in
 		-ra|-reset-abuse-counter)
 			readrc
-			echo user=$u;exit
 			osuffix=$(echo -n "$ddns-$u"|rev|base64)
 			oabfil=$(realpath ~/.$bn-abuse-$osuffix)
 			rm -iv $oabfil
