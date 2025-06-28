@@ -253,6 +253,7 @@ ddnsupd () {
 		# this ddns-server and account. If so, don't 
 		# try again (but silently) as the abuses have
 		# already been logged
+		readrc
 		abusechk chk $ddns $u $abuselimit
 		[ $? != 0 ] && return
 		# Need to update, so request it
@@ -330,6 +331,8 @@ while [ "${1:0:1}" = "-" ]
 do
 	case $1 in
 		-ra|-reset-abuse-counter)
+			readrc
+			echo user=$u;exit
 			osuffix=$(echo -n "$ddns-$u"|rev|base64)
 			oabfil=$(realpath ~/.$bn-abuse-$osuffix)
 			rm -iv $oabfil
