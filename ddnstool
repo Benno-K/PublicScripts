@@ -253,7 +253,6 @@ ddnsupd () {
 		# this ddns-server and account. If so, don't 
 		# try again (but silently) as the abuses have
 		# already been logged
-		readrc
 		abusechk chk $ddns $u $abuselimit
 		[ $? != 0 ] && return
 		# Need to update, so request it
