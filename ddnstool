@@ -272,7 +272,9 @@ ddnsupd () {
 			# if that happens retry a number of times
 			# currently this is logged for my curiosity
 			rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
-			while [ "$rsp" == "" ] && [ $tries -le $maxretry ]
+			#FIXME why was $tries not defined in rare cases?
+			chktries=${$tries:-0} 
+			while [ "$rsp" == "" ] && [ $chktries -le $maxretry ]
 			do
 				[ $hlog ] && loghist " failure: no response for $name in try $tries - will retry"
 				[ $log ] && echo >&2 empty answer code for $name try $tries
