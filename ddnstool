@@ -273,7 +273,10 @@ ddnsupd () {
 			# currently this is logged for my curiosity
 			rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
 			#FIXME why was $tries not defined in rare cases?
-			chktries=${$tries:-0} 
+			[ ! -n "$tries" ] && loghist " failure: tries=\"$tries\" - not numeric, maxretry=$maxretry"
+			[ ! -n "$maxretry" ] && loghist " failure: maxretry=\"$maxretry\" - not numeric, tries=$tries"
+			# Ensure what we check IS numeric
+			chktries=${$tries:-0}
 			while [ "$rsp" == "" ] && [ $chktries -le $maxretry ]
 			do
 				[ $hlog ] && loghist " failure: no response for $name in try $tries - will retry"
