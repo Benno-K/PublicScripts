@@ -5,49 +5,65 @@ stateFile="$HOME/.$(basename "$0").state"
 declare -A fsStates
 declare -A fsDates
 quiet=0
+savedCmd=""
+savedThr=""
 
 while getopts "t:q" opt; do
   case $opt in
     t) thr="$OPTARG" ;;
     q) quiet=1 ;;
-    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
-    :) echo "Option -$OPTARG requires an argument." >&2; exit 1 ;;
+    \?) echo "Bad option: -$OPTARG" >&2; exit 1 ;;
+    :) echo "Option -$OPTARG needs arg." >&2; exit 1 ;;
   esac
 done
 
 shift $((OPTIND - 1))
-
-if [ $# -eq 0 ]; then
-  echo "Usage: $0 [-t threshold] [-q] filesystem1 filesystem2 ..."
-  exit 1
-fi
 
 getUsage() { df -P "$1" | awk 'NR==2 {print $5, $4, $3}'; }
 
 loadState() {
   if [ -f "$stateFile" ]; then
     while IFS='=' read -r key value; do
-      if [[ $key =~ ^initial_percent_(.+)$ ]]; then
-        fsKey="${BASH_REMATCH[1]}"
-        fsStates["$fsKey"]="${value%%|*}"
-        fsDates["$fsKey"]="${value#*|}"
-      fi
+      case "$key" in
+        "saved_threshold") savedThr="$value" ;;
+        "saved_cmd") savedCmd="$value" ;;
+        initial_percent_*)
+          fsKey="${key#initial_percent_}"
+          fsStates["$fsKey"]="${value%%|*}"
+          fsDates["$fsKey"]="${value#*|}"
+          ;;
+      esac
     done < "$stateFile"
   fi
 }
 
 saveState() {
   rm -f "$stateFile"
+  printf "saved_threshold=%s\n" "$thr" >> "$stateFile"
+  printf "saved_cmd=%s\n" "$savedCmd" >> "$stateFile"
   for fs in "$@"; do
     safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
     safeFs="FS_${safeFs}"
     percent="${fsStates["$safeFs"]}"
     dt="${fsDates["$safeFs"]}"
-    [ -n "$percent" ] && [ -n "$dt" ] && printf "initial_percent_%s=%s|%s\n" "$safeFs" "$percent" "$dt" >> "$stateFile"
+    [ -n "$percent" ] && [ -n "$dt" ] && \
+      printf "initial_percent_%s=%s|%s\n" "$safeFs" "$percent" "$dt" >> "$stateFile"
   done
 }
 
 loadState
+
+if [ $# -eq 0 ]; then
+  if [ -n "$savedCmd" ]; then
+    set -- $savedCmd
+    [ -n "$savedThr" ] && thr="$savedThr"
+  else
+    echo "Usage: $0 [-t thr] [-q] fs1 fs2 ..."
+    exit 1
+  fi
+else
+  savedCmd="$*"
+fi
 
 for fs in "$@"; do
   safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
@@ -63,12 +79,15 @@ for fs in "$@"; do
   initialPercent="${fsStates["$safeFs"]:-0}"
   initialDate="${fsDates["$safeFs"]:-$now}"
 
+  # Short output for initial usage
   if [ "$initialPercent" = "0" ]; then
-    echo "Initial usage for $fs: $percent% used, $free free, $used used (recorded at $now, triggered at $now)"
+    echo "$fs: $percent% free:$free used:$used"
+    echo "rec:$now trg:$now"
     updateState=1
   else
     if [ "$quiet" -eq 0 ]; then
-      echo "Previous usage for $fs: $initialPercent% used (recorded at $initialDate, triggered at $now)"
+      echo "$fs: was $initialPercent% free:$free used:$used"
+      echo "rec:$initialDate trg:$now"
     fi
     updateState=0
   fi
@@ -76,14 +95,11 @@ for fs in "$@"; do
   diff=$((percent - initialPercent))
   absDiff=$((diff < 0 ? -diff : diff))
 
+  # Short output for threshold exceeded
   if ((absDiff > thr)); then
-    echo "Filesystem $fs usage has changed beyond threshold of $thr% (since $initialDate, triggered at $now)"
-    echo "  Previous usage: $initialPercent%"
-    echo "  Current usage: $percent%"
-    echo "  Free space: $free"
-    echo "  Used space: $used"
-    echo "  Previous value recorded at: $initialDate"
-    echo "  Triggered at: $now"
+    echo "$fs: $initialPercent%->$percent% thr:$thr%"
+    echo "f:$free u:$used"
+    echo "rec:$initialDate trg:$now"
     updateState=1
   fi
 
