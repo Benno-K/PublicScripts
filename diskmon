@@ -9,7 +9,7 @@ savedCmdLine=""
 savedThreshold=""
 
 showHelp() {
-  cat <<EOF
+  cat <<EOF 1>&2
 Usage: $(basename "$0") [options] fs1 [fs2 ...]
 Options:
   -t N       Set threshold percentage (default: 5)
@@ -83,7 +83,7 @@ if [ $# -eq 0 ]; then
     set -- $savedCmdLine
     [ -n "$savedThreshold" ] && threshold="$savedThreshold"
   else
-    echo "Usage: $0 [-t threshold] [-q] fs1 fs2 ..."
+    echo "Usage: $0 [-t threshold] [-q] fs1 fs2 ..." >&2
     exit 1
   fi
 else
