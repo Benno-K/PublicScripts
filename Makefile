@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade ddfbset homeaddr f2bsts friedl ddnstool githooks
-UTARGETS=nsimgurl shredLenovoWSg
+UTARGETS=nsimgurl shredLenovoWSg diskmon
 
 LBINDIR = /usr/local/bin
 UBINDIR = ~/bin
