@@ -276,7 +276,7 @@ ddnsupd () {
 			[ ! -n "$tries" ] && loghist " failure: tries=\"$tries\" - not numeric, maxretry=$maxretry"
 			[ ! -n "$maxretry" ] && loghist " failure: maxretry=\"$maxretry\" - not numeric, tries=$tries"
 			# Ensure what we check IS numeric
-			chktries=${$tries:-0}
+			chktries=${tries:-0}
 			while [ "$rsp" == "" ] && [ $chktries -le $maxretry ]
 			do
 				[ $hlog ] && loghist " failure: no response for $name in try $tries - will retry"
@@ -566,3 +566,4 @@ case $mode in
 		;;
 esac
 exit
+# vim: set ts=2 sw=2 et:
