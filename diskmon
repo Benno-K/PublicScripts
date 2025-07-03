@@ -1,0 +1,87 @@
+#!/bin/bash
+
+thr=5
+stateFile="$HOME/.$(basename "$0").state"
+declare -A fsStates
+quiet=0
+
+while getopts "t:q" opt; do
+  case $opt in
+    t) thr="$OPTARG" ;;
+    q) quiet=1 ;;
+    \?) echo "Invalid option: -$OPTARG" >&2; exit 1 ;;
+    :) echo "Option -$OPTARG requires an argument." >&2; exit 1 ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 [-t threshold] [-q] filesystem1 filesystem2 ..."
+  exit 1
+fi
+
+getUsage() { df -P "$1" | awk 'NR==2 {print $5, $4, $3}'; }
+
+loadState() {
+  if [ -f "$stateFile" ]; then
+    while IFS='=' read -r key value; do
+      if [[ $key =~ ^initial_percent_(.+)$ ]]; then
+        fsKey="${BASH_REMATCH[1]}"
+        fsStates["$fsKey"]="$value"
+      fi
+    done < "$stateFile"
+  fi
+}
+
+saveState() {
+  rm -f "$stateFile"
+  for fs in "$@"; do
+    safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
+    safeFs="FS_${safeFs}"
+    [ "${fsStates["$safeFs"]+_}" ] && printf "initial_percent_%s=%s\n" "$safeFs" "${fsStates["$safeFs"]}" >> "$stateFile"
+  done
+}
+
+loadState
+
+for fs in "$@"; do
+  safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
+  safeFs="FS_${safeFs}"
+
+  usage=$(getUsage "$fs")
+  percent=$(echo "$usage" | awk '{print substr($1, 1, length($1)-1)}')
+  free=$(echo "$usage" | awk '{print $2}')
+  used=$(echo "$usage" | awk '{print $3}')
+
+  initialPercent="${fsStates["$safeFs"]:-0}"
+
+  if [ "$initialPercent" = "0" ]; then
+    echo "Initial usage for $fs: $percent% used, $free free, $used used (first run)"
+    updateState=1
+  else
+    if [ "$quiet" -eq 0 ]; then
+      echo "Previous usage for $fs: $initialPercent% used"
+    fi
+    updateState=0
+  fi
+
+  diff=$((percent - initialPercent))
+  absDiff=$((diff < 0 ? -diff : diff))
+
+  if ((absDiff > thr)); then
+    echo "Filesystem $fs usage has changed beyond threshold of $thr%"
+    echo "  Previous usage: $initialPercent%"
+    echo "  Current usage: $percent%"
+    echo "  Free space: $free"
+    echo "  Used space: $used"
+    echo "  Triggered at: $(date -u +'%Y-%m-%d %H:%M:%S')"
+    updateState=1
+  fi
+
+  if [ "$updateState" -eq 1 ]; then
+    fsStates["$safeFs"]="$percent"
+  fi
+done
+
+saveState "$@"
