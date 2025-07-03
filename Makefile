@@ -22,6 +22,8 @@ install: $(TARGETS) $(UTARGETS)
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
 	done;\
+
+restofabove:
 	echo for dusage;\
 	echo " cp -n" dusagelimits ~/.dusagelimits;\
 	cp -n dusagelimits ~/.dusagelimits;\
