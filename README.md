@@ -28,9 +28,7 @@ do with grep.
 Easily edit or list files in
 /etc/cron.d which usually
 come with some software that
-needs to run frequently, e.
-g. can be used for the 
-**diskusage** script.
+needs to run frequently
 Invokes **ctab** to get input
 for the file. You can pass all
 paramwters you like to handover
@@ -90,7 +88,11 @@ which will invoke /usr/sbin/nologin every day at 20:30 as user pi
 Manage your dynamic DNS entries.
 See [here](ddnstool.md)
 
-## diskusage
+## diskmon
+See [diskmon.md](diskmon.md)
+
+## diskusage (obsolete)
+Replaced by [diskmon](#diskmon).
 Checks the usage of some file-systems
 for changes. Actually it does 
 mainly a "df -h" stores the

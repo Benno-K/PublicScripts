@@ -8,6 +8,31 @@ quiet=0
 savedCmdLine=""
 savedThreshold=""
 
+showHelp() {
+  cat <<EOF
+Usage: $(basename "$0") [options] fs1 [fs2 ...]
+Options:
+  -t N       Set threshold percentage (default: 5)
+  -q         Quiet mode (minimal output)
+  -h, --help Show this help and exit
+
+Without arguments, runs with saved filesystems and threshold.
+Example:
+  $(basename "$0") -t 10 /home /var
+  $(basename "$0") -q
+EOF
+  exit 0
+}
+
+# Check for -h or --help before option parsing
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      showHelp
+      ;;
+  esac
+done
+
 while getopts "t:q" opt; do
   case $opt in
     t) threshold="$OPTARG" ;;
