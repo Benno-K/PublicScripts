@@ -24,8 +24,7 @@ EOF
   exit 0
 }
 
-# Human-readable format function using awk
-human_readable() {
+humanReadable() {
   awk -v size="$1" '
     function hum(n) {
       split("B K M G T P", u)
@@ -40,7 +39,6 @@ human_readable() {
   '
 }
 
-# Check for -h or --help before option parsing
 for arg in "$@"; do
   case "$arg" in
     -h|--help)
@@ -60,26 +58,24 @@ done
 
 shift $((OPTIND - 1))
 
-# Use stat to get usage, avoiding parsing df output
 getUsage() {
-  statout=$(stat -f --format="%a %b %S" "$1" 2>/dev/null)
-  if [ $? -ne 0 ] || [ -z "$statout" ]; then
+  statOut=$(stat -f --format="%a %b %S" "$1" 2>/dev/null)
+  if [ $? -ne 0 ] || [ -z "$statOut" ]; then
     echo "ERROR"
     return 1
   fi
-  set -- $statout
-  free_blocks=$1
-  total_blocks=$2
-  block_size=$3
+  set -- $statOut
+  freeBlocks=$1
+  totalBlocks=$2
+  blockSize=$3
 
-  used_blocks=$((total_blocks - free_blocks))
-  [ "$total_blocks" -eq 0 ] && percent=0 || percent=$(( (used_blocks * 100) / total_blocks ))
+  usedBlocks=$((totalBlocks - freeBlocks))
+  [ "$totalBlocks" -eq 0 ] && percent=0 || percent=$(( (usedBlocks * 100) / totalBlocks ))
 
-  free_bytes=$((free_blocks * block_size))
-  used_bytes=$((used_blocks * block_size))
+  freeBytes=$((freeBlocks * blockSize))
+  usedBytes=$((usedBlocks * blockSize))
 
-  # Output: percent free_bytes used_bytes
-  echo "$percent $free_bytes $used_bytes"
+  echo "$percent $freeBytes $usedBytes"
 }
 
 loadState() {
@@ -88,8 +84,8 @@ loadState() {
       case "$key" in
         "savedThreshold") savedThreshold="$value" ;;
         "savedCmdLine") savedCmdLine="$value" ;;
-        initial_percent_*)
-          fsKey="${key#initial_percent_}"
+        initialPercent*)
+          fsKey="${key#initialPercent}"
           fsStates["$fsKey"]="${value%%|*}"
           fsDates["$fsKey"]="${value#*|}"
           ;;
@@ -103,12 +99,12 @@ saveState() {
   printf "savedThreshold=%s\n" "$threshold" >> "$stateFile"
   printf "savedCmdLine=%s\n" "$savedCmdLine" >> "$stateFile"
   for fs in "$@"; do
-    safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
-    safeFs="FS_${safeFs}"
+    safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9]/_/g')
+    safeFs="FS${safeFs}"
     percent="${fsStates["$safeFs"]}"
     dt="${fsDates["$safeFs"]}"
     [ -n "$percent" ] && [ -n "$dt" ] && \
-      printf "initial_percent_%s=%s|%s\n" "$safeFs" "$percent" "$dt" >> "$stateFile"
+      printf "initialPercent%s=%s|%s\n" "$safeFs" "$percent" "$dt" >> "$stateFile"
   done
 }
 
@@ -126,9 +122,12 @@ else
   savedCmdLine="$*"
 fi
 
+headlinePrinted=0
+headlineStr="Disk usage as of $(date +'%d.%m.%y %H:%M')"
+
 for fs in "$@"; do
-  safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9_]/_/g')
-  safeFs="FS_${safeFs}"
+  safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9]/_/g')
+  safeFs="FS${safeFs}"
 
   usage=$(getUsage "$fs")
   if [ "$usage" = "ERROR" ]; then
@@ -139,38 +138,33 @@ for fs in "$@"; do
   free=$(echo "$usage" | awk '{print $2}')
   used=$(echo "$usage" | awk '{print $3}')
 
-  free_h=$(human_readable "$free")
-  used_h=$(human_readable "$used")
+  freeH=$(humanReadable "$free")
+  usedH=$(humanReadable "$used")
 
-  now=$(date +"%d.%m.%y/%H.%M")
+  now=$(date +"%d.%m.%y:%H.%M")
 
-  initialPercent="${fsStates["$safeFs"]:-0}"
+  initialPercent="${fsStates["$safeFs"]:-$percent}"
   initialDate="${fsDates["$safeFs"]:-$now}"
 
-  # Initial usage
-  if [ "$initialPercent" = "0" ]; then
-    echo "$fs:"
-    echo " $percent% f:$free_h u:$used_h"
-    echo " rec:$now trg:$now"
-    updateState=1
-  else
-    if [ "$quiet" -eq 0 ]; then
-      echo "$fs:"
-      echo " now $percent% was $initialPercent% f:$free_h u:$used_h"
-      echo " rec:$initialDate trg:$now"
-    fi
-    updateState=0
+  updateState=0
+
+  # Only print headline if not in quiet mode and output is generated
+  if [ $quiet -eq 0 ] && [ $headlinePrinted -eq 0 ]; then
+    echo "$headlineStr"
+    headlinePrinted=1
+  fi
+
+  if [ $quiet -eq 0 ]; then
+    echo "$fs: $initialPercent -> $percent% free:$freeH used:$usedH"
+    echo " since: $initialDate"
   fi
 
   diff=$((percent - initialPercent))
   absDiff=$((diff < 0 ? -diff : diff))
 
-  # Threshold exceeded
-  if ((absDiff > threshold)); then
-    echo "$fs:"
-    echo " $initialPercent%->$percent% thr:$threshold%"
-    echo " f:$free_h u:$used_h"
-    echo " rec:$initialDate trg:$now"
+  if [ "$initialPercent" = "$percent" ]; then
+    updateState=0
+  elif ((absDiff > threshold)); then
     updateState=1
   fi
 

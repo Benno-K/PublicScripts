@@ -6,13 +6,24 @@ use Filesys::Statvfs;
 
 my $threshold = 5;
 my $quiet = 0;
-my $show_help = 0;
 my $script = $0 =~ s!.*/!!r;
 my $state_file = "$ENV{HOME}/.$script.state";
 my (%fsStates, %fsDates);
 my $savedCmdLine = "";
 my $savedThreshold = "";
 my @fs_args;
+
+# Human-readable formatting
+sub human_readable {
+    my $size = shift;
+    my @units = ('B','K','M','G','T','P');
+    my $i = 0;
+    while ($size >= 1024 && $i < @units-1) {
+        $size /= 1024;
+        $i++;
+    }
+    return sprintf("%.1f%s", $size, $units[$i]);
+}
 
 # Pre-parse for -h/--help
 for (@ARGV) {
@@ -108,6 +119,9 @@ for my $fs (@fs_args) {
     my $used    = $blocks_used  * $block_size;
     my $percent = $blocks_total == 0 ? 0 : int($blocks_used * 100 / $blocks_total);
 
+    my $free_h = human_readable($free);
+    my $used_h = human_readable($used);
+
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime;
     my $now = sprintf "%02d.%02d.%02d/%02d.%02d", $mday, $mon+1, ($year+1900)%100, $hour, $min;
 
@@ -116,15 +130,13 @@ for my $fs (@fs_args) {
 
     my $updateState = 0;
     if ($initialPercent eq "0") {
-        print "$fs:\n";
-        print " $percent% f:$free u:$used\n";
-        print " rec:$now trg:$now\n";
+        print "now $percent% (0%) free:$free_h used:$used_h\n";
+        print "prv:$now act:$now\n";
         $updateState = 1;
     } else {
         if (!$quiet) {
-            print "$fs:\n";
-            print " now $percent% was $initialPercent% f:$free u:$used\n";
-            print " rec:$initialDate trg:$now\n";
+            print "now $percent% ($initialPercent%) free:$free_h used:$used_h\n";
+            print "prv:$initialDate act:$now\n";
         }
         $updateState = 0;
     }
@@ -132,10 +144,8 @@ for my $fs (@fs_args) {
     my $absDiff = $diff < 0 ? -$diff : $diff;
 
     if ($absDiff > $threshold) {
-        print "$fs:\n";
-        print " $initialPercent%->$percent% thr:$threshold%\n";
-        print " f:$free u:$used\n";
-        print " rec:$initialDate trg:$now\n";
+        print "now $percent% ($initialPercent%) free:$free_h used:$used_h\n";
+        print "prv:$initialDate act:$now\n";
         $updateState = 1;
     }
     if ($updateState) {
