@@ -44,7 +44,28 @@ done
 
 shift $((OPTIND - 1))
 
-getUsage() { df -P "$1" | awk 'NR==2 {print $5, $4, $3}'; }
+# Use stat to get usage, avoiding parsing df output
+getUsage() {
+  # Get relevant stat output
+  statout=$(stat -f --format="%a %b %S" "$1" 2>/dev/null)
+  if [ $? -ne 0 ] || [ -z "$statout" ]; then
+    echo "ERROR"
+    return 1
+  fi
+  set -- $statout
+  free_blocks=$1
+  total_blocks=$2
+  block_size=$3
+
+  used_blocks=$((total_blocks - free_blocks))
+  [ "$total_blocks" -eq 0 ] && percent=0 || percent=$(( (used_blocks * 100) / total_blocks ))
+
+  free_bytes=$((free_blocks * block_size))
+  used_bytes=$((used_blocks * block_size))
+
+  # Output: percent free_bytes used_bytes
+  echo "$percent $free_bytes $used_bytes"
+}
 
 loadState() {
   if [ -f "$stateFile" ]; then
@@ -95,7 +116,11 @@ for fs in "$@"; do
   safeFs="FS_${safeFs}"
 
   usage=$(getUsage "$fs")
-  percent=$(echo "$usage" | awk '{print substr($1, 1, length($1)-1)}')
+  if [ "$usage" = "ERROR" ]; then
+    echo "$fs: Could not stat filesystem or directory." >&2
+    continue
+  fi
+  percent=$(echo "$usage" | awk '{print $1}')
   free=$(echo "$usage" | awk '{print $2}')
   used=$(echo "$usage" | awk '{print $3}')
 
