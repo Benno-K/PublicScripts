@@ -2,156 +2,172 @@
 use strict;
 use warnings;
 use Getopt::Long;
-use Filesys::Statvfs;
+use Filesys::Df;
+use POSIX qw(strftime);
+use File::Basename;
 
+my $scriptName = fileparse($0, ".pl",".plc");
 my $threshold = 5;
+my $showAll = 0;
 my $quiet = 0;
-my $script = $0 =~ s!.*/!!r;
-my $state_file = "$ENV{HOME}/.$script.state";
-my (%fsStates, %fsDates);
-my $savedCmdLine = "";
-my $savedThreshold = "";
-my @fs_args;
-
-# Human-readable formatting
-sub human_readable {
-    my $size = shift;
-    my @units = ('B','K','M','G','T','P');
-    my $i = 0;
-    while ($size >= 1024 && $i < @units-1) {
-        $size /= 1024;
-        $i++;
-    }
-    return sprintf("%.1f%s", $size, $units[$i]);
-}
-
-# Pre-parse for -h/--help
-for (@ARGV) {
-    if ($_ eq '-h' or $_ eq '--help') {
-        print STDERR <<"HELP";
-Usage: $script [options] fs1 [fs2 ...]
-Options:
-  -t N       Set threshold percentage (default: 5)
-  -q         Quiet mode (minimal output)
-  -h, --help Show this help and exit
-
-Without arguments, runs with saved filesystems and threshold.
-Example:
-  $script -t 10 /home /var
-  $script -q
-HELP
-        exit 0;
-    }
-}
+my $help = 0;
+my $stateFile = "$ENV{HOME}/.$scriptName.state";
+my @fsList;
 
 GetOptions(
-    "t=i"    => \$threshold,
-    "q"      => \$quiet,
-) or do { print STDERR "Bad options. Use -h for help.\n"; exit 1; };
+    't=i' => \$threshold,
+    'a'   => \$showAll,
+    'q'   => \$quiet,
+    'h|help' => \$help,
+) or die "Error in command line arguments\n";
 
-@fs_args = @ARGV;
+if ($help) {
+    print <<"EOF";
+Usage: $0 [options] fs1 [fs2 ...]
+Options:
+  -t N       Set threshold percentage (default: 5)
+  -a         Show all filesystems (not only changed ones)
+  -q         Quiet mode (suppresses output)
+  -h, --help Show this help and exit
 
-sub load_state {
-    return unless -f $state_file;
-    open my $fh, '<', $state_file or return;
-    while (<$fh>) {
+Exit status: number of changed filesystems (0 = no change)
+EOF
+    exit 0;
+}
+
+@fsList = @ARGV;
+
+# Load state
+my %fsStates;
+my %fsDates;
+my $savedCmdLine = '';
+my $savedThreshold = '';
+
+if (-f $stateFile) {
+    open my $sf, '<', $stateFile or die "Cannot open $stateFile: $!";
+    while (<$sf>) {
         chomp;
-        my ($key, $value) = split(/=/, $_, 2);
-        if ($key eq 'savedThreshold') {
-            $savedThreshold = $value;
-        } elsif ($key eq 'savedCmdLine') {
-            $savedCmdLine = $value;
-        } elsif ($key =~ /^initial_percent_(.+)$/) {
-            my $fsKey = $1;
-            my ($p, $d) = split(/\|/, $value, 2);
-            $fsStates{$fsKey} = $p;
-            $fsDates{$fsKey} = $d;
+        if (/^savedThreshold=(.*)$/) {
+            $savedThreshold = $1;
+        } elsif (/^savedCmdLine=(.*)$/) {
+            $savedCmdLine = $1;
+        } elsif (/^initialPercent(.+?)=(\d+)\|(.*)$/) {
+            $fsStates{$1} = $2;
+            $fsDates{$1} = $3;
         }
     }
-    close $fh;
+    close $sf;
 }
 
-sub save_state {
-    my @save_fs = @_;
-    open my $fh, '>', $state_file or do { print STDERR "Can't write $state_file: $!"; exit 1; };
-    print $fh "savedThreshold=$threshold\n";
-    print $fh "savedCmdLine=$savedCmdLine\n";
-    for my $fs (@save_fs) {
-        my $safeFs = $fs; $safeFs =~ s/[^a-zA-Z0-9_]/_/g;
-        $safeFs = "FS_$safeFs";
-        my $percent = $fsStates{$safeFs};
-        my $dt = $fsDates{$safeFs};
-        print $fh "initial_percent_$safeFs=$percent|$dt\n"
-            if defined $percent and defined $dt;
-    }
-    close $fh;
-}
-
-load_state();
-
-if (!@fs_args) {
+if (!@fsList) {
     if ($savedCmdLine) {
-        @fs_args = split ' ', $savedCmdLine;
-        $threshold = $savedThreshold if $savedThreshold ne "";
+        @fsList = split(/\s+/, $savedCmdLine);
+        $threshold = $savedThreshold if $savedThreshold ne '';
     } else {
-        print STDERR "Usage: $script [-t threshold] [-q] fs1 fs2 ...\n";
-        exit 1;
+        die "Usage: $0 [-t threshold] [-a] [-q] fs1 fs2 ...\n";
     }
 } else {
-    $savedCmdLine = join ' ', @fs_args;
+    $savedCmdLine = join(' ', @fsList);
 }
 
-for my $fs (@fs_args) {
-    my $safeFs = $fs; $safeFs =~ s/[^a-zA-Z0-9_]/_/g;
-    $safeFs = "FS_$safeFs";
+# Helper: human readable size
+sub humanReadable {
+    my $bytes = shift;
+    my @units = qw(B K M G T P);
+    my $unit = 0;
+    while ($bytes >= 1024 && $unit < $#units) {
+        $bytes /= 1024;
+        $unit++;
+    }
+    return sprintf("%.1f%s", $bytes, $units[$unit]);
+}
 
-    my $stat = Filesys::Statvfs::statvfs($fs);
-    if (!$stat) {
-        print "$fs:\n ! Not found or statvfs failed\n";
+# Helper: get usage (percent, free, used)
+sub getUsage {
+    my ($fs) = @_;
+    my $ref = Filesys::Df::df($fs);
+    return unless $ref;
+    my $total = $ref->{blocks};
+    my $used = $ref->{bused};
+    my $free = $ref->{bavail};
+    my $bsize = $ref->{bsize};
+    # Check for undefineds or zeros
+		if (!defined($bsize)) {
+			$bsize = 1024;
+		}
+		if (!defined($used)) {
+			$used = $total - $free;
+		}
+    return unless defined $total && defined $used && defined $free && defined $bsize && $bsize > 0;
+    my $percent = $total ? int($used * 100 / $total + 0.5) : 0;
+    return ($percent, $free * $bsize, $used * $bsize);
+}
+my $now = strftime("%d.%m.%y:%H.%M", localtime);
+my $headline = "Disk usage as of " . strftime("%d.%m.%y %H:%M", localtime);
+my %updatedFsStates;
+my %updatedFsDates;
+my $outputBuffer = '';
+my $changedCount = 0;
+
+for my $fs (@fsList) {
+    my $safeFs = $fs; $safeFs =~ s/[^a-zA-Z0-9]/_/g; $safeFs = "FS$safeFs";
+    my ($percent, $free, $used) = getUsage($fs);
+    if (!defined $percent) {
+        warn "$fs: Could not stat filesystem or directory.\n";
         next;
     }
-    my $block_size   = $stat->f_frsize || $stat->f_bsize;
-    my $blocks_total = $stat->f_blocks;
-    my $blocks_free  = $stat->f_bfree;
-    my $blocks_used  = $blocks_total - $blocks_free;
+    my $freeH = humanReadable($free);
+    my $usedH = humanReadable($used);
 
-    my $free    = $blocks_free  * $block_size;
-    my $used    = $blocks_used  * $block_size;
-    my $percent = $blocks_total == 0 ? 0 : int($blocks_used * 100 / $blocks_total);
+    my $initialPercent = $fsStates{$safeFs};
+    my $initialDate = $fsDates{$safeFs};
 
-    my $free_h = human_readable($free);
-    my $used_h = human_readable($used);
-
-    my ($sec,$min,$hour,$mday,$mon,$year) = localtime;
-    my $now = sprintf "%02d.%02d.%02d/%02d.%02d", $mday, $mon+1, ($year+1900)%100, $hour, $min;
-
-    my $initialPercent = $fsStates{$safeFs} // 0;
-    my $initialDate    = $fsDates{$safeFs} // $now;
-
-    my $updateState = 0;
-    if ($initialPercent eq "0") {
-        print "now $percent% (0%) free:$free_h used:$used_h\n";
-        print "prv:$now act:$now\n";
-        $updateState = 1;
-    } else {
-        if (!$quiet) {
-            print "now $percent% ($initialPercent%) free:$free_h used:$used_h\n";
-            print "prv:$initialDate act:$now\n";
+    # First run for this fs
+    if (!defined $initialPercent) {
+        $updatedFsStates{$safeFs} = $percent;
+        $updatedFsDates{$safeFs}  = $now;
+        if ($showAll) {
+            $outputBuffer .= "$fs: $percent% -> $percent% free:$freeH used:$usedH\n since: $now\n";
         }
-        $updateState = 0;
+        next;
     }
+
     my $diff = $percent - $initialPercent;
     my $absDiff = $diff < 0 ? -$diff : $diff;
+    my $stateChanged = $absDiff > $threshold ? 1 : 0;
 
-    if ($absDiff > $threshold) {
-        print "now $percent% ($initialPercent%) free:$free_h used:$used_h\n";
-        print "prv:$initialDate act:$now\n";
-        $updateState = 1;
+    if ($showAll || $stateChanged) {
+        $outputBuffer .= "$fs: $initialPercent% -> $percent% free:$freeH used:$usedH\n since: $initialDate\n";
     }
-    if ($updateState) {
-        $fsStates{$safeFs} = $percent;
-        $fsDates{$safeFs}  = $now;
+
+    # Only update state if threshold exceeded
+    if ($stateChanged) {
+        $updatedFsStates{$safeFs} = $percent;
+        $updatedFsDates{$safeFs}  = $now;
+        $changedCount++;
+    } else {
+        $updatedFsStates{$safeFs} = $initialPercent;
+        $updatedFsDates{$safeFs}  = $initialDate;
     }
 }
 
-save_state(@fs_args);
+if (!$quiet && $outputBuffer ne '') {
+    print "$headline\n";
+    print $outputBuffer;
+}
+
+# Save state only if not -q
+if (!$quiet) {
+    open my $sf, '>', $stateFile or die "Cannot write $stateFile: $!";
+    print $sf "savedThreshold=$threshold\n";
+    print $sf "savedCmdLine=$savedCmdLine\n";
+    for my $fs (@fsList) {
+        my $safeFs = $fs; $safeFs =~ s/[^a-zA-Z0-9]/_/g; $safeFs = "FS$safeFs";
+        my $ip = $updatedFsStates{$safeFs};
+        my $id = $updatedFsDates{$safeFs};
+        print $sf "initialPercent$safeFs=$ip|$id\n" if defined $ip && defined $id;
+    }
+    close $sf;
+}
+
+exit($changedCount);
