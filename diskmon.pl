@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use Getopt::Long;
+use Filesys::Statvfs;
 
 my $threshold = 5;
 my $quiet = 0;
@@ -92,18 +93,20 @@ if (!@fs_args) {
 for my $fs (@fs_args) {
     my $safeFs = $fs; $safeFs =~ s/[^a-zA-Z0-9_]/_/g;
     $safeFs = "FS_$safeFs";
-    my $df = `df -P '$fs' 2>/dev/null`;
-    my @lines = split /\n/, $df;
-    if (@lines < 2) {
-        print "$fs:\n ! Not found\n";
+
+    my $stat = Filesys::Statvfs::statvfs($fs);
+    if (!$stat) {
+        print "$fs:\n ! Not found or statvfs failed\n";
         next;
     }
-    my @fields = split ' ', $lines[1];
-    # df -P output: Filesystem 1K-blocks Used Available Use% Mounted_on
-    my $used    = $fields[2] // "?";
-    my $free    = $fields[3] // "?";
-    my $percent = $fields[4] // "?";
-    $percent =~ s/%$// if defined $percent;
+    my $block_size   = $stat->f_frsize || $stat->f_bsize;
+    my $blocks_total = $stat->f_blocks;
+    my $blocks_free  = $stat->f_bfree;
+    my $blocks_used  = $blocks_total - $blocks_free;
+
+    my $free    = $blocks_free  * $block_size;
+    my $used    = $blocks_used  * $block_size;
+    my $percent = $blocks_total == 0 ? 0 : int($blocks_used * 100 / $blocks_total);
 
     my ($sec,$min,$hour,$mday,$mon,$year) = localtime;
     my $now = sprintf "%02d.%02d.%02d/%02d.%02d", $mday, $mon+1, ($year+1900)%100, $hour, $min;
