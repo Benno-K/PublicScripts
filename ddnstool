@@ -272,6 +272,8 @@ ddnsupd () {
 			# if that happens retry a number of times
 			# currently this is logged for my curiosity
 			rsp=$(curl -${v} -s -u $u:$p "https://${ddns}/nic/update?hostname=$name")
+      # hope this fixes the problem(s) below
+			[ ! -n "$tries" ] && tries=0
 			#FIXME why was $tries not defined in rare cases?
 			[ ! -n "$tries" ] && loghist " failure: tries=\"$tries\" - not numeric, maxretry=$maxretry"
 			[ ! -n "$maxretry" ] && loghist " failure: maxretry=\"$maxretry\" - not numeric, tries=$tries"
