@@ -1,25 +1,25 @@
 #!/bin/bash
 
 threshold=5
+showAll=0
+quiet=0
 stateFile="$HOME/.$(basename "$0").state"
 declare -A fsStates
 declare -A fsDates
-quiet=0
 savedCmdLine=""
 savedThreshold=""
+changedCount=0
 
 showHelp() {
   cat <<EOF 1>&2
 Usage: $(basename "$0") [options] fs1 [fs2 ...]
 Options:
   -t N       Set threshold percentage (default: 5)
-  -q         Quiet mode (minimal output)
+  -a         Show all filesystems (not only changed ones)
+  -q         Quiet mode (suppresses output)
   -h, --help Show this help and exit
 
-Without arguments, runs with saved filesystems and threshold.
-Example:
-  $(basename "$0") -t 10 /home /var
-  $(basename "$0") -q
+Exit status: number of changed filesystems (0 = no change)
 EOF
   exit 0
 }
@@ -47,9 +47,10 @@ for arg in "$@"; do
   esac
 done
 
-while getopts "t:q" opt; do
+while getopts "t:aq" opt; do
   case $opt in
     t) threshold="$OPTARG" ;;
+    a) showAll=1 ;;
     q) quiet=1 ;;
     \?) echo "Bad option: -$OPTARG" >&2; exit 1 ;;
     :) echo "Option -$OPTARG needs arg." >&2; exit 1 ;;
@@ -115,15 +116,18 @@ if [ $# -eq 0 ]; then
     set -- $savedCmdLine
     [ -n "$savedThreshold" ] && threshold="$savedThreshold"
   else
-    echo "Usage: $0 [-t threshold] [-q] fs1 fs2 ..." >&2
+    echo "Usage: $0 [-t threshold] [-a] [-q] fs1 fs2 ..." >&2
     exit 1
   fi
 else
   savedCmdLine="$*"
 fi
 
-headlinePrinted=0
 headlineStr="Disk usage as of $(date +'%d.%m.%y %H:%M')"
+declare -A updatedFsStates
+declare -A updatedFsDates
+
+outputBuffer=""
 
 for fs in "$@"; do
   safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9]/_/g')
@@ -143,35 +147,61 @@ for fs in "$@"; do
 
   now=$(date +"%d.%m.%y:%H.%M")
 
-  initialPercent="${fsStates["$safeFs"]:-$percent}"
-  initialDate="${fsDates["$safeFs"]:-$now}"
+  initialPercent="${fsStates["$safeFs"]}"
+  initialDate="${fsDates["$safeFs"]}"
 
-  updateState=0
-
-  # Only print headline if not in quiet mode and output is generated
-  if [ $quiet -eq 0 ] && [ $headlinePrinted -eq 0 ]; then
-    echo "$headlineStr"
-    headlinePrinted=1
-  fi
-
-  if [ $quiet -eq 0 ]; then
-    echo "$fs: $initialPercent -> $percent% free:$freeH used:$usedH"
-    echo " since: $initialDate"
+  # If no previous state, store but don't print unless -a
+  if [ -z "$initialPercent" ]; then
+    updatedFsStates["$safeFs"]="$percent"
+    updatedFsDates["$safeFs"]="$now"
+    if [ $showAll -eq 1 ]; then
+      outputBuffer="${outputBuffer}${fs}: $percent -> $percent% free:$freeH used:$usedH
+ since: $now
+"
+    fi
+    continue
   fi
 
   diff=$((percent - initialPercent))
   absDiff=$((diff < 0 ? -diff : diff))
-
-  if [ "$initialPercent" = "$percent" ]; then
-    updateState=0
-  elif ((absDiff > threshold)); then
-    updateState=1
+  stateChanged=0
+  if ((absDiff > threshold)); then
+    stateChanged=1
+    changedCount=$((changedCount + 1))
   fi
 
-  if [ "$updateState" -eq 1 ]; then
-    fsStates["$safeFs"]="$percent"
-    fsDates["$safeFs"]="$now"
+  # Only output if -a or threshold exceeded
+  if [ $showAll -eq 1 ] || [ $stateChanged -eq 1 ]; then
+    outputBuffer="${outputBuffer}${fs}: $initialPercent -> $percent% free:$freeH used:$usedH
+ since: $initialDate
+"
+  fi
+
+  # Only update stored state if threshold exceeded
+  if [ $stateChanged -eq 1 ]; then
+    updatedFsStates["$safeFs"]="$percent"
+    updatedFsDates["$safeFs"]="$now"
+  else
+    updatedFsStates["$safeFs"]="$initialPercent"
+    updatedFsDates["$safeFs"]="$initialDate"
   fi
 done
 
-saveState "$@"
+# Print headline and output buffer if anything to show and not in quiet mode
+if [ $quiet -eq 0 ] && [ -n "$outputBuffer" ]; then
+  echo "$headlineStr"
+  printf "%s" "$outputBuffer"
+fi
+
+# Now update global fsStates/fsDates before saving, only if not -q
+if [ $quiet -eq 0 ]; then
+  for fs in "$@"; do
+    safeFs=$(echo "$fs" | sed 's/[^a-zA-Z0-9]/_/g')
+    safeFs="FS${safeFs}"
+    fsStates["$safeFs"]="${updatedFsStates["$safeFs"]}"
+    fsDates["$safeFs"]="${updatedFsDates["$safeFs"]}"
+  done
+  saveState "$@"
+fi
+
+exit $changedCount
