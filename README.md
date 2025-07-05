@@ -118,7 +118,7 @@ are: / /boot /ssd /data"
 ## fritzip, extip, extip4, extip6
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases. 
-See [fritzip](myip.md).
+See [fritzip](fritzip.md).
 
 ## friedl
 Keep a copy of all events logged on a FRITZ!Box.
