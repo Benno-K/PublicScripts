@@ -145,7 +145,7 @@ for fs in "$@"; do
   freeH=$(humanReadable "$free")
   usedH=$(humanReadable "$used")
 
-  now=$(date +"%d.%m.%y:%H.%M")
+  now=$(date +"%d.%m.%y %H:%M")
 
   initialPercent="${fsStates["$safeFs"]}"
   initialDate="${fsDates["$safeFs"]}"

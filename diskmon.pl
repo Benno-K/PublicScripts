@@ -102,7 +102,7 @@ sub getUsage {
     my $percent = $total ? int($used * 100 / $total + 0.5) : 0;
     return ($percent, $free * $bsize, $used * $bsize);
 }
-my $now = strftime("%d.%m.%y:%H.%M", localtime);
+my $now = strftime("%d.%m.%y %H:%M", localtime);
 my $headline = "Disk usage as of " . strftime("%d.%m.%y %H:%M", localtime);
 my %updatedFsStates;
 my %updatedFsDates;
