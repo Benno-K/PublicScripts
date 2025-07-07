@@ -1,9 +1,15 @@
 SHELL = /bin/bash
 TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade ddfbset homeaddr f2bsts friedl ddnstool githooks
 UTARGETS=nsimgurl shredLenovoWSg diskmon
+PTARGETS=git-web-viewer.php webgit.php
 
 LBINDIR = /usr/local/bin
 UBINDIR = ~/bin
+PBINDIR = /data/www
+PSTYDIR = $(PBINDIR)/webgit-style
+POWNER  = www-data
+PGROUP  = www-data
+PSTYLES	= dark light
 
 install: $(TARGETS) $(UTARGETS)
 	@for n in $(UTARGETS);\
@@ -39,6 +45,25 @@ copyright: $(TARGETS)
 
 asset: $(TARGETS)
 	zip asset.zip $(TARGETS)
+
+webgit:
+	@for n in $(PTARGETS);\
+	do \
+	sudo diff -q $$n $(PBINDIR)/$$n > /dev/null;\
+	if [ "$$?" != "0"	];then \
+     echo sudo installing in $(PBINDIR): $$n;\
+	   sudo install -o $(POWNER) -g $(PGROUP) -m 500 -t $(PBINDIR) $$n;\
+	fi;\
+	done;\
+	for n in $(PSTYLES);\
+	do \
+	sudo diff -q $$n-theme.css $(PSTYDIR)/$$n-theme.css > /dev/null;\
+	if [ "$$?" != "0"	];then \
+     echo sudo installing in $(PSTYDIR): style $$n;\
+	   sudo install -o $(POWNER) -g $(PGROUP) -m 500 -t $(PSTYDIR) $$n-theme.css;\
+	fi;\
+	done;\
+
 
 # Code below is from template!
 usage:

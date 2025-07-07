@@ -1,0 +1,31 @@
+:root {
+    --headline-bg: #0d1117;
+    --border-color: #21262d;
+    --btn-bg: #388bfd;
+    --btn-bg-hover: #58a6ff;
+    --popup-bg: #161b22;
+    --nav-bg: #161b22;
+    --subheadline-color: #58a6ff;
+    --body-bg: #0d1117;
+}
+body {
+    background: var(--body-bg);
+    color: #c9d1d9;
+}
+.git-red { color: #ff7b72;}
+.git-green { color: #56d364;}
+.git-yellow { color: #e3b341;}
+.git-cyan { color: #39c5cf;}
+.git-bold { font-weight: bold;}
+.git-diff {
+    background: #161b22;
+    padding: 1.1em 1.2em;
+    border-radius: 7px;
+    margin: 2em 3vw 1em 3vw;
+    font-family: 'JetBrains Mono', 'Fira Mono', 'Menlo', monospace;
+    font-size: 1.05em;
+    overflow-x: auto;
+    box-shadow: 0 0 12px #0004;
+    border: 1px solid #21262d;
+    line-height: 1.61;
+}
