@@ -3,29 +3,18 @@
     --border-color: #d0d7de;
     --btn-bg: #388bfd;
     --btn-bg-hover: #1f6feb;
+    --btn-fg: #fff;
     --popup-bg: #f6f8fa;
     --nav-bg: #eaeef2;
     --subheadline-color: #0969da;
     --body-bg: #fff;
-}
-body {
-    background: var(--body-bg);
-    color: #1a1a1a;
-}
-.git-red { color: #cf222e;}
-.git-green { color: #116329;}
-.git-yellow { color: #8a6700;}
-.git-cyan { color: #1b7c83;}
-.git-bold { font-weight: bold;}
-.git-diff {
-    background: #eaeef2;
-    padding: 1.1em 1.2em;
-    border-radius: 7px;
-    margin: 2em 3vw 1em 3vw;
-    font-family: 'JetBrains Mono', 'Fira Mono', 'Menlo', monospace;
-    font-size: 1.05em;
-    overflow-x: auto;
-    box-shadow: 0 0 12px #0002;
-    border: 1px solid #d0d7de;
-    line-height: 1.61;
+    --body-color: #1a1a1a;
+    --diff-bg: #eaeef2;
+    --git-red: #cf222e;
+    --git-green: #116329;
+    --git-yellow: #8a6700;
+    --git-cyan: #1b7c83;
+    --meta-date: #6e7781;
+    --meta-author: #116329;
+    --meta-subject: #24292f;
 }
