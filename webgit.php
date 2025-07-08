@@ -1,8 +1,8 @@
 <?php
 // Enable error display for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
 
 // ----------- CONFIGURATION -----------
 $repoRoot = '/home/pi/gitrepos'; // All git repos in this directory
@@ -11,7 +11,7 @@ $styleWebPath = '/webgit-style'; // Web-accessible path (relative to script loca
 $gitBin   = '/home/pi/gitrepos/webgit'; // Use your setuid git copy here
 
 // ----------- UTILS -----------
-function available_themes($styleDir) {
+function themesAvailable($styleDir) {
     $themes = [];
     foreach (glob($styleDir . '/*-theme.css') as $css) {
         $name = basename($css);
@@ -21,13 +21,13 @@ function available_themes($styleDir) {
     }
     return $themes;
 }
-function get_theme() {
+function getTheme() {
     if (!empty($_COOKIE['theme']) && preg_match('/^[a-zA-Z0-9_-]+$/', $_COOKIE['theme'])) {
         return $_COOKIE['theme'];
     }
     return 'dark'; // Default
 }
-function set_theme_header($themes, $theme, $styleWebPath) {
+function setThemeHeader($themes, $theme, $styleWebPath) {
     if (isset($themes[$theme])) {
         echo '<link rel="stylesheet" href="' . $styleWebPath . '/' . htmlspecialchars($themes[$theme]) . '" id="themecss">';
     } else {
@@ -37,13 +37,13 @@ function set_theme_header($themes, $theme, $styleWebPath) {
         }
     }
 }
-function sanitize_repo($repo) {
+function sanitizeRepo($repo) {
     return preg_replace('/[^\w.-]/', '', $repo);
 }
-function repo_exists($repoRoot, $repo) {
+function repoExists($repoRoot, $repo) {
     return is_dir("$repoRoot/$repo/.git");
 }
-function ansi_to_html($ansi) {
+function ansi2html($ansi) {
     $ansi = htmlspecialchars($ansi);
     $map = [
         "\033[1;31m" => '<span class="git-red">',
@@ -73,14 +73,10 @@ function ansi_to_html($ansi) {
 }
 
 // ----------- ROUTING LOGIC -----------
-$repo = isset($_GET['repo']) ? sanitize_repo($_GET['repo']) : null;
+$repo = isset($_GET['repo']) ? sanitizeRepo($_GET['repo']) : null;
 $commit = isset($_GET['commit']) ? preg_replace('/[^0-9a-f]/i', '', $_GET['commit']) : null;
-$themes = available_themes($styleDir);
-$theme = get_theme();
-// Debug: dump cookie and theme selection
-error_log("COOKIE: " . print_r($_COOKIE, true));
-error_log("THEME: " . $theme);
-error_log("THEMES ARRAY: " . print_r($themes, true));
+$themes = themesAvailable($styleDir);
+$theme = getTheme();
 
 if (!$repo) {
     $level = 1;
@@ -97,11 +93,11 @@ if ($level == 1) {
     // List all repos
     $repos = [];
     foreach (scandir($repoRoot) as $r) {
-        if ($r[0] == '.' || !repo_exists($repoRoot, $r)) continue;
+        if ($r[0] == '.' || !repoExists($repoRoot, $r)) continue;
         $repos[] = $r;
     }
     sort($repos, SORT_NATURAL | SORT_FLAG_CASE);
-} elseif ($level == 2 && repo_exists($repoRoot, $repo)) {
+} elseif ($level == 2 && repoExists($repoRoot, $repo)) {
     // Get commit list
     $cmd = sprintf('%s -C %s log --pretty=format:"%%h|%%ad|%%an|%%s" --date=short --no-color 2>&1',
         escapeshellarg($gitBin), escapeshellarg("$repoRoot/$repo"));
@@ -115,7 +111,7 @@ if ($level == 1) {
             }
         }
     }
-} elseif ($level == 3 && repo_exists($repoRoot, $repo)) {
+} elseif ($level == 3 && repoExists($repoRoot, $repo)) {
     // Get commit diff and message
     $cmd = sprintf('%s -C %s show --color=always %s 2>&1',
         escapeshellarg($gitBin), escapeshellarg("$repoRoot/$repo"), escapeshellarg($commit));
@@ -142,7 +138,7 @@ if ($level == 1) {
 
 // ----------- ERROR HANDLING -----------
 $notfound = false;
-if (($level == 2 || $level == 3) && !repo_exists($repoRoot, $repo)) {
+if (($level == 2 || $level == 3) && !repoExists($repoRoot, $repo)) {
     $notfound = true;
 } elseif ($level == 3 && empty($diff)) {
     $notfound = true;
@@ -157,7 +153,7 @@ if (($level == 2 || $level == 3) && !repo_exists($repoRoot, $repo)) {
         if ($level==2 && $repo) echo ': '.htmlspecialchars($repo);
         if ($level==3 && $repo && $commit) echo ': '.htmlspecialchars($repo).' '.htmlspecialchars($commit);
     ?></title>
-    <?php set_theme_header($themes, $theme, $styleWebPath); ?>
+    <?php setThemeHeader($themes, $theme, $styleWebPath); ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
     /* Only structure/neutral layout styles here. All colors in theme files */
@@ -360,7 +356,7 @@ elseif ($level == 3 && !$notfound): ?>
             <div style="margin-bottom:2em;">
                 <span style="font-size:1.16em; color:var(--subheadline-color); font-weight:600;"><?=htmlspecialchars($repo)?> / <span style="font-family:monospace;"><?=htmlspecialchars($commit)?></span></span>
             </div>
-            <div class="git-diff"><?=ansi_to_html($diff)?></div>
+            <div class="git-diff"><?=ansi2html($diff)?></div>
         </div>
     </div>
 <?php
