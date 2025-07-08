@@ -1,20 +1,30 @@
 :root {
-    --headline-bg: #f6f8fa;
-    --border-color: #d0d7de;
-    --btn-bg: #388bfd;
-    --btn-bg-hover: #1f6feb;
-    --btn-fg: #fff;
-    --popup-bg: #f6f8fa;
-    --nav-bg: #eaeef2;
-    --subheadline-color: #0969da;
-    --body-bg: #fff;
-    --body-color: #1a1a1a;
-    --diff-bg: #eaeef2;
-    --git-red: #cf222e;
-    --git-green: #116329;
-    --git-yellow: #8a6700;
-    --git-cyan: #1b7c83;
-    --meta-date: #6e7781;
-    --meta-author: #116329;
-    --meta-subject: #24292f;
+  --body-bg: #fff;
+  --body-color: #222;
+  --btn-bg: #f5f5f5;
+  --btn-bg-hover: #e0e0e0;
+  --btn-fg: #222;
+  --popup-bg: #fafbfc;
+  --border-color: #d1d5da;
+  --headline-bg: #f7f7f7;
+  --subheadline-color: #888;
+  --nav-bg: #f7f7f7;
+  --diff-bg: #fbfbfb;
+  --git-red: #be1e1e;
+  --git-green: #18741a;
+  --git-yellow: #b68c00;
+  --git-cyan: #1687a7;
+  --git-bold: #111;
+  --meta-date: #666;
+  --meta-author: #3b2d64;
+  --meta-subject: #222;
+}
+
+/* Ensure theme selector button and popup items are always readable */
+.theme-switcher,
+.theme-popup .theme-item {
+  color: var(--btn-fg) !important;
+}
+.theme-popup .theme-item.selected {
+  color: var(--btn-bg-hover) !important;
 }
