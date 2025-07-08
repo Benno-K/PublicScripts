@@ -61,13 +61,12 @@ function ansi2html($ansi) {
     $ansi = preg_replace_callback('/(\033\[[0-9;]*m)/', function($m) use ($map) {
         return $map[$m[1]] ?? '';
     }, $ansi);
-    #$ansi .= str_repeat('</span>', substr_count($ansi, '<span') - substr_count($ansi, '</span>'));
 
-		$open = substr_count($ansi, '<span');
-		$close = substr_count($ansi, '</span>');
-		if ($open > $close) {
-			    $ansi .= str_repeat('</span>', $open - $close);
-		}
+    $open = substr_count($ansi, '<span');
+    $close = substr_count($ansi, '</span>');
+    if ($open > $close) {
+        $ansi .= str_repeat('</span>', $open - $close);
+    }
 
     return nl2br($ansi);
 }
@@ -217,6 +216,19 @@ if (($level == 2 || $level == 3) && !repoExists($repoRoot, $repo)) {
         .nav-content-layout { flex-direction: column; }
         .nav-pane, .main-pane { max-width: 100vw; border: none; padding-left: 1em;}
     }
+    /* Level 3: Hide nav-pane on small screens to avoid scrolling to diff */
+    @media (max-width: 900px) {
+      body.level-3 .nav-pane {
+        display: none;
+      }
+      body.level-3 .main-pane {
+        max-width: 100vw;
+        padding-left: 1em;
+      }
+      body.level-3 .nav-content-layout {
+        flex-direction: column;
+      }
+    }
     body {
         background: var(--body-bg);
         color: var(--body-color);
@@ -240,7 +252,7 @@ if (($level == 2 || $level == 3) && !repoExists($repoRoot, $repo)) {
     .git-bold { font-weight: bold;}
     </style>
 </head>
-<body>
+<body class="level-<?=$level?>">
 <div id="headline-row">
     <div class="hl-left">
         <?php if ($level==2): ?>
@@ -339,7 +351,7 @@ elseif ($level == 2 && !$notfound): ?>
 elseif ($level == 3 && !$notfound): ?>
     <div class="nav-content-layout">
         <div class="nav-pane">
-            <div style="font-size:1.2em; font-weight:600; color:var(--subheadline-color); margin-bottom:1em;">
+            <div style="font-size:1.2em; font-weight:600; color:var(--subheadline-color); margin-bottom:1em;"
                 <?=htmlspecialchars($repo)?>
             </div>
             <ul style="list-style:none; padding:0;">

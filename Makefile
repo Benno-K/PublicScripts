@@ -9,7 +9,7 @@ PBINDIR = /data/www
 PSTYDIR = $(PBINDIR)/webgit-style
 POWNER  = www-data
 PGROUP  = www-data
-PSTYLES	= dark light
+PSTYLES	= dark-theme light-theme webgit-layout
 
 install: $(TARGETS) $(UTARGETS)
 	@for n in $(UTARGETS);\
@@ -57,13 +57,19 @@ webgit:
 	done;\
 	for n in $(PSTYLES);\
 	do \
-	sudo diff -q $$n-theme.css $(PSTYDIR)/$$n-theme.css > /dev/null;\
+	sudo diff -q $$n.css $(PSTYDIR)/$$n.css > /dev/null;\
 	if [ "$$?" != "0"	];then \
-     echo sudo installing in $(PSTYDIR): style $$n;\
-	   sudo install -o $(POWNER) -g $(PGROUP) -m 500 -t $(PSTYDIR) $$n-theme.css;\
+     echo sudo installing in $(PSTYDIR): $$n.css;\
+	   sudo install -o $(POWNER) -g $(PGROUP) -m 400 -t $(PSTYDIR) $$n.css;\
 	fi;\
 	done;\
 
+webgitlayout: webgit-layout.css
+	@sudo diff -q webgit-layout.css $(PSTYDIR)/webgit-layout.css > /dev/null; \
+	if [ "$$?" != "0"	];then \
+    echo sudo installing in $(PSTYDIR)/webgit-style: style webgit-layout.css;\
+		sudo install -o $(POWNER) -g $(PGROUP) -m 400 -t $(PBINDIR)/webgit-style  webgit-layout.css; \
+	fi;\
 
 # Code below is from template!
 usage:
