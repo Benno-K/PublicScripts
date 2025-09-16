@@ -1,28 +1,228 @@
-#!/bin/bash
-export LANGUAGE="C"
+#!/usr/bin/bash
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+#
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
 
-# Example of use:
-# cat /etc/postfix/main.cf|./htmlwrap |mutt -s Test -H - pi
+# ------------------------------
+# Function: wrapTextHtml
+#   See DETAILED EXAMPLE how to use at end of this file
+# Description:
+#   Wraps a plain text file into a mobile-friendly
+#   HTML5 page with optional pre/post HTML snippets.
+#   Headline is used as an H1, fonts are loaded
+#   from Bunny Fonts (Anaheim for headline, M PLUS 1 Code for text)
+# Arguments:
+#   --plain FILE   : required, path to plain text file
+#   --pre FILE     : optional, HTML to include before the text
+#   --post FILE    : optional, HTML to include after the text
+#   --out FILE     : optional, write output to file, otherwise stdout
+#   "Headline Text": required, the H1 headline
+# ------------------------------
+wrapTextHtml() {
 
-cat<<EOI
-Content-Type: text/html ; encoding="UTF-8"
+  # ------------------------------
+  # Helper function: showHelp
+  # Prints usage instructions
+  # ------------------------------
+  showHelp() {
+    cat <<EOF
+Usage: wrapTextHtml [options] "Headline Text"
 
-<!DOCTYPE PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” “https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd”>
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-	    <title></title>
-  </head>
-  <body>
-	<body>
-		<pre>
-			<code>
-$(cat)
-			</code>
-		</pre>
-	</body>
+Options:
+  --plain FILE   Plain text file to wrap (required)
+  --pre FILE     HTML snippet to include before plain text
+  --post FILE    HTML snippet to include after plain text
+  --out FILE     Write output to file (otherwise writes to stdout)
+  -h, --help     Show this help message
+
+Example:
+  wrapTextHtml --plain notes.txt --pre header.html --post footer.html --out output.html "My Notes"
+EOF
+  }
+
+  # ------------------------------
+  # Default variable values
+  # ------------------------------
+  local preFile=""     # optional HTML before main text
+  local postFile=""    # optional HTML after main text
+  local plainFile=""   # required plain text file
+  local headline=""    # required H1 headline
+  local outFile=""     # optional output file
+
+  # ------------------------------
+  # Parse command-line arguments
+  # ------------------------------
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --plain)
+        plainFile="$2"
+        shift 2
+        ;;
+      --pre)
+        preFile="$2"
+        shift 2
+        ;;
+      --post)
+        postFile="$2"
+        shift 2
+        ;;
+      --out)
+        outFile="$2"
+        shift 2
+        ;;
+      -h|--help)
+        showHelp
+        return 0
+        ;;
+      *)
+        # First non-option argument is treated as headline
+        if [[ -z "$headline" ]]; then
+          headline="$1"
+          shift
+        else
+          echo "Unknown argument: $1"
+          return 1
+        fi
+        ;;
+    esac
+  done
+
+  # ------------------------------
+  # Check required arguments
+  # ------------------------------
+  if [[ -z "$plainFile" || -z "$headline" ]]; then
+    echo "Error: --plain FILE and headline are required."
+    echo
+    showHelp
+    return 1
+  fi
+
+  # ------------------------------
+  # Redirect output if --out specified
+  # ------------------------------
+  if [[ -n "$outFile" ]]; then
+    exec >"$outFile"
+  fi
+
+  # ------------------------------
+  # Start HTML output
+  # ------------------------------
+  cat <<EOF
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>$headline</title>
+  <!-- Bunny Fonts -->
+  <link href="https://fonts.bunny.net/css?family=anaheim:400&display=swap" rel="stylesheet">
+  <link href="https://fonts.bunny.net/css?family=m-plus-1-code:400&display=swap" rel="stylesheet">
+  <style>
+    /* General page styling */
+    body {
+      margin: 0;
+      padding: 1em;
+      background-color: #f9f9f9;
+      color: #222;
+    }
+    /* Headline styling */
+    h1 {
+      font-family: 'Anaheim', sans-serif;
+      font-size: 1.6em;
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    /* Main text styling */
+    pre {
+      font-family: 'M PLUS 1 Code', monospace;
+      font-size: 1em;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    /* Container for centered content */
+    .textContainer {
+      max-width: 800px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>$headline</h1>
+  <div class="textConainer">
+EOF
+
+  # ------------------------------
+  # Insert pre-file HTML if provided
+  # ------------------------------
+  if [[ -n "$preFile" ]]; then
+    cat "$preFile"
+  fi
+
+  # ------------------------------
+  # Insert main plain text
+  # ------------------------------
+  echo "    <pre>"
+  cat "$plainFile"
+  echo "    </pre>"
+
+  # ------------------------------
+  # Insert post-file HTML if provided
+  # ------------------------------
+  if [[ -n "$postFile" ]]; then
+    cat "$postFile"
+  fi
+
+  # ------------------------------
+  # Close HTML tags
+  # ------------------------------
+  cat <<EOF
+  </div>
+</body>
 </html>
-EOI
+EOF
+}
 
-exit
+# ------------------------------
+# Invoke function if script receives arguments
+# ------------------------------
+# Only auto-run if script is executed, not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  wrapTextHtml "$@"
+fi
+
+# ------------------------------
+# Example: send HTML email using wrapTextHtml
+# ------------------------------
+# This shows how to send the generated HTML as an email
+# with proper Content-Type so the recipient sees it rendered
+# in HTML, not plain text.
+#
+# Usage: uncomment and adjust the email address and files
+# wrapTextHtml --plain notes.txt --pre header.html --post footer.html "My Notes" | \
+# (
+#   # Source the function
+#   . /usr/local/bibn/htmlwrap
+#   # Set the email subject
+#   echo "Subject: My HTML Email"
+#   # Required MIME version
+#   echo "MIME-Version: 1.0"
+#   # Content-Type header tells the mail client to render HTML
+#   echo "Content-Type: text/html; charset=UTF-8"
+#   # Empty line separates headers from body
+#   echo
+#   # Pipe in the HTML generated by wrapTextHtml
+#   cat
+# ) | sendmail username@example.com
+#
+# Notes:
+# - You can also use 'mailx' with the -a option for headers:
+#   wrapTextHtml ... | mailx -s "My HTML Email" -a "Content-Type: text/html; charset=UTF-8" username@example.com
+# - For Gmail or modern email clients, inline styles and external fonts may be limited.
+# - This approach works with any command-line HTML generator, not just wrapTextHtml.

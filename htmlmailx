@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# exit on error, undefd vars and when any cmd in a
+# pipeline fails	
+set -euo pipefail
+#
+# htmlmailx – drop-in replacement for mailx
+# Converts plain text mail body into HTML using wrapTextHtml
+#
+
+# Load wrapTextHtml function
+. $(dirname "$0")/htmlwrap
+
+subject=""
+recipients=()
+attachments=()
+declare -a mailxArgs=()
+
+# --- Parse mailx arguments we care about ---
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -s)
+      subject="$2"
+      shift 2
+      ;;
+    -a)
+      attachments+=("$1" "$2")  # preserve attachments/headers
+      shift 2
+      ;;
+    *)
+      recipients+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# --- Generate HTML directly from stdin via wrapTextHtml ---
+wrapTextHtml --plain /dev/stdin "${subject:-Message}" | \
+  mailx -s "${subject:-Message}" -a "Content-Type: text/html; charset=UTF-8" \
+        "${attachments[@]}" "${recipients[@]}"

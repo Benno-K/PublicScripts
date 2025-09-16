@@ -1,17 +1,79 @@
 #!/bin/bash
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+# ------------------------------
+# Script: Automated APT upgrade and notifier
+# Description:
+#   Performs 'apt upgrade', logs changes, and sends
+#   an HTML-formatted email if packages were upgraded.
+#   Uses the wrapTextHtml function sourced from htmlwrap
+# ------------------------------
+
+# ------------------------------
+# Set recipient email
+# If an argument is provided, use it; otherwise default to 'root'
+# ------------------------------
 mailto=${1:-root}
 
-cmp='
-WARNING: apt does not have a stable CLI interface. Use with caution in scripts.
+# ------------------------------
+# Source the wrapTextHtml function from htmlwrap
+# Assumes htmlwrap is in the same directory as this script
+# ------------------------------
+. $(dirname $0)/htmlwrap
 
-Paketlisten werden gelesen…
-Abhängigkeitsbaum wird aufgebaut…
-Statusinformationen werden eingelesen…
-Paketaktualisierung (Upgrade) wird berechnet…
-0 aktualisiert, 0 neu installiert, 0 zu entfernen und 0 nicht aktualisiert.'
+# ------------------------------
+# Warning string to ignore in apt output
+# Some versions of apt print this warning that we want to suppress
+# ------------------------------
+aptwarn="WARNING: apt does not have a stable CLI interface"
 
+# ------------------------------
+# Create a temporary log file for apt upgrade output
+# mktemp ensures a unique temporary filename
+# ------------------------------
 log=$(mktemp /tmp/upglog-XXXXXXXX.tmp)
-sudo apt upgrade -y >$log 2>&1
-echo "$cmp" | diff -q - $log 2>&1 >/dev/null || grep -v stable $log|mail -s "Package upgrade took place - see log below ($0)" $mailto
-rm -f $log
-exit
+
+# ------------------------------
+# Run apt upgrade non-interactively, suppressing the warning
+# Redirect both stdout and stderr to grep to filter out the warning
+# Save the resulting output into the temporary log file
+# ------------------------------
+sudo apt upgrade -y 2>&1 | grep -v "$aptwarn" >"$log"
+
+# ------------------------------
+# Extract package change counts from the log
+# Example line: "Aktualisiert: 3 Installiert: 1 Entfernt: 0 ..."
+# awk picks the 2nd, 4th, 6th, and 9th fields (numbers)
+# ------------------------------
+counts=$(awk '/Aktu.*:/{print $2,$4,$6,$9}' "$log")
+
+# ------------------------------
+# Only send an email if there were changes
+# Here we check if counts are different from all zeros
+# ------------------------------
+if [ "$counts" != "0, 0, 0, 0" ]; then
+    # ------------------------------
+    # Wrap the log in HTML using wrapTextHtml
+    # --plain $log       : the main log content
+    # --pre -            : the pre-HTML content (provided via heredoc)
+    # "APT upgrade"      : headline for the HTML page
+    # The heredoc (EOI) contains the pre-message to appear above the log
+    # Pipe output directly to mailx with HTML Content-Type
+    # ------------------------------
+    wrapTextHtml --plain "$log" --pre - "APT upgrade" <<EOI | \
+    mailx -s "APT upgrade" -a "Content-Type: text/html; charset=UTF-8" "$mailto"
+An automated "apt upgrade" has been done. See the changes made to your system below.
+EOI
+fi
+
+# ------------------------------
+# Clean up temporary log file
+# ------------------------------
+rm -f "$log"
