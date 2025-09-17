@@ -1,0 +1,201 @@
+#!/usr/bin/env perl
+# Script created by ChatGPT, designed by "the author"
+# Purpose: Check Perl scripts in $PATH, detect missing modules, suggest apt packages, and list CPAN-only modules
+# Features:
+#   - Recursive dependency checking
+#   - Version-aware using version->parse
+#   - Verbose mode (-v) showing each module checked
+#   - Statistics mode (-s #) showing processed modules every # items with elapsed time
+#   - Outputs a single apt install line for missing Debian-packaged modules
+#   - Writes CPAN-only missing modules to a file
+#   - Optional CPAN output file name via -o
+#   - Help info via -h or --help
+#   - Summary report at end: scripts, top-level modules, recursive modules
+#   - Hidden -X # option to stop after # modules (for testing)
+#   - Tracks and reports total runtime
+
+use strict;
+use warnings;
+use File::Spec;
+use Getopt::Long;
+use version;
+
+# Start time
+my $startTime = time();
+
+# Command-line options
+my $verbose = 0;
+my $statInterval = 0;
+my $cpanFile = "cpanMissingModules.txt";
+my $help = 0;
+my $maxModules = 0;   # hidden -X option
+
+GetOptions(
+    'v'        => \$verbose,
+    's=i'      => \$statInterval,
+    'o=s'      => \$cpanFile,
+    'X=i'      => \$maxModules,  # hidden
+    'h|help'   => \$help,
+) or die "Error in command line arguments\n";
+
+# Show help and exit
+if ($help) {
+    print <<"USAGE";
+Usage: $0 [options]
+Options:
+  -v          Verbose mode, show each module checked
+  -s <num>    Statistics mode, print progress every <num> modules with elapsed time
+  -o <file>   Output file for CPAN-only modules (default: $cpanFile)
+  -h, --help  Show this help message and exit
+USAGE
+    exit 0;
+}
+
+my %checkedModules;
+my %aptMissing;
+my %cpanCandidates;
+my $processedCount = 0;
+my %scriptsScanned;
+my %topModules;
+
+# Convert Module::Name -> Debian package name
+sub moduleToPkg {
+    my ($modName) = @_;
+    my $pkg = lc $modName;
+    $pkg =~ s!::!-!g;
+    return "lib$pkg-perl";
+}
+
+# Check if a Debian package exists
+sub pkgExists {
+    my ($pkg) = @_;
+    my $out = `apt-cache search ^$pkg\$ 2>/dev/null`;
+    return $out =~ /^$pkg\s/ ? 1 : 0;
+}
+
+# Recursively check a module and its dependencies
+sub checkModule {
+    my ($modName, $requiredVersion) = @_;
+    return if $checkedModules{$modName}++;
+
+    # Stop if maxModules limit is reached
+    if ($maxModules && $processedCount >= $maxModules) {
+        exitSummary();
+        exit 0;
+    }
+
+    $processedCount++;
+    print "Checking $modName\n" if $verbose;
+
+    if ($statInterval && $processedCount % $statInterval == 0) {
+        my $elapsed = time() - $startTime;
+        printf "Processed %d modules in %.1f seconds\n", $processedCount, $elapsed;
+    }
+
+    my $ok = eval "require $modName";
+    my $installedVersion = eval { version->parse($modName->VERSION) } || version->parse('0');
+    my $requiredVer = defined $requiredVersion ? version->parse($requiredVersion) : version->parse('0');
+
+    if (!$ok || $installedVersion < $requiredVer) {
+        my $pkg = moduleToPkg($modName);
+        if (pkgExists($pkg)) {
+            $aptMissing{$modName} = $pkg;
+        } else {
+            $cpanCandidates{$modName} = 1;
+        }
+        return;
+    }
+
+    # Module loaded successfully; check dependencies
+    my $modPath = $modName;
+    $modPath =~ s|::|/|g;
+    $modPath .= ".pm";
+
+    foreach my $inc (@INC) {
+        my $file = "$inc/$modPath";
+        next unless -f $file;
+        open my $fh, '<', $file or next;
+        while (<$fh>) {
+            if (/^\s*use\s+([\w:]+)\s*([\d._]+)?/) {
+                my $m = $1;
+                my $v = $2;
+                checkModule($m, $v) if $m;
+            } elsif (/^\s*require\s+['"]?([\w:]+)['"]?/) {
+                checkModule($1) if $1;
+            }
+        }
+        close $fh;
+        last;
+    }
+}
+
+# Collect Perl scripts from $PATH
+my @pathDirs = split /:/, $ENV{PATH};
+
+for my $dir (@pathDirs) {
+    next unless -d $dir;
+    opendir(my $dh, $dir) or next;
+    while (my $f = readdir($dh)) {
+        my $full = File::Spec->catfile($dir, $f);
+        next unless -f $full && -x $full;
+        open my $fh, '<', $full or next;
+        my $first = <$fh>;
+        close $fh;
+        next unless defined $first && $first =~ m{^#!.*\bperl};
+        $scriptsScanned{$full} = 1;  # track scripts scanned
+        open my $fh2, '<', $full or next;
+        while (<$fh2>) {
+            if (/^\s*use\s+([\w:]+)\s*([\d._]+)?/) {
+                my $mod = $1;
+                my $ver = $2;
+                $topModules{$mod} = $ver // 0;
+            } elsif (/^\s*require\s+['"]?([\w:]+)['"]?/) {
+                $topModules{$1} = 0 if $1;
+            }
+        }
+        close $fh2;
+    }
+    closedir($dh);
+}
+
+# Recursively check all top-level modules
+for my $mod (sort keys %topModules) {
+    checkModule($mod, $topModules{$mod});
+}
+
+# Reporting
+print "\nAPT-installable missing modules:\n";
+if (%aptMissing) {
+    my $pkgLine = join(" ", sort values %aptMissing);
+    print "  sudo apt install $pkgLine\n";
+} else {
+    print "  None\n";
+}
+
+print "\nCPAN-only missing modules written to $cpanFile\n";
+if (%cpanCandidates) {
+    open my $fh, '>', $cpanFile or die "Cannot write $cpanFile: $!";
+    for my $mod (sort keys %cpanCandidates) {
+        print $fh "$mod\n";
+    }
+    close $fh;
+} else {
+    open my $fh, '>', $cpanFile or die "Cannot write $cpanFile: $!";
+    close $fh;
+}
+
+# Summary
+sub exitSummary {
+    my $totalTime = time() - $startTime;
+    print "\n===== Summary =====\n";
+    print "Total Perl scripts scanned (from PATH): ", scalar keys %scriptsScanned, "\n";
+    print "Total top-level modules referenced by scripts: ", scalar keys %topModules, "\n";
+    print "Total modules checked recursively: $processedCount\n";
+    print "APT-installable missing modules: ", scalar keys %aptMissing, "\n";
+    print "CPAN-only missing modules: ", scalar keys %cpanCandidates, "\n";
+    printf "Total runtime: %.1f seconds\n", $totalTime;
+    print "===================\n";
+}
+
+# Print summary at end
+exitSummary();

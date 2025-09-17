@@ -225,6 +225,24 @@ in the rare cause of a malfunctioning screenify. Otherwise you might lock out yo
 if  [ ! -r ~/noscreenify ] && [ ! -r /etc/noscreenify ]; then  /usr/local/bin/screenify;[ $? > 9 ] && exit 0
 fi
 ```
+
+## pmcheck - perl module check
+
+Script created by ChatGPT, designed by 
+Purpose: Check Perl scripts in $PATH, detect missing modules, suggest apt packages, and list CPAN-only modules
+Features:
+  - Recursive dependency checking
+  - Version-aware using version->parse
+  - Verbose mode (-v) showing each module checked
+  - Statistics mode (-s #) showing processed modules every # items
+  - Outputs a single apt install line for missing Debian-packaged modules
+  - Writes CPAN-only missing modules to a file
+  - Optional CPAN output file name via -o
+  - Help info via -h or --help
+  - Summary report at end
+  - Hidden -X # option to stop after # modules (for testing)
+
+
 ## shredLenovoWSg
 Perl script to shred specific unwanted mails in
 my IMAP INBOX. (I subscribed getting some 
