@@ -1,248 +1,157 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use File::Which;
 use File::Find;
+use Module::Metadata;
+use version;
 use Getopt::Long;
 use Time::HiRes qw(time);
-use Module::Metadata;
-use Module::CoreList;
 
-# -----------------------------------------------------------
-# pmcheck - Perl Module Checker
-# Created by ChatGPT, designed by the author
-#
-# Purpose:
-#   Check Perl scripts in $PATH, detect missing modules,
-#   suggest apt packages, and list CPAN-only modules.
+# ------------------------------------------------------------
+# Script created by ChatGPT, designed by the author
+# Purpose: Check Perl scripts in $PATH, detect missing modules,
+#          suggest apt packages, and list CPAN-only modules.
 #
 # Features:
 #   - Recursive dependency checking
+#   - Version-aware using version->parse
 #   - Verbose mode (-v) showing each module checked
-#   - Statistics mode (-s #) showing progress every # modules
-#   - Outputs a single "apt install ..." line for missing Debian-packaged modules
-#   - Writes CPAN-only missing modules to a file (cpan-missing.txt)
-#   - Explain mode (--explain) shows which scripts require which missing modules
-#     and counts of missing modules per script
+#   - Statistics mode (-s #) showing processed modules every # items
+#   - Outputs a single apt install line for missing Debian-packaged modules
+#   - Writes CPAN-only missing modules to a file
+#   - Optional CPAN output file name via -o
 #   - Help info via -h or --help
 #   - Summary report at end: scripts, top-level modules, recursive modules
 #   - Hidden -X # option to stop after # modules (for testing)
 #   - Tracks and reports total runtime
-# -----------------------------------------------------------
+# ------------------------------------------------------------
 
-my $verbose       = 0;
-my $statInterval  = 0;
-my $maxModules    = 0;
-my $help          = 0;
-my $explain       = 0;
+my $verbose      = 0;
+my $statEvery    = 0;
+my $stopAfter    = 0;    # hidden -X
+my $cpanFile     = "missing_from_cpan.txt";
+my $help         = 0;
 
 GetOptions(
     "v"        => \$verbose,
-    "s=i"      => \$statInterval,
-    "X=i"      => \$maxModules,
+    "s=i"      => \$statEvery,
+    "X=i"      => \$stopAfter,
+    "o=s"      => \$cpanFile,
     "h|help"   => \$help,
-    "explain"  => \$explain,
-) or die "Error parsing options\n";
+) or die "Invalid options. Try --help\n";
 
 if ($help) {
     print <<"USAGE";
-Usage: pmcheck [options]
+Usage: $0 [options]
 
 Options:
-  -v              Verbose output (print each module as it is checked)
-  -s <N>          Show statistics every N modules
-  --explain       Show which scripts require which missing modules
+  -v              Verbose: show each module checked
+  -s N            Show statistics every N modules
+  -o FILE         Write CPAN-only missing modules to FILE (default: missing_from_cpan.txt)
   -h, --help      Show this help message
-
-Debug/testing:
-  -X <N>          Stop after checking N modules (for faster testing)
+  -X N            (hidden) Stop after N modules (for testing)
 USAGE
     exit;
 }
 
 my $startTime = time();
 
-# -----------------------------------------------------------
-# Hashes to track modules and usage
-# -----------------------------------------------------------
-my %checkedModules;
-my %missingModules;
-my %moduleUsage;       # module -> [ scripts that required it ]
-my %aptPackages;
-my %scriptsSeen;
+my %seenModules;
+my %missingApt;
+my %missingCpan;
+my %scriptModules;
 
-# -----------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------
-sub normalizeModuleName {
-    my ($name) = @_;
-    return undef unless defined $name;
-
-    $name =~ s/^\s+|\s+$//g;
-    $name =~ s/['"]//g;
-
-    return undef if $name =~ /^(main|MM|MY|v5|U64|inc::latest)$/;
-    return undef if $name =~ /^[a-z]+$/;
-
-    $name =~ s/^(.*?::.*?)(::.*)?$/$1/;
-    return $name;
-}
-
-sub isCoreModule {
-    my ($module) = @_;
-    return exists $Module::CoreList::version{$module};
-}
-
-sub moduleToApt {
-    my ($module) = @_;
-    my $pkg = lc($module);
-    $pkg =~ s/::/-/g;
-    return "lib$pkg-perl";
-}
-
-sub checkModule {
-    my ($module, $originScript, $processedCount) = @_;
-    return if $checkedModules{$module}++;
-
-    $moduleUsage{$module} ||= [];
-    push @{$moduleUsage{$module}}, $originScript if $originScript;
-
-    print "Checking module: $module\n" if $verbose;
-
-    $module =~ s/^\s+|\s+$//g;
-    $module =~ s/['"]//g;
-
-    return if isCoreModule($module);
-
-    eval {
-        local $^W = 0;
-        require $module;
-    };
-
-    if ($@) {
-        $missingModules{$module} = 1;
-        $aptPackages{ moduleToApt($module) } = 1;
-    }
-
-    if ($statInterval && $processedCount % $statInterval == 0) {
-        my $elapsed = time() - $startTime;
-        printf "Processed %d modules in %.1f seconds\n", $processedCount, $elapsed;
-    }
-}
-
-# -----------------------------------------------------------
-# Find Perl scripts in PATH
-# -----------------------------------------------------------
-my @pathDirs = split /:/, $ENV{PATH};
-my @perlScripts;
-
-for my $dir (@pathDirs) {
+# --- Find all scripts in PATH that are Perl ---
+my @scripts;
+for my $dir (split /:/, $ENV{PATH}) {
     next unless -d $dir;
     find(
         sub {
             return unless -f $_ && -x _;
-            open my $fh, '<', $_ or return;
+            open my $fh, "<", $_ or return;
             my $first = <$fh>;
             close $fh;
-            push @perlScripts, $File::Find::name
-              if defined $first && $first =~ m{^#!.*perl};
+            if ($first && $first =~ m{^#!.*perl}) {
+                push @scripts, $File::Find::name;
+            }
         },
         $dir
     );
 }
 
-# -----------------------------------------------------------
-# Scan scripts for "use" and "require"
-# -----------------------------------------------------------
-my @allModules;
-for my $script (@perlScripts) {
-    $scriptsSeen{$script} = 1;
-    open my $fh, '<', $script or next;
+# --- Parse scripts for use/require ---
+my @topModules;
+for my $script (@scripts) {
+    open my $fh, "<", $script or next;
     while (<$fh>) {
-        if (/^\s*use\s+([\w:]+)/ || /^\s*require\s+([\w:']+)/) {
-            my $mod = $1;
-            $mod =~ s/['"]//g;
-            push @allModules, [$mod, $script];
+        if (/^\s*use\s+([\w:]+)/ || /^\s*require\s+([\w:]+)\s*;/) {
+            push @topModules, $1;
+            $scriptModules{$script}{$1} = 1;
         }
     }
     close $fh;
 }
 
-# -----------------------------------------------------------
-# Process modules
-# -----------------------------------------------------------
-my $processed = 0;
-for my $pair (@allModules) {
-    my ($mod, $src) = @$pair;
-    checkModule($mod, $src, ++$processed);
-    last if $maxModules && $processed >= $maxModules;
+# --- Recursive module check ---
+sub checkModule {
+    my ($module) = @_;
+    return if $seenModules{$module}++;
+    print "Checking $module\n" if $verbose;
+
+    my $meta = Module::Metadata->new_from_module($module);
+    unless ($meta) {
+        # Try to map to apt
+        (my $pkg = lc($module)) =~ s{::}{-}g;
+        $pkg = "lib$pkg-perl";
+        if (system("apt-cache show $pkg > /dev/null 2>&1") == 0) {
+            $missingApt{$pkg} = 1;
+        } else {
+            $missingCpan{$module} = 1;
+        }
+        return;
+    }
+
+    for my $used ($meta->packages_inside) {
+        next if $used eq $module;
+        checkModule($used);
+    }
+
+    if ($statEvery && (keys %seenModules) % $statEvery == 0) {
+        printf "Processed %d modules in %.1f seconds\n",
+            scalar(keys %seenModules), time() - $startTime;
+    }
+
+    if ($stopAfter && (keys %seenModules) >= $stopAfter) {
+        die "Stopped after $stopAfter modules (testing mode)\n";
+    }
 }
 
-# -----------------------------------------------------------
-# Summarize
-# -----------------------------------------------------------
+for my $mod (@topModules) {
+    checkModule($mod);
+}
+
+# --- Write CPAN-only modules ---
+if (%missingCpan) {
+    open my $fh, ">", $cpanFile or die "Cannot write $cpanFile: $!";
+    print $fh "$_\n" for sort keys %missingCpan;
+    close $fh;
+    print "CPAN-only missing modules written to $cpanFile\n";
+}
+
+# --- Print apt install line ---
+if (%missingApt) {
+    my $cmd = "sudo apt install " . join(" ", sort keys %missingApt);
+    print "APT-installable missing modules:\n  $cmd\n";
+}
+
+# --- Print summary ---
 my $runtime = time() - $startTime;
-
-my %collapsedMissing;
-for my $m (keys %missingModules) {
-    my $norm = normalizeModuleName($m);
-    $collapsedMissing{$norm} = 1 if $norm;
-}
-
 print "\n===== Summary =====\n";
-printf "Total Perl scripts scanned (from PATH): %d\n", scalar keys %scriptsSeen;
-printf "Total top-level modules referenced by scripts: %d\n", scalar @allModules;
-printf "Total modules checked recursively: %d\n", $processed;
-printf "APT-installable missing modules (raw): %d\n", scalar keys %aptPackages;
-printf "Unique top-level missing modules: %d\n", scalar keys %collapsedMissing;
-
-# Write apt install file
-open my $aptfh, '>', 'apt-install-missing.txt' or die $!;
-print $aptfh join(" ", sort keys %aptPackages), "\n";
-close $aptfh;
-
-if (%aptPackages) {
-    print "APT install command:\n  sudo apt install ", join(" ", sort keys %aptPackages), "\n";
-}
-print "APT install command saved to apt-install-missing.txt\n";
-
-# Write CPAN-only missing file
-open my $cpanfh, '>', 'cpan-missing.txt' or die $!;
-for my $m (sort keys %collapsedMissing) {
-    my $apt = moduleToApt($m);
-    print $cpanfh "$m\n" unless exists $aptPackages{$apt};
-}
-close $cpanfh;
-print "CPAN-only missing modules saved to cpan-missing.txt\n";
-
+print "Total Perl scripts scanned (from PATH): " . scalar(@scripts) . "\n";
+print "Total top-level modules referenced by scripts: " . scalar(@topModules) . "\n";
+print "Total modules checked recursively: " . scalar(keys %seenModules) . "\n";
+print "APT-installable missing modules: " . scalar(keys %missingApt) . "\n";
+print "CPAN-only missing modules: " . scalar(keys %missingCpan) . "\n";
 printf "Total runtime: %.1f seconds\n", $runtime;
 print "===================\n";
-
-# -----------------------------------------------------------
-# Explain mode with per-script counts
-# -----------------------------------------------------------
-if ($explain) {
-    print "\n===== Missing Modules with Script Context =====\n";
-    open my $fh, '>', 'missing-details.txt' or die "Can't write missing-details.txt: $!";
-
-    my %scriptMissing;
-    foreach my $module (sort keys %collapsedMissing) {
-        for my $script (@{ $moduleUsage{$module} // [] }) {
-            push @{ $scriptMissing{$script} }, $module;
-        }
-    }
-
-    foreach my $script (sort keys %scriptMissing) {
-        my @mods = @{ $scriptMissing{$script} };
-        printf "Script: %s (%d missing modules)\n", $script, scalar @mods;
-        for my $mod (@mods) {
-            print "  $mod\n";
-        }
-        print "\n";
-        print $fh "Script: $script (" . scalar(@mods) . " missing modules)\n";
-        print $fh join("\n", map { "  $_" } @mods) . "\n\n";
-    }
-
-    close $fh;
-    print "Details also written to missing-details.txt\n";
-    print "===============================================\n";
-}
