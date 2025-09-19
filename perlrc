@@ -1,0 +1,11 @@
+# /etc/profile.d/perl5.sh
+# Shared Perl local::lib environment
+# CPAN modules are installed under /usr/local/lib/perl5
+# Keeps them separate from APT-managed Perl modules in /usr/lib and /usr/share
+
+PERL_LOCAL_LIB_ROOT="/usr/local/lib/perl5"
+PERL5LIB="$PERL_LOCAL_LIB_ROOT/lib/perl5${PERL5LIB:+:$PERL5LIB}"
+PATH="$PERL_LOCAL_LIB_ROOT/bin:$PATH"
+MANPATH="$PERL_LOCAL_LIB_ROOT/man${MANPATH:+:$MANPATH}"
+
+export PERL_LOCAL_LIB_ROOT PERL5LIB PATH MANPATH
