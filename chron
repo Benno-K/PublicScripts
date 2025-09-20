@@ -1,0 +1,82 @@
+#!/bin/bash
+# chron.sh - List crontab entries sorted by time
+# Supports user crontabs and /etc/cron.d files
+# Entries with ambiguous times (*, ranges, lists) are shown as ??/??
+
+showUsage() {
+    echo "Usage: $0 <username>"
+    echo "       If <username> does not exist, tries /etc/cron.d/<username>"
+    echo "Options:"
+    echo "  -h, --help   Show this help message"
+}
+
+if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
+    showUsage
+    exit 0
+fi
+
+userName="$1"
+crontabContent=""
+
+# Check if user exists
+if id "$userName" &>/dev/null; then
+    crontabContent=$(crontab -l -u "$userName" 2>/dev/null)
+else
+    cronFile="/etc/cron.d/$userName"
+    if [[ -f "$cronFile" ]]; then
+        crontabContent=$(grep -vE '^\s*#' "$cronFile")
+    else
+        echo "Error: user '$userName' not found and no /etc/cron.d/$userName"
+        exit 1
+    fi
+fi
+
+# Process lines
+declare -a cronLines
+while IFS= read -r line; do
+    [[ "$line" =~ ^\s*# ]] && continue
+    [[ -z "$line" ]] && continue
+    [[ "$line" =~ ^[A-Z_]+= ]] && continue
+    cronLines+=("$line")
+done <<< "$crontabContent"
+
+# Prepare output arrays
+declare -a sortableLines
+declare -a ambiguousLines
+
+for entry in "${cronLines[@]}"; do
+    fields=($entry)
+    if [[ $(id "$userName" &>/dev/null) ]]; then
+        min="${fields[0]}"
+        hour="${fields[1]}"
+        rest="${fields[@]:2}"
+    else
+        min="${fields[0]}"
+        hour="${fields[1]}"
+        rest="${fields[@]:2}"
+    fi
+
+    # Check if min and hour are pure numbers (avoid octal interpretation)
+    if [[ "$min" =~ ^[0-9]+$ && "$hour" =~ ^[0-9]+$ ]]; then
+        # Remove leading zeros to avoid octal
+        hourDec=$((10#$hour))
+        minDec=$((10#$min))
+        printf -v timeStr "%02d:%02d" "$hourDec" "$minDec"
+        sortableLines+=("$timeStr $entry")
+    else
+        ambiguousLines+=("??:?? $entry")
+    fi
+done
+
+# Sort entries by time
+IFS=$'\n' sortedLines=($(sort <<<"${sortableLines[*]}"))
+unset IFS
+
+# Output
+echo -e "Time\tUser\tCommand"
+for line in "${sortedLines[@]}"; do
+    echo -e "$line"
+done
+for line in "${ambiguousLines[@]}"; do
+    echo -e "$line"
+done
