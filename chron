@@ -1,82 +1,57 @@
 #!/bin/bash
-# chron.sh - List crontab entries sorted by time
-# Supports user crontabs and /etc/cron.d files
-# Entries with ambiguous times (*, ranges, lists) are shown as ??/??
-
-showUsage() {
-    echo "Usage: $0 <username>"
-    echo "       If <username> does not exist, tries /etc/cron.d/<username>"
-    echo "Options:"
-    echo "  -h, --help   Show this help message"
-}
+# chron - list crontab entries sorted by time (HH:MM), normalizing unspecific times
+# Usage: ./chron <user>
+# - shows full cron lines
+# - times like *, */5, ranges are displayed as !??:??
+# - single numeric times normalized with leading zeros
+# - sorted by time, unspecific times at the end
 
 if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
-    showUsage
+    echo "Usage: $0 <username>"
     exit 0
 fi
 
-userName="$1"
-crontabContent=""
+user="$1"
 
-# Check if user exists
-if id "$userName" &>/dev/null; then
-    crontabContent=$(crontab -l -u "$userName" 2>/dev/null)
+# Determine cron input
+if crontab -u "$user" -l &>/dev/null; then
+    cronContent=$(crontab -u "$user" -l)
+elif [[ -f "/etc/cron.d/$user" ]]; then
+    cronContent=$(grep -vE '^\s*#|^\s*$' "/etc/cron.d/$user")
 else
-    cronFile="/etc/cron.d/$userName"
-    if [[ -f "$cronFile" ]]; then
-        crontabContent=$(grep -vE '^\s*#' "$cronFile")
-    else
-        echo "Error: user '$userName' not found and no /etc/cron.d/$userName"
-        exit 1
-    fi
+    echo "No crontab found for user '$user'"
+    exit 1
 fi
 
-# Process lines
-declare -a cronLines
-while IFS= read -r line; do
-    [[ "$line" =~ ^\s*# ]] && continue
-    [[ -z "$line" ]] && continue
-    [[ "$line" =~ ^[A-Z_]+= ]] && continue
-    cronLines+=("$line")
-done <<< "$crontabContent"
+process_line() {
+    line="$1"
 
-# Prepare output arrays
-declare -a sortableLines
-declare -a ambiguousLines
+    # Skip empty or comment lines
+    [[ "$line" =~ ^[[:space:]]*# || -z "$line" ]] && return
 
-for entry in "${cronLines[@]}"; do
-    fields=($entry)
-    if [[ $(id "$userName" &>/dev/null) ]]; then
-        min="${fields[0]}"
-        hour="${fields[1]}"
-        rest="${fields[@]:2}"
-    else
-        min="${fields[0]}"
-        hour="${fields[1]}"
-        rest="${fields[@]:2}"
-    fi
+    # Extract fields
+    read -r min hour dom mon dow rest <<<"$line"
 
-    # Check if min and hour are pure numbers (avoid octal interpretation)
+    # Determine display time
     if [[ "$min" =~ ^[0-9]+$ && "$hour" =~ ^[0-9]+$ ]]; then
-        # Remove leading zeros to avoid octal
-        hourDec=$((10#$hour))
-        minDec=$((10#$min))
-        printf -v timeStr "%02d:%02d" "$hourDec" "$minDec"
-        sortableLines+=("$timeStr $entry")
+        # Both numeric, pad with leading zeros
+        dispTime=$(printf "%02d:%02d" "$hour" "$min")
     else
-        ambiguousLines+=("??:?? $entry")
+        dispTime="!??:??"
     fi
-done
 
-# Sort entries by time
-IFS=$'\n' sortedLines=($(sort <<<"${sortableLines[*]}"))
-unset IFS
+    # Output normalized line
+    echo -e "$dispTime\t$line"
+}
 
-# Output
+# Process all lines
+output=""
+while IFS= read -r line; do
+    processed=$(process_line "$line")
+    [[ -n "$processed" ]] && output+="$processed"$'\n'
+done <<< "$cronContent"
+
+# Sort output: numeric HH:MM first, then !??:?? at end
 echo -e "Time\tUser\tCommand"
-for line in "${sortedLines[@]}"; do
-    echo -e "$line"
-done
-for line in "${ambiguousLines[@]}"; do
-    echo -e "$line"
-done
+echo "$output" | sort -k1,1V -k2,2 -k3,3
+
