@@ -1,57 +1,85 @@
 #!/bin/bash
-# chron - list crontab entries sorted by time (HH:MM), normalizing unspecific times
-# Usage: ./chron <user>
-# - shows full cron lines
-# - times like *, */5, ranges are displayed as !??:??
-# - single numeric times normalized with leading zeros
-# - sorted by time, unspecific times at the end
+# chron - Display crontab entries sorted by time.
+# Works with user crontabs and /etc/cron.d files.
+# Times are normalized:
+#   " HH:MM" = exact time
+#   "!HH:MM" = normalized (first value from range/list/step)
+#   " ??:??" = could not resolve
 
-if [[ "$1" == "-h" || "$1" == "--help" || -z "$1" ]]; then
-    echo "Usage: $0 <username>"
-    exit 0
-fi
-
-user="$1"
-
-# Determine cron input
-if crontab -u "$user" -l &>/dev/null; then
-    cronContent=$(crontab -u "$user" -l)
-elif [[ -f "/etc/cron.d/$user" ]]; then
-    cronContent=$(grep -vE '^\s*#|^\s*$' "/etc/cron.d/$user")
-else
-    echo "No crontab found for user '$user'"
+show_help() {
+    echo "Usage: $0 <user|cronfile>"
+    echo
+    echo "If the argument is a username, show that user's crontab."
+    echo "If not, try to read it as a file from /etc/cron.d/."
     exit 1
-fi
-
-process_line() {
-    line="$1"
-
-    # Skip empty or comment lines
-    [[ "$line" =~ ^[[:space:]]*# || -z "$line" ]] && return
-
-    # Extract fields
-    read -r min hour dom mon dow rest <<<"$line"
-
-    # Determine display time
-    if [[ "$min" =~ ^[0-9]+$ && "$hour" =~ ^[0-9]+$ ]]; then
-        # Both numeric, pad with leading zeros
-        dispTime=$(printf "%02d:%02d" "$hour" "$min")
-    else
-        dispTime="!??:??"
-    fi
-
-    # Output normalized line
-    echo -e "$dispTime\t$line"
 }
 
-# Process all lines
-output=""
-while IFS= read -r line; do
-    processed=$(process_line "$line")
-    [[ -n "$processed" ]] && output+="$processed"$'\n'
-done <<< "$cronContent"
+[ $# -ne 1 ] && show_help
+[[ $1 == "-h" || $1 == "--help" ]] && show_help
 
-# Sort output: numeric HH:MM first, then !??:?? at end
-echo -e "Time\tUser\tCommand"
-echo "$output" | sort -k1,1V -k2,2 -k3,3
+target=$1
+if id "$target" &>/dev/null; then
+    crontab -l -u "$target" 2>/dev/null
+elif [ -f "/etc/cron.d/$target" ]; then
+    cat "/etc/cron.d/$target"
+else
+    echo "No such user or cron file: $target" >&2
+    exit 1
+fi | awk '
+function pad(num) {
+    return (num < 10 ? "0" num : num)
+}
+function firstNumber(field,  val) {
+    if (field ~ /^[0-9]+$/) {
+        return field
+    }
+    if (match(field, /[0-9]+/)) {
+        return substr(field, RSTART, RLENGTH)
+    }
+    return "??"
+}
+function processLine(min, hour, user, cmd,
+                     dispTime, sortKey, firstMin, firstHour) {
+    # Handle environment variable lines
+    if (min ~ /^[A-Z0-9_]+=.*/) {
+        return
+    }
+    # /etc/cron.d has user field at $6
+    if (NF >= 6 && $1 ~ /^[0-9\*]/) {
+        min=$1; hour=$2; user=$6
+        cmd=""
+        for (i=7; i<=NF; i++) cmd=cmd $i " "
+    } else if (NF >= 5 && $1 ~ /^[0-9\*]/) {
+        min=$1; hour=$2; user=ENVIRON["target"]
+        cmd=""
+        for (i=6; i<=NF; i++) cmd=cmd $i " "
+    } else {
+        return
+    }
 
+    # Detect numeric or not
+    if (min ~ /^[0-9]+$/ && hour ~ /^[0-9]+$/) {
+        dispTime=" " pad(hour) ":" pad(min)
+        sortKey=pad(hour) pad(min)
+    } else {
+        firstMin=firstNumber(min)
+        firstHour=firstNumber(hour)
+        if (firstMin != "??" && firstHour != "??") {
+            dispTime="!" pad(firstHour) ":" pad(firstMin)
+            sortKey=pad(firstHour) pad(firstMin)
+        } else {
+            dispTime=" ??:??"
+            sortKey="9999"
+        }
+    }
+    print sortKey, dispTime, user, min, hour, $3, $4, $5, cmd
+}
+BEGIN {
+    target=ENVIRON["target"]
+    print "Time   User     Command"
+}
+{
+    if ($0 ~ /^#/ || NF == 0) next
+    processLine($1,$2)
+}
+' target="$target" | sort -k1,1 | cut -d" " -f2-
