@@ -1,85 +1,180 @@
-#!/bin/bash
-# chron - Display crontab entries sorted by time.
-# Works with user crontabs and /etc/cron.d files.
-# Times are normalized:
-#   " HH:MM" = exact time
-#   "!HH:MM" = normalized (first value from range/list/step)
-#   " ??:??" = could not resolve
+#!/usr/bin/env bash
+# chron - list crontab entries in chronological order (sorted by time of day)
+# - shows whole original cron line
+# - exact numeric times -> " HH:MM"
+# - normalized times (from ranges/lists/steps) -> "!HH:MM" (first possible value)
+# - unresolved times -> " ??:??" (appear at the end)
+# - works for user crontabs and /etc/cron.d/<file>
+#
+# Usage: ./chron <username-or-cronfile>
+#   if argument is a username, that user's crontab is used
+#   otherwise /etc/cron.d/<argument> is used (if present)
 
-show_help() {
-    echo "Usage: $0 <user|cronfile>"
-    echo
-    echo "If the argument is a username, show that user's crontab."
-    echo "If not, try to read it as a file from /etc/cron.d/."
-    exit 1
-}
+set -o nounset
+set -o errexit
+set -o pipefail
 
-[ $# -ne 1 ] && show_help
-[[ $1 == "-h" || $1 == "--help" ]] && show_help
+if [[ "${1:-}" == "" || "$1" == "-h" || "$1" == "--help" ]]; then
+  echo "Usage: $0 <username|cronfile>"
+  exit 0
+fi
 
-target=$1
-if id "$target" &>/dev/null; then
-    crontab -l -u "$target" 2>/dev/null
-elif [ -f "/etc/cron.d/$target" ]; then
-    cat "/etc/cron.d/$target"
+target="$1"
+tmpfile="$(mktemp)"
+trap 'rm -f "$tmpfile"' EXIT
+
+# disable globbing while parsing to avoid '*' expanding to filenames
+set -o noglob
+
+# collect user crontab lines (if any)
+if crontab -l -u "$target" &>/dev/null; then
+  # prefix USER to mark format (no user field in line)
+  while IFS= read -r line; do
+    # keep comments/empty for potential debug, but skip them later
+    printf 'USER|%s\n' "$line" >> "$tmpfile"
+  done < <(crontab -l -u "$target")
+fi
+
+# collect lines from /etc/cron.d that target this user (prefix CROND)
+if [[ -f "/etc/cron.d/$target" ]]; then
+  # whole file -> we'll filter env/comments later
+  while IFS= read -r line; do
+    printf 'CROND|%s\n' "$line" >> "$tmpfile"
+  done < "/etc/cron.d/$target"
 else
-    echo "No such user or cron file: $target" >&2
-    exit 1
-fi | awk '
-function pad(num) {
-    return (num < 10 ? "0" num : num)
-}
-function firstNumber(field,  val) {
-    if (field ~ /^[0-9]+$/) {
-        return field
-    }
-    if (match(field, /[0-9]+/)) {
-        return substr(field, RSTART, RLENGTH)
-    }
-    return "??"
-}
-function processLine(min, hour, user, cmd,
-                     dispTime, sortKey, firstMin, firstHour) {
-    # Handle environment variable lines
-    if (min ~ /^[A-Z0-9_]+=.*/) {
-        return
-    }
-    # /etc/cron.d has user field at $6
-    if (NF >= 6 && $1 ~ /^[0-9\*]/) {
-        min=$1; hour=$2; user=$6
-        cmd=""
-        for (i=7; i<=NF; i++) cmd=cmd $i " "
-    } else if (NF >= 5 && $1 ~ /^[0-9\*]/) {
-        min=$1; hour=$2; user=ENVIRON["target"]
-        cmd=""
-        for (i=6; i<=NF; i++) cmd=cmd $i " "
-    } else {
-        return
-    }
+  # also consider any other cron.d files that contain the user in the user field
+  if [[ -d /etc/cron.d ]]; then
+    for f in /etc/cron.d/*; do
+      # skip non-files
+      [[ -f "$f" ]] || continue
+      # read and append only lines (we'll filter by user during processing)
+      while IFS= read -r line; do
+        printf 'CROND|%s\n' "$line" >> "$tmpfile"
+      done < "$f"
+    done
+  fi
+fi
 
-    # Detect numeric or not
-    if (min ~ /^[0-9]+$/ && hour ~ /^[0-9]+$/) {
-        dispTime=" " pad(hour) ":" pad(min)
-        sortKey=pad(hour) pad(min)
-    } else {
-        firstMin=firstNumber(min)
-        firstHour=firstNumber(hour)
-        if (firstMin != "??" && firstHour != "??") {
-            dispTime="!" pad(firstHour) ":" pad(firstMin)
-            sortKey=pad(firstHour) pad(firstMin)
-        } else {
-            dispTime=" ??:??"
-            sortKey="9999"
-        }
-    }
-    print sortKey, dispTime, user, min, hour, $3, $4, $5, cmd
+# helper: determine the first usable numeric value from a cron field
+# rules:
+#   "*"        -> ambiguous (return "??")
+#   "*/N"      -> 0
+#   "X/Y"      -> X (if present)
+#   "A-B"      -> A
+#   "A,B,..."  -> A (leftmost numeric)
+#   any numeric substring -> first numeric substring
+firstValue() {
+  local field="$1"
+  # pure star
+  if [[ "$field" == "*" ]]; then
+    printf "??"; return
+  fi
+  # step from star -> 0 (*/N)
+  if [[ "$field" =~ ^\*/[0-9]+$ ]]; then
+    printf "0"; return
+  fi
+  # step with explicit start X/Y
+  if [[ "$field" =~ ^([0-9]+)/[0-9]+$ ]]; then
+    printf "%s" "${BASH_REMATCH[1]}"; return
+  fi
+  # range A-B or A-B/X -> take A
+  if [[ "$field" =~ ^([0-9]+)-[0-9]+ ]]; then
+    printf "%s" "${BASH_REMATCH[1]}"; return
+  fi
+  # list A,B,... -> take the leftmost numeric piece (before first comma)
+  if [[ "$field" =~ ^([0-9]+), ]]; then
+    printf "%s" "${BASH_REMATCH[1]}"; return
+  fi
+  # any numeric substring -> first occurrence
+  if [[ "$field" =~ ([0-9]+) ]]; then
+    printf "%s" "${BASH_REMATCH[1]}"; return
+  fi
+  # fallback
+  printf "??"
 }
-BEGIN {
-    target=ENVIRON["target"]
-    print "Time   User     Command"
-}
-{
-    if ($0 ~ /^#/ || NF == 0) next
-    processLine($1,$2)
-}
-' target="$target" | sort -k1,1 | cut -d" " -f2-
+
+# build job list as: sortKey|displayTime|user|originalLine
+declare -a jobs=()
+while IFS= read -r entry; do
+  src="${entry%%|*}"        # USER or CROND
+  line="${entry#*|}"
+  # skip empty/comment lines and env assignments here
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] && continue
+
+  # Split into fields (preserve original in $line)
+  read -ra fields <<< "$line"
+
+  # decide format and extract minute/hour/user/command
+  if [[ "$src" == "USER" ]]; then
+    # expect: min hour dom mon dow command...
+    [[ ${#fields[@]} -lt 6 ]] && continue
+    minute="${fields[0]}"
+    hour="${fields[1]}"
+    userOut="$target"
+    # preserve original command (the rest of the line) as-is
+    # (we keep original $line for full unmodified text)
+  else
+    # CROND: expect: min hour dom mon dow user command...
+    # some cron.d lines might be env or not target user; check
+    if [[ ${#fields[@]} -lt 7 ]]; then
+      # not a job line we care about
+      continue
+    fi
+    # user field is index 5 (0-based)
+    userField="${fields[5]}"
+    # if a specific cron.d file was provided as "target" and we read only that file,
+    # we already appended all its lines; otherwise we should filter by user matching target
+    # keep only those intended for this user (if target is a username)
+    if id "$target" &>/dev/null; then
+      # if the line's user doesn't match the target, skip
+      [[ "$userField" != "$target" ]] && continue
+    fi
+    minute="${fields[0]}"
+    hour="${fields[1]}"
+    userOut="$userField"
+  fi
+
+  # Determine exact vs normalized vs unresolved
+  display=""
+  sortKey=0
+
+  # if both fields are pure decimal numbers -> exact time
+  if [[ "$minute" =~ ^[0-9]+$ && "$hour" =~ ^[0-9]+$ ]]; then
+    hh=$(printf "%02d" "$((10#$hour))")
+    mm=$(printf "%02d" "$((10#$minute))")
+    display=" ${hh}:${mm}"    # leading space for alignment
+    sortKey=$((10#$hour * 100 + 10#$minute))
+  else
+    # try to extract first usable numeric values
+    firstMin="$(firstValue "$minute")"
+    firstHour="$(firstValue "$hour")"
+
+    if [[ "$firstMin" != "??" && "$firstHour" != "??" ]]; then
+      hh=$(printf "%02d" "$((10#$firstHour))")
+      mm=$(printf "%02d" "$((10#$firstMin))")
+      display="!${hh}:${mm}"
+      sortKey=$((10#$firstHour * 100 + 10#$firstMin))
+    else
+      display=" ??:??"
+      sortKey=9999
+    fi
+  fi
+
+  # store: numeric key, display time, user, original line
+  jobs+=("${sortKey}|${display}|${userOut}|${line}")
+done < "$tmpfile"
+
+# restore globbing
+set +o noglob
+
+# sort numerically by key and print aligned output
+printf "%-7s %-8s %s\n" "Time" "User" "Command"
+if (( ${#jobs[@]} )); then
+  # print sorted
+  printf "%s\n" "${jobs[@]}" | sort -t'|' -n -k1,1 | while IFS='|' read -r key display userOut origLine; do
+    # origLine already contains the full original cron line; print as-is
+    printf "%-7s %-8s %s\n" "$display" "$userOut" "$origLine"
+  done
+fi
+

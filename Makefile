@@ -1,5 +1,5 @@
 SHELL = /bin/bash
-TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck
+TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron
 UTARGETS=nsimgurl shredLenovoWSg diskmon
 PTARGETS=git-web-viewer.php webgit.php
 

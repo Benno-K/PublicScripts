@@ -14,6 +14,10 @@ accounts to access some files.
 Very simple script to list all "screen" sessions
 on the system.
 
+## chron
+Command to list crontab entries in chronologial order
+(see [chron.md](chron.md)).
+
 ## clean
 Very simple wrapper around
 a grep command that removes
