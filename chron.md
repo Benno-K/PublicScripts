@@ -30,3 +30,43 @@ With `chron`, you can immediately locate the failing job in its chronological co
 
 ```bash
 chron <user-or-cronfile>
+```
+
+## Example
+### Unordered Crontab
+
+Below is an unordered crontab example with comments:
+
+```cron
+# System update every Sunday at 04:00
+0 4 * * 0 sudo apt update
+
+# Clean tmp every day at 01:30
+30 1 * * * rm -rf /tmp/*
+
+# Backup home every weekday at 03:00
+0 3 * * 1-5 tar -czf /backup/home.tgz /home
+
+# Disk check on the 1st of every month at 02:15
+15 2 1 * * fsck -AR
+
+# Run hourly script
+0 * * * * /usr/local/bin/hourly-job.sh
+```
+
+---
+
+### Example Output (`chron' $`USER`)
+
+When run through `chron` $`USER`, the above entries would be listed in chronological order:
+
+```text
+ 01:30  30 1 * * * rm -rf /tmp/*
+ 02:15  15 2 1 * * fsck -AR
+ 03:00  0 3 * * 1-5 tar -czf /backup/home.tgz /home
+ 04:00  0 4 * * 0 sudo apt update
+!XX:00  0 * * * * /usr/local/bin/hourly-job.sh
+```
+
+- Entries with normalized time (like the hourly job) are marked with a `!` prefix (e.g. `!XX:00`) to show that it repeats at every hour.
+- The output is sorted by the time the job first runs within a typical day.
