@@ -1,0 +1,267 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+progNam=$(basename "$0")
+logFil="/var/log/${progNam}.log"
+tmpMntBase="/mnt/${progNam}"
+paramDir="${HOME}"
+rsyncOpts=(-aHAXx --numeric-ids --delete --partial)
+rsyncExcl=(--exclude=/tmp --exclude=/var/tmp)
+
+echO() {
+	echo >&2 "$@"
+}
+
+log() {
+	local msg="$1"
+	local now; now="$(date --iso-8601=seconds)"
+	printf '%s %s\n' "$now" "$msg" >>"$logFil" || true
+}
+
+die() {
+	log "ERROR: $1"
+	echO "ERROR: $1"
+	exit 1
+}
+
+showHelp() {
+	cat <<-EOF
+	Usage: $progNam [--dry-run] [-h|--help] [--] [...]
+
+	Options:
+	  --dry-run   Perform trial run (no data copied)
+	  -h, --help  Show this help text
+	  --          All following options will be appended to
+	              the rsync command
+	EOF
+	[ -n "${1:-}" ] && echO -e "\nError: $1"
+}
+
+checkTargetCapacity() {
+    local srcDir="/"
+    local trgDev="$1"   # e.g. /dev/mmcblk0p2
+    local slackPct=10   # % safety margin
+
+    # Get source usage in bytes
+    local srcUsed
+    srcUsed=$(df --output=used -B1 "$srcDir" | tail -1)
+
+    # Get total size of target device in bytes
+    local trgSize
+    trgSize=$(blockdev --getsize64 "$trgDev")
+
+    # Calculate needed size with slack
+    local need=$(( srcUsed + (srcUsed * slackPct / 100) ))
+
+    log "Source used: $srcUsed bytes (+${slackPct}% slack = $need)"
+    log "Target size: $trgSize bytes"
+
+    if (( need > trgSize )); then
+        echO "ERROR: Source ($srcUsed bytes) + slack ($need bytes) exceeds target ($trgSize bytes)"
+        return 1
+    fi
+    return 0
+}
+
+getSrcUuid() {
+	local dev; dev="$(findmnt -n -o SOURCE / || true)"
+	[ -n "$dev" ] || die "Cannot determine source device"
+	local pu; pu="$(blkid -s PARTUUID -o value "$dev" 2>/dev/null || true)"
+	[ -n "$pu" ] || die "Source device $dev has no PARTUUID"
+	printf '%s' "$pu"
+}
+
+getTrgUuid() {
+	local srcUuid="$1"
+	mapfile -t list < <(blkid -t LABEL=rootfs -o export 2>/dev/null | awk -F= '/^PARTUUID=/{print $2}')
+	[ "${#list[@]}" -gt 0 ] || die "No partitions with LABEL=rootfs found"
+	for pu in "${list[@]}"; do
+		[ "$pu" != "$srcUuid" ] && { printf '%s' "$pu"; return; }
+	done
+	die "No target rootfs different from source"
+}
+
+getDevInfo() {
+	local dev="${1/\/dev\//}"
+	local bus model vendor serial devKind
+
+	# primär udevadm auslesen
+	read bus model vendor serial < <(
+		udevadm info --query=property --name="$dev" 2>/dev/null | awk -F= '
+			/^ID_BUS=/ {bus=$2}
+			/^ID_MODEL=/ {model=$2}
+			/^ID_VENDOR=/ {vendor=$2}
+			/^ID_SERIAL_SHORT=/ {serial=$2}
+			END {printf "%s %s %s %s\n", bus, model, vendor, serial}'
+	)
+
+	# fallback nur, falls bus leer
+	if [ -z "$bus" ]; then
+		case "$dev" in
+			mmcblk*) devKind="SD/MMC" ;;
+			sd*)     devKind="Unknown" ;;
+			*)       devKind="Unknown" ;;
+		esac
+	else
+		devKind="$bus"
+	fi
+
+	# formatierte Ausgabe
+	printf '%s%s%s%s' "$devKind" \
+		${model:+ ", $model"} \
+		${vendor:+ ", $vendor"} \
+		${serial:+ ", $serial"}
+}
+
+caught() {
+	echO trapped
+	if [ ! -z ${mnt+X} ]; then
+		if mountpoint -q "$mnt"; then
+			umount "$mnt" && rmdir "$mnt"
+			echO "Unmounted and removed $mnt"
+			log "Unmounted and removed $mnt"
+		fi
+	fi
+}
+
+mountTrg() {
+	local trgUuid="$1"
+	local isDryRun="${2:-0}"
+	mnt="${tmpMntBase}-${trgUuid}"
+
+	trap 'caught' EXIT
+
+	mkdir -p "$mnt"
+	local dev
+	dev="$(blkid -t PARTUUID="$trgUuid" -o device 2>/dev/null || true)"
+	[ -n "$dev" ] || die "Cannot find device for PARTUUID $trgUuid"
+
+	local opts="rw"
+	[ "$isDryRun" -eq 1 ] && opts="ro"
+	mount -o "$opts" "$dev" "$mnt"
+	echO "Mounted $dev on $mnt with option $opts"
+	log "Mounted $dev on $mnt with option $opts"
+
+	echo "$mnt"
+}
+
+writeParamFile() {
+	local srcUuid="$1"; local trgUuid="$2";dryRun="$3";shift 3
+	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.i${dryRun}.params"
+	local opts="$*"
+	{
+		printf '%s\n' "$opts"
+		printf '# Approved: %s\n' "$(date --iso-8601=seconds)"
+		printf '# Source: %s (PARTUUID=%s)\n' "$srcDevInfo" "$srcUuid"
+		printf '# Target: %s (PARTUUID=%s)\n' "$trgDevInfo" "$trgUuid"
+		printf '# Note: Approved manually\n'
+	} > "$pf"
+	chmod 600 "$pf"
+	log "Wrote param file $pf"
+}
+
+checkParamFileApproved() {
+	local srcUuid="$1"; local trgUuid="$2"
+	local dryRun="3"
+	local srcUuid="$1"; local trgUuid="$2"
+	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params"
+	[ -f "$pf" ] && return 0 || return 1
+}
+
+doRsync() {
+	local trgMnt="$1"
+	[ "$(readlink -f "$trgMnt")" != "/" ] || die "Target mountpoint resolves to /"
+	command -v rsync >/dev/null 2>&1 || die "rsync not found"
+	log "Starting rsync to $trgMnt"
+	echO rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMnt"/
+	local rc=$?
+	[ $rc -eq 0 ] || die "rsync exited with code $rc"
+	log "rsync finished successfully"
+}
+
+main() {
+	local arg dryRun=0
+	local -a rsyncOptsPassed=()
+	for arg in "$@"; do
+		case "$arg" in
+			--dry-run) dryRun=1; rsyncOpts+=(--dry-run);;
+			-h|--help) showHelp; exit 0 ;;
+			--)
+				rsyncOptsPassed+=${arg}
+				;;
+			*)
+				if [ ${#rsyncOptsPassed[@]} = 0 ]; then 
+					showHelp "Unknown option: $arg"; exit 1
+				else
+					if [ ${rsyncOptsPassed[0]} = "--" ]; then 
+						rsyncOptsPassed[0]=${arg} # Replace -- with arg
+					else
+						rsyncOptsPassed+=(${arg}) # add arg
+					fi
+				fi
+				;;
+		esac
+	done
+	if [ ${#rsyncOptsPassed[@]} -gt 0 ]; then
+    rsyncOpts+=("${rsyncOptsPassed[@]}")
+	fi
+
+	if [ "$(id -u)" -ne 0 ]; then
+		exec sudo "$0" "$@"
+	fi
+
+	local srcUuid trgUuid srcDev trgDev srcDevInfo trgDevInfo
+	srcUuid="$(getSrcUuid)"
+	trgUuid="$(getTrgUuid "$srcUuid")"
+
+	srcDev=$(findmnt -n -o SOURCE /)
+	trgDev=$(blkid -t PARTUUID="$trgUuid" -o device)
+	srcDevInfo=$(getDevInfo "$srcDev")
+	trgDevInfo=$(getDevInfo "$trgDev")
+
+	local isTty=0; [ -t 1 ] && isTty=1
+
+	local trgMnt
+	if [ "$isTty" -eq 0 ]; then
+		checkParamFileApproved "$srcUuid" "$trgUuid" "$dryRun" || die "Cron run blocked: no approval"
+		local paramLine
+		paramLine=$(head -n1 "${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.params" || echo "")
+		[[ "$paramLine" == *"--dry-run"* ]] && dryRun=1
+		trgMnt=$(mountTrg "$trgUuid" "$dryRun")
+		log "Non-interactive run authorized"
+	else
+		echO "Source: ${srcDev} (${srcDevInfo}, PARTUUID=${srcUuid})"
+		echO "Target: ${trgDev} (${trgDevInfo}, PARTUUID=${trgUuid})"
+		local ans
+		read -r -p "Your choice (run/approve/quit) [r/a/q]: " ans >&2
+		case "${ans:0:1}" in
+			r)
+				trgMnt=$(mountTrg "$trgUuid" 0)   # rw
+				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
+				;;
+			a)
+				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
+				echO "Approved for cron only."
+				log "User approved for next cron"
+				return 0
+				;;
+			q)
+				log "User quit without running"
+				exit 0
+				;;
+			*)
+				die "Invalid choice"
+				;;
+		esac
+	fi
+
+	# The check exits script on failure !
+	[ "$dryRun" -eq 0 ] && checkTargetCapacity "$trgDev"
+	# trgMnt=$(mountTrg "$trgUuid" "$dryRun")
+
+	doRsync "$trgMnt"
+	log "rbackup completed successfully"
+	[ "$isTty" -eq 1 ] && echO "rbackup: completed successfully"
+}
+
+main "$@"
