@@ -114,11 +114,10 @@ getDevInfo() {
 }
 
 caught() {
-	echO trapped
 	if [ ! -z ${mnt+X} ]; then
 		if mountpoint -q "$mnt"; then
 			umount "$mnt" && rmdir "$mnt"
-			echO "Unmounted and removed $mnt"
+			echO dbg:"Unmounted and removed $mnt"
 			log "Unmounted and removed $mnt"
 		fi
 	fi
@@ -128,9 +127,6 @@ mountTrg() {
 	local trgUuid="$1"
 	local isDryRun="${2:-0}"
 	mnt="${tmpMntBase}-${trgUuid}"
-
-	trap 'caught' EXIT
-
 	mkdir -p "$mnt"
 	local dev
 	dev="$(blkid -t PARTUUID="$trgUuid" -o device 2>/dev/null || true)"
@@ -146,8 +142,8 @@ mountTrg() {
 }
 
 writeParamFile() {
-	local srcUuid="$1"; local trgUuid="$2";dryRun="$3";shift 3
-	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.i${dryRun}.params"
+	local srcUuid="$1" trgUuid="$2" dryRun="$3";shift 3
+	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params"
 	local opts="$*"
 	{
 		printf '%s\n' "$opts"
@@ -161,9 +157,7 @@ writeParamFile() {
 }
 
 checkParamFileApproved() {
-	local srcUuid="$1"; local trgUuid="$2"
-	local dryRun="3"
-	local srcUuid="$1"; local trgUuid="$2"
+	local srcUuid="$1" trgUuid="$2" dryRun="$3"
 	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params"
 	[ -f "$pf" ] && return 0 || return 1
 }
@@ -171,6 +165,8 @@ checkParamFileApproved() {
 doRsync() {
 	local trgMnt="$1"
 	[ "$(readlink -f "$trgMnt")" != "/" ] || die "Target mountpoint resolves to /"
+	#umount $trgMnt # DBG
+	#mountpoint -q "$trgMnt" || die "Target is not mounted"
 	command -v rsync >/dev/null 2>&1 || die "rsync not found"
 	log "Starting rsync to $trgMnt"
 	echO rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMnt"/
@@ -182,6 +178,9 @@ doRsync() {
 main() {
 	local arg dryRun=0
 	local -a rsyncOptsPassed=()
+
+	trap 'caught' EXIT
+
 	for arg in "$@"; do
 		case "$arg" in
 			--dry-run) dryRun=1; rsyncOpts+=(--dry-run);;
@@ -257,7 +256,7 @@ main() {
 
 	# The check exits script on failure !
 	[ "$dryRun" -eq 0 ] && checkTargetCapacity "$trgDev"
-	# trgMnt=$(mountTrg "$trgUuid" "$dryRun")
+	trgMnt=$(mountTrg "$trgUuid" "$dryRun")
 
 	doRsync "$trgMnt"
 	log "rbackup completed successfully"
