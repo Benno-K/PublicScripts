@@ -114,11 +114,10 @@ getDevInfo() {
 }
 
 caught() {
-	if [ ! -z ${mnt+X} ]; then
-		if mountpoint -q "$mnt"; then
-			umount "$mnt" && rmdir "$mnt"
-			echO dbg:"Unmounted and removed $mnt"
-			log "Unmounted and removed $mnt"
+	if [ ! -z ${trgMntGlobal+X} ]; then
+		if mountpoint -q "$trgMntGlobal"; then
+			umount "$trgMntGlobal" && rmdir "$trgMntGlobal"
+			log "Unmounted and removed $trgMntGlobal"
 		fi
 	fi
 }
@@ -163,13 +162,11 @@ checkParamFileApproved() {
 }
 
 doRsync() {
-	local trgMnt="$1"
-	[ "$(readlink -f "$trgMnt")" != "/" ] || die "Target mountpoint resolves to /"
-	#umount $trgMnt # DBG
-	#mountpoint -q "$trgMnt" || die "Target is not mounted"
+	[ "$(readlink -f "$trgMntGlobal")" != "/" ] || die "Target mountpoint resolves to /"
+	mountpoint -q "$trgMntGlobal" || die "Target is not mounted"
 	command -v rsync >/dev/null 2>&1 || die "rsync not found"
-	log "Starting rsync to $trgMnt"
-	echO rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMnt"/
+	log "Starting rsync to $trgMntGlobal"
+	echO rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMntGlobal"/
 	local rc=$?
 	[ $rc -eq 0 ] || die "rsync exited with code $rc"
 	log "rsync finished successfully"
@@ -220,13 +217,12 @@ main() {
 
 	local isTty=0; [ -t 1 ] && isTty=1
 
-	local trgMnt
 	if [ "$isTty" -eq 0 ]; then
 		checkParamFileApproved "$srcUuid" "$trgUuid" "$dryRun" || die "Cron run blocked: no approval"
 		local paramLine
 		paramLine=$(head -n1 "${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.params" || echo "")
 		[[ "$paramLine" == *"--dry-run"* ]] && dryRun=1
-		trgMnt=$(mountTrg "$trgUuid" "$dryRun")
+		trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
 		log "Non-interactive run authorized"
 	else
 		echO "Source: ${srcDev} (${srcDevInfo}, PARTUUID=${srcUuid})"
@@ -235,7 +231,6 @@ main() {
 		read -r -p "Your choice (run/approve/quit) [r/a/q]: " ans >&2
 		case "${ans:0:1}" in
 			r)
-				trgMnt=$(mountTrg "$trgUuid" 0)   # rw
 				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
 				;;
 			a)
@@ -256,9 +251,9 @@ main() {
 
 	# The check exits script on failure !
 	[ "$dryRun" -eq 0 ] && checkTargetCapacity "$trgDev"
-	trgMnt=$(mountTrg "$trgUuid" "$dryRun")
+	trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
 
-	doRsync "$trgMnt"
+	doRsync
 	log "rbackup completed successfully"
 	[ "$isTty" -eq 1 ] && echO "rbackup: completed successfully"
 }
