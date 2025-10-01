@@ -3,11 +3,18 @@
 # Author: Benno K.
 # Email: benno@xyz.de
 # Github: https://www.github.com/Benno-K
-# 
+#
 # This script is available for
 # public use under GPL V3 (see
 # file LICENSE)
+#
+# rbackup - Automated Rsync-based System Backup Utility
+#
+# This script creates a full backup of the root filesystem to another partition labeled 'rootfs' (other than the current root).
+# It checks for sufficient space, supports interactive and batch/cron modes, and enforces manual approval of options for safety.
+# It uses rsync with safe defaults and logs all actions. Useful for SD card or disk cloning on Linux systems.
 ##
+
 set -euo pipefail
 
 progNam=$(basename "$0")
@@ -17,22 +24,26 @@ paramDir="${HOME}"
 rsyncOpts=(-aHAXx --numeric-ids --delete --partial)
 rsyncExcl=(--exclude=/tmp --exclude=/var/tmp)
 
+# Print message to stderr
 echO() {
 	echo >&2 "$@"
 }
 
+# Log a message with a timestamp to the log file
 log() {
 	local msg="$@"
 	local now; now="$(date --iso-8601=seconds)"
 	printf '%s %s\n' "$now" "$msg" >>"$logFil" || true
 }
 
+# Print error, log it, and exit
 die() {
 	log "ERROR: $1"
 	echO "ERROR: $1"
 	exit 1
 }
 
+# Show usage/help message, optionally with an error message
 showHelp() {
 	cat <<-EOF
 	Usage: $progNam [--dry-run] [-h|--help] [--] [...]
@@ -46,20 +57,21 @@ showHelp() {
 	[ -n "${1:-}" ] && echO -e "\nError: $1"
 }
 
+# Check if the target device has enough capacity (with a safety margin) for the backup
 checkTargetCapacity() {
     local srcDir="/"
     local trgDev="$1"   # e.g. /dev/mmcblk0p2
-    local slackPct=10   # % safety margin
+    local slackPct=10   # safety margin in percent
 
-    # Get source usage in bytes
+    # Get used bytes of the source filesystem
     local srcUsed
     srcUsed=$(df --output=used -B1 "$srcDir" | tail -1)
 
-    # Get total size of target device in bytes
+    # Get total size of the target device in bytes
     local trgSize
     trgSize=$(blockdev --getsize64 "$trgDev")
 
-    # Calculate needed size with slack
+    # Calculate required space with slack
     local need=$(( srcUsed + (srcUsed * slackPct / 100) ))
 
     log "Source used: $srcUsed bytes (+${slackPct}% slack = $need)"
@@ -72,6 +84,7 @@ checkTargetCapacity() {
     return 0
 }
 
+# Get the PARTUUID of the current root filesystem
 getSrcUuid() {
 	local dev; dev="$(findmnt -n -o SOURCE / || true)"
 	[ -n "$dev" ] || die "Cannot determine source device"
@@ -80,6 +93,7 @@ getSrcUuid() {
 	printf '%s' "$pu"
 }
 
+# Find the PARTUUID of a 'rootfs'-labeled partition that is NOT the current root
 getTrgUuid() {
 	local srcUuid="$1"
 	mapfile -t list < <(blkid -t LABEL=rootfs -o export 2>/dev/null | awk -F= '/^PARTUUID=/{print $2}')
@@ -90,11 +104,12 @@ getTrgUuid() {
 	die "No target rootfs different from source"
 }
 
+# Get device information for display/logging
 getDevInfo() {
 	local dev="${1/\/dev\//}"
 	local bus model vendor serial devKind
 
-	# primär udevadm auslesen
+	# Try to get info from udevadm
 	read bus model vendor serial < <(
 		udevadm info --query=property --name="$dev" 2>/dev/null | awk -F= '
 			/^ID_BUS=/ {bus=$2}
@@ -104,7 +119,7 @@ getDevInfo() {
 			END {printf "%s %s %s %s\n", bus, model, vendor, serial}'
 	)
 
-	# fallback nur, falls bus leer
+	# Fallback: guess kind if udevadm didn't return info
 	if [ -z "$bus" ]; then
 		case "$dev" in
 			mmcblk*) devKind="SD/MMC" ;;
@@ -115,13 +130,14 @@ getDevInfo() {
 		devKind="$bus"
 	fi
 
-	# formatierte Ausgabe
+	# Format output
 	printf '%s%s%s%s' "$devKind" \
 		${model:+ ", $model"} \
 		${vendor:+ ", $vendor"} \
 		${serial:+ ", $serial"}
 }
 
+# Cleanup function: unmount and remove mountpoint if still mounted
 caught() {
 	if [ ! -z ${trgMntGlobal+X} ]; then
 		if mountpoint -q "$trgMntGlobal"; then
@@ -131,6 +147,7 @@ caught() {
 	fi
 }
 
+# Mount the target partition by PARTUUID, read-only if dry-run
 mountTrg() {
 	local trgUuid="$1"
 	local isDryRun="${2:-0}"
@@ -148,6 +165,7 @@ mountTrg() {
 	echo "$mnt"
 }
 
+# Record approved parameters to a file in the user's home directory
 writeParamFile() {
 	local srcUuid="$1" trgUuid="$2" dryRun="$3";shift 3
 	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params"
@@ -163,12 +181,14 @@ writeParamFile() {
 	log "Wrote param file $pf"
 }
 
+# Check if parameters have been approved (approval file exists)
 checkParamFileApproved() {
 	local srcUuid="$1" trgUuid="$2" dryRun="$3"
 	local pf="${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params"
 	[ -f "$pf" ] && return 0 || return 1
 }
 
+# Run rsync with the chosen options to perform the backup
 doRsync() {
 	[ "$(readlink -f "$trgMntGlobal")" != "/" ] || die "Target mountpoint resolves to /"
 	mountpoint -q "$trgMntGlobal" || die "Target is not mounted"
@@ -180,12 +200,14 @@ doRsync() {
 	log "rsync finished successfully"
 }
 
+# Main program logic
 main() {
 	local arg dryRun=0
 	local -a rsyncOptsPassed=()
 
 	trap 'caught' EXIT
 
+	# Parse command-line arguments
 	for arg in "$@"; do
 		case "$arg" in
 			--dry-run) dryRun=1; rsyncOpts+=(--dry-run);;
@@ -208,6 +230,7 @@ main() {
     rsyncOpts+=("${rsyncOptsPassed[@]}")
 	fi
 
+	# Re-exec as root if not already root
 	if [ "$(id -u)" -ne 0 ]; then
 		exec sudo "$0" "$@"
 	fi
@@ -259,7 +282,7 @@ main() {
 		esac
 	fi
 
-	# The check exits script on failure !
+	# Capacity check (skipped for dry-run); exit on failure
 	[ "$dryRun" -eq 0 ] && checkTargetCapacity "$trgDev"
 	trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
 

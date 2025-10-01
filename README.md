@@ -200,7 +200,13 @@ to /usr/local/bin so that
 every authorized user can
 invoke it.
 
-# screenify.sh
+## rbackup
+
+**Automated Rsync-based System Backup Utility**
+This script creates a full backup of the root filesystem to another device partition labeled `rootfs` (except the current
+root). See [rbackup.md](rbackup.md) for details.
+
+## screenify.sh
 
 See "man screen" to learn about the screen command 
 
