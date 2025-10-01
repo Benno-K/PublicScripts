@@ -13,7 +13,7 @@ echO() {
 }
 
 log() {
-	local msg="$1"
+	local msg="$@"
 	local now; now="$(date --iso-8601=seconds)"
 	printf '%s %s\n' "$now" "$msg" >>"$logFil" || true
 }
@@ -134,7 +134,6 @@ mountTrg() {
 	local opts="rw"
 	[ "$isDryRun" -eq 1 ] && opts="ro"
 	mount -o "$opts" "$dev" "$mnt"
-	echO "Mounted $dev on $mnt with option $opts"
 	log "Mounted $dev on $mnt with option $opts"
 
 	echo "$mnt"
@@ -182,9 +181,7 @@ main() {
 		case "$arg" in
 			--dry-run) dryRun=1; rsyncOpts+=(--dry-run);;
 			-h|--help) showHelp; exit 0 ;;
-			--)
-				rsyncOptsPassed+=${arg}
-				;;
+			--) rsyncOptsPassed+=${arg} ;;
 			*)
 				if [ ${#rsyncOptsPassed[@]} = 0 ]; then 
 					showHelp "Unknown option: $arg"; exit 1
@@ -216,13 +213,17 @@ main() {
 	trgDevInfo=$(getDevInfo "$trgDev")
 
 	local isTty=0; [ -t 1 ] && isTty=1
+	[ -r rbnotty ] && isTty=0 # hack to test batch interactively
 
 	if [ "$isTty" -eq 0 ]; then
 		checkParamFileApproved "$srcUuid" "$trgUuid" "$dryRun" || die "Cron run blocked: no approval"
 		local paramLine
-		paramLine=$(head -n1 "${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.params" || echo "")
-		[[ "$paramLine" == *"--dry-run"* ]] && dryRun=1
-		trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
+		paramLine=$(head -n1 "${paramDir}/.${progNam}.${srcUuid}.${trgUuid}.${dryRun}.params" || echo "")
+		 if [[ "${paramLine}" != "${@}" ]]; then
+		 	log "Not approved options:     ${@}"
+			log "Approved would have been: ${paramLine}"
+			die "Unapproved options in batch mode"
+		fi
 		log "Non-interactive run authorized"
 	else
 		echO "Source: ${srcDev} (${srcDevInfo}, PARTUUID=${srcUuid})"
