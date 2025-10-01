@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
 set -euo pipefail
 
 progNam=$(basename "$0")
@@ -165,7 +174,7 @@ doRsync() {
 	mountpoint -q "$trgMntGlobal" || die "Target is not mounted"
 	command -v rsync >/dev/null 2>&1 || die "rsync not found"
 	log "Starting rsync to $trgMntGlobal"
-	echO rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMntGlobal"/
+	rsync "${rsyncOpts[@]}" "${rsyncExcl[@]}" / "$trgMntGlobal"/
 	local rc=$?
 	[ $rc -eq 0 ] || die "rsync exited with code $rc"
 	log "rsync finished successfully"
@@ -237,7 +246,7 @@ main() {
 			a)
 				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
 				echO "Approved for cron only."
-				log "User approved for next cron"
+				log "User approved for next cron (options: $@)"
 				return 0
 				;;
 			q)
@@ -255,7 +264,7 @@ main() {
 	trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
 
 	doRsync
-	log "rbackup completed successfully"
+	log "rbackup $@ completed successfully"
 	[ "$isTty" -eq 1 ] && echO "rbackup: completed successfully"
 }
 
