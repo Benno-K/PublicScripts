@@ -155,7 +155,7 @@ EOF
 </head>
 <body>
   <h1>$headline</h1>
-  <div class="textConainer">
+  <div class="textContainer">
 EOF
 
   # ------------------------------
