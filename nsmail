@@ -1,0 +1,61 @@
+#!/bin/bash
+
+recipient=${1:-pi}
+mailx -s "Non Sequitur" -a "Content-Type: text/html;charset=UTF-8" $recipient <<EOI
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Non Sequitur</title>
+  <!-- Bunny Fonts -->
+  <link href="https://fonts.bunny.net/css?family=anaheim:400&display=swap" rel="stylesheet">
+  <link href="https://fonts.bunny.net/css?family=m-plus-1-code:400&display=swap" rel="stylesheet">
+  <style>
+    /* General page styling */
+    body {
+      margin: 0;
+      padding: 1em;
+      background-color: #f9f9f9;
+      color: #222;
+    }
+    /* Headline styling */
+    h1 {
+      font-family: 'Anaheim', sans-serif;
+      font-size: 1.6em;
+      text-align: center;
+      margin-bottom: 1em;
+    }
+    /* Main text styling */
+    pre {
+      font-family: 'M PLUS 1 Code', monospace;
+      font-size: 1em;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+		/* anchor less prominent */
+		a {
+			text-decoration: none;
+			color: #000000
+			display: inline-block;
+			background-color: #ffb;
+		}
+    /* Container for centered content */
+    .textContainer {
+      max-width: 800px;
+      margin: auto;
+		}
+		.webPage {
+			width: 100%;
+			height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Non Sequitur</h1>
+	<a href="https://www.gocomics.com/nonsequitur"></object>Open</a> todays cartoon
+</body>
+</html>
+EOI
+
