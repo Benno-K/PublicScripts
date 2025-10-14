@@ -1,0 +1,26 @@
+#!/bin/bash
+url="$1"
+trg=~/nonsequitur/$(date +%Y)
+while [ -z "$url" ]
+	do
+	read -p "URL: " url
+	done
+imgnam=$(date +"Non-Sequitur-%Y-%m-%d")
+curl -so $imgnam.img "$url"
+imgfmt=$(identify -format "%m" $imgnam.img)
+case $imgfmt in
+	JPEG)
+		mv $imgnam.img $trg/$imgnam.jpg
+		;;
+	GIF)
+		convert $imgfmt:$imgnam.img $trg/$imgnam.png && rm -f $imgnam.img
+		;;
+	PNG)
+		mv $imgnam.img $trg/$imgnam.png
+		;;
+	*)
+		echo Format \"$imgfmt\" not supported
+		exit 1
+		;;
+esac
+echo $imgnam processed
