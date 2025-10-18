@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+port=33445
+codeWord="Bingo"
+restartCmd="systemctl restart ssh"
+startCmd="systemctl restart ssh"
+statusCmd="systemctl status ssh"
+
+if [ "$1" = "-d" ]; then
+	echo "Hi!"
+	read -p "> " resp
+ 	resp=$(echo -n $resp | tr -d '\r') # Remove CR
+	if [ "$resp" = "$codeWord" ]; then
+		echo -n "Start/Restart/(CR=status) []: "
+		read resp
+		resp=$(echo -n $resp | tr -d '\r') # Remove CR
+		case $resp in
+			r|R)
+				sudo $restartCmd
+				;;
+			s|S)
+				sudo $startCmd
+				;;
+		esac
+		sudo $statusCmd
+	fi
+	echo "Ciao"
+	exit
+fi
+
+echo "$(date +'%F %T') - starting ncat listener on port $port (keep-open)"
+# ncat führt für jede Verbindung das sh Kommando aus, dessen stdin/stdout mit dem Client verbunden sind
+ncat --listen --keep-open --exec "$0 -d" $port

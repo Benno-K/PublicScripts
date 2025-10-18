@@ -1,0 +1,13 @@
+[Unit]
+Description=SSH Restart Watch via netcat
+After=network.target
+
+[Service]
+Type=simple
+User=kardel
+ExecStart=/usr/local/bin/sshdRestarter
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

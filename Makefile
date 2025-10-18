@@ -1,17 +1,19 @@
 SHELL = /bin/bash
-TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron rbackup
+TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron rbackup sshdRestarter
 UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore
 PTARGETS=git-web-viewer.php webgit.php
+STARGETS=sshdRestarter
 
 LBINDIR = /usr/local/bin
 UBINDIR = ~/bin
 PBINDIR = /data/www
 PSTYDIR = $(PBINDIR)/webgit-style
+STRGDIR = /usr/lib/systemd/system
 POWNER  = www-data
 PGROUP  = www-data
 PSTYLES	= dark-theme light-theme webgit-layout
 
-install: $(TARGETS) $(UTARGETS)
+install: $(TARGETS) $(UTARGETS) $(STARGETS)
 	@for n in $(UTARGETS);\
 	do \
 	diff -q $$n $(UBINDIR)/$$n > /dev/null;\
@@ -27,7 +29,17 @@ install: $(TARGETS) $(UTARGETS)
 	   echo sudo install -m 755 -t $(LBINDIR) $$n;\
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
-	done;\
+	done
+	@for n in $(STARGETS);\
+	do \
+	diff -q $$n.service $(STRGDIR)/$$n.service > /dev/null;\
+	if [ "$$?" != "0"	];then \
+	   echo install -m 755 -t $(STRGDIR) $$n.service;\
+	   sudo install -m 755 -t $(STRGDIR) $$n.service;\
+		 sudo systemctl daemon-reload;\
+		 echo "DON'T FORGET TO ENABLE/START $$n";\
+	fi;\
+	done
 
 restofabove:
 	echo for dusage;\
