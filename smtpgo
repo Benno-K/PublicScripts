@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# -------- smtpgo - automated mailserver testing ----
+# This script automates the testing of mail-
+# connections using swaks (swiss army knife for smtp).
+# It uses per connection configuration files sto
+# below ~/.config/smtpgo.
+# ----------------------------------------------------
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+# Basics, what's my name and where to sesrch configs
 me=$(basename $0)
 cfdir=~/.config/$me
 
@@ -11,69 +28,80 @@ cfdir=~/.config/$me
 #   values to allowed variables
 #   everything not being "name=value" gives an error
 readCfg () {
+	# Open config file passed as arg #1 as unit 3 and
+	# read first line
 	exec 3< $1
 	read -u3 cfgline
+	# Until EOF
 	until [ $? != 0 ]
 	do
+		# Count lines
 		((n++))
+		# Extract variable name (left of =)
 		nam=${cfgline/=*/}
+		# Extract variable value (right of =)
 		val=${cfgline/*=/}
+		# Check validity and define values
 		case $nam in
-			from|mode|to|mailer|port|ehlo)
-				read $nam <<< $val
-				;;
-				no6|f|m|t|s|p|e)
+			ip|from|mode|to|mailer|port|ehlo)
 				read $nam <<< $val
 				;;
 			noauth)
+				# The presence of noauth is enough
 				auth=
 				;;
 			*)
-				echo "config line $n invalid"
+				echo >&2 "config line $n invalid:"
+				echo >&2 " ${cfgline}"
 				;;
 		esac
 		read -u3 cfgline
 	done
 }
 
+# The real work is done by swaks, ensure it's installed
+# if not, complain and stop
 type swaks > /dev/null
 [ $? != 0 ] && echo "You do not have swaks installed - exiting" && exit 4
 
+# Little goodie, find out where we run, to tell later
 if [ -r /etc/os-release ]; then
 	. /etc/os-release
 	infosuffix=" on $(hostname) running $NAME ($VERSION_CODENAME)"
 fi
 
-ehlo=${ehlo:-mx.kardel.eu}
+# Default values, most servers use auth, not verbose
 auth="--auth"
-
 ha="-ha"
+
+# Parse commandline options
 while [ "${1:0:1}" = "-" ]
 	do
 	case $1 in
-		"-4")
+		"-4") # user forces IP version
 			i=4
 			;;
-		"-6")
+		"-6") # user forces IP version
 			i=6
 			;;
-		"-a")
+		"-a") # Process all mailers by config file
 			shift
 			mailers=$(ls -1 ~/.config/smtpgo/)
+			# Just call ourselves per mailer
 			for mailer in $mailers
 			do
 				$0 "$@" $mailer
 			done
 			exit;
 			;;
-		"-e")
+		"-e") # Override EHLO of config
 			shift
 			ehlo=$1
 			;;
-		"-v")
+		"-v") # Be verbose (turn off swaks --hide-all/--ha)
 			ha=
 			;;
-		*)
+		*) # unknown option given
 			echo >&2 "illegal option: $1"
 			exit 2
 			;;
@@ -81,8 +109,10 @@ while [ "${1:0:1}" = "-" ]
 	shift
 done
 
-cfnam=$cfdir/${1:-freenet}
+# Name of config file
+cfnam=$cfdir/${1}
 
+# Check for config dir and file, complain if absent
 if [ ! -d $cfdir ]; then
 	echo >&2 "configuration directorx $cfdir is missing"
 	exit 1
@@ -92,12 +122,28 @@ if [ ! -r $cfnam ]; then
 	exit 2
 fi
 
+# Read the config, define vars from it
 readCfg $cfnam
 
-ip=${i:-$(getent ahosts $mailer | awk '/STREAM/{if (index($1,":")>0) {print "6"};if (index($1,".")>0) {print "4"};exit}')}
+if [ -z "$ip" ]; then
+	# Find the preferred IP protocol
+	#  How?
+	#   Ask the name-resolver for the mailserver host and
+	#   find what IP is listed first. If it contains dots
+	#   (.) it is IPv4, if colons (:) it is IPv6.
+	#   Can be overriden in the config (ip=4,ip=6)
+	ip=${i:-$(getent ahosts $mailer | awk '/STREAM/{if (index($1,":")>0) {print "6"};if (index($1,".")>0) {print "4"};exit}')}
+fi
+
+# For the message, we define a name for tls/tlsc
 modename=TLS
 [ $mode = tls ] && modename=StartTLS
+
+# Define MIME-type of mail-message
 msgtype=plain
+
+# Define the body that will be mailed containing
+# all parameters of the test
 read -rd '' msg <<EOI
 This test message was sent using the following parameters
 IP version: $ip
@@ -112,4 +158,5 @@ at $(date "+%H:%M:%S on %m/%d, %Y")
 ©$(date +%Y) $(basename $0)$infosuffix
 EOI
 
+# Now use swaks to submit the message
 swaks $ha -$ip --ehlo $ehlo --server $mailer:$port --from $from --to $to -$mode $auth --header-Content-Type "text/${msgtype};charset=utf-8" --header-Subject "$from→$to via IPv$ip:$mailer:$port/$modename" --body "${msg}"
