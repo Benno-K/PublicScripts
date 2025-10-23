@@ -1,8 +1,45 @@
 #!/bin/bash
 
-tmpf=$(mktemp mmuttXXXXXX.tmp)
+# getNetrcCreds <machine> [netrc-file]
+# Sets netrcUser and netrcPass on success, returns 0.
+# Returns non-zero if machine not found or credentials incomplete.
+getNetrcCreds() {
+  local machine="$1"
+  local netrcFile="${2:-$HOME/.netrc}"
 
-if [ "$2" @= "" ]; then
+  netrcUser=""
+  netrcPass=""
+
+  # Prüfe, ob Datei lesbar ist
+  [ -r "$netrcFile" ] || { return 1; }
+
+  # Awk: finde block für machine, extrahiere login/password, entferne Anführungszeichen
+  local result
+  result=$(awk -v m="$machine" '
+    $1 == "machine" && $2 == m { inBlock = 1; next }
+    $1 == "machine" && inBlock { inBlock = 0 }
+    inBlock && $1 == "login"   { user = $2 }
+    inBlock && $1 == "password"{ pass = $2 }
+    END {
+      if (user != "" && pass != "") {
+        gsub(/^"|"$/, "", user)
+        gsub(/^"|"$/, "", pass)
+        printf("%s\t%s", user, pass)
+      }
+    }' "$netrcFile")
+
+  [ -z "$result" ] && return 1
+
+  # Split result (user<TAB>pass)
+  IFS=$'\t' read -r netrcUser netrcPass <<< "$result"
+	echo $netrcUser:$netrcPass
+  return 0
+}
+
+# Create temp file, remove it  on exit
+tmpf=$(mktemp ~/.mmuttXXXXXX.tmp) && trap "rm -f $tmpf" EXIT
+
+if [ "$2" != "" ]; then
 	pw=$2
 fi
 
@@ -11,6 +48,11 @@ if [ ${1:0:1} == / ]; then
 else
 	folder="imaps://localhost"
   un=$(echo $1 | cut -d@ -f1)
+fi
+
+creds=$(getNetrcCreds mutt:$1)
+if [ $? = 0 ]; then
+	IFS=: ; read un pw <<<$creds;unset IFS
 fi
 
 if [ "$pw" == "" ];then
