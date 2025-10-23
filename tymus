@@ -1,0 +1,233 @@
+#!/bin/bash
+
+# -------- tymus - automated mailserver testing ----
+# tymus stands for:        
+#          T est
+#          Y our
+#          M ailservers
+#          U sing
+#          S  waks
+#
+# This script automates the testing of mail-
+# connections using swaks (swiss army knife for smtp).
+# It uses per connection configuration files sto
+# below ~/.config/tymus.
+# ----------------------------------------------------
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+# Basics, what's my name and where to sesrch configs
+me=$(basename $0)
+cfdir=~/.config/$me
+
+# Read config file and define variables defined there
+#  about the config:
+#   it just contains name value pairs separated by an =-sign
+#   it could as well just be sourced, however to minimize
+#   command injection, we just parse it and only assign
+#   values to allowed variables
+#   everything not being "name=value" gives an error
+readCfg () {
+	# Open config file passed as arg #1 as unit 3 and
+	# read first line
+	exec 3< $1
+	read -u3 cfgline
+	# Until EOF
+	until [ $? != 0 ]
+	do
+		# Count lines
+		((n++))
+		# Extract variable name (left of =)
+		nam=${cfgline/=*/}
+		# Extract variable value (right of =)
+		val=${cfgline/*=/}
+		# Check validity and define values
+		case $nam in
+			ip|from|mode|to|mailer|port|ehlo)
+				read $nam <<< $val
+				;;
+			noauth)
+				# The presence of noauth is enough
+				auth=
+				;;
+			*)
+				echo >&2 "config line $n invalid:"
+				echo >&2 " ${cfgline}"
+				;;
+		esac
+		read -u3 cfgline
+	done
+}
+
+# The real work is done by swaks, ensure it's installed
+# if not, complain and stop
+type swaks > /dev/null
+[ $? != 0 ] && echo "You do not have swaks installed - exiting" && exit 4
+
+# Little goodie, find out where we run, to tell later
+if [ -r /etc/os-release ]; then
+	. /etc/os-release
+	infosuffix=" on $(hostname) running $NAME ($VERSION_CODENAME)"
+fi
+
+# Default values, most servers use auth, not verbose
+auth="--auth"
+ha="-ha"
+
+# Parse commandline options
+while [ "${1:0:1}" = "-" ]
+	do
+	case $1 in
+		"-4") # user forces IP version
+			i=4
+			;;
+		"-6") # user forces IP version
+			i=6
+			;;
+		"-a") # Process all mailers by config file
+			shift
+			mailers=$(ls -1 ~/.config/tymus/)
+			# Just call ourselves per mailer
+			for mailer in $mailers
+			do
+				$0 "$@" $mailer
+			done
+			exit;
+			;;
+		"-e") # Override EHLO of config
+			shift
+			ehlo=$1
+			;;
+		"-v") # Be verbose (turn off swaks --hide-all/--ha)
+			ha=
+			;;
+		"-h"|"--help")
+			cat <<-EOI
+			Usage: $me [option..] [configfile]
+			  $me takes defs from config file to send a
+			  test message through an SMTP-mailer
+			 Options:
+			  -4	use IPv4 for connection
+			  -6	use IPv6 for connection
+			  -a	process ALL config files
+			  -ci	display info for config file syntax
+			  -c	config - prompt for creating a config file
+			  -e	override EHLO from config
+			  -v	be verbose
+			  -h	display this text
+			EOI
+			exit
+			;;
+		"-c")
+			read -p "(Config-File)Name for this file: " cfnam
+			read -p "hostname of mailserver: " mailer   
+			read -p "port number (e.g. 465,587,25): " port
+			read -p "recipient: " to       
+			read -p "sender: " from
+			read -p "mode (tlsc, tls): " mode
+			echo "the hostname this host should claim to be when"
+			read -p "initiating the conversation: " ehlo
+			echo "By default the IP protocol prefered by"
+			echo "the mailserver is obtained. You can"
+			echo "override this by forcing 4 or 6. Just"
+			echo "press <CR> to use default, or enter"
+			read -p "IP protocol version to force (<CR>,4,6): " ip
+			cat <<-EOI > $cfdir/$cfnam && echo "created $cfdir/$cfnam"
+			mailer=$mailer
+			port=$port
+			from=$from
+			to=$to
+			mode=$mode
+			ehlo=$ehlo
+			ip=$ip
+			EOI
+			exit
+			;;
+		"-ci")
+			cat <<-EOI
+			Configuration variables and their values
+			 mailer   hostname of mailserver
+			 port     port number (usual: 465 for TLS
+			          587 for StartTLS, rarely 25)
+			 from     the originator's mail address
+			 to       the recipient's mail address
+			 mode     valid: tls (=StartTLS), tlsc (=TLS)
+			 ehlo     the own hostname used to begin the
+			          conversation
+			 ip       the IP protocol
+			Example:
+			mailer=mx.freenet.de
+			port=465
+			from=itsme@freenet.de
+			to=you@somewhere.org
+			mode=tlsc
+			ehlo=mymailer.mydomain.net
+			EOI
+			exit
+			;;
+		*) # unknown option given
+			echo >&2 "illegal option: $1"
+			exit 2
+			;;
+	esac
+	shift
+done
+
+# Name of config file
+cfnam=$cfdir/${1}
+
+# Check for config dir and file, complain if absent
+if [ ! -d $cfdir ]; then
+	echo >&2 "configuration directory $cfdir is missing"
+	exit 1
+fi
+if [ ! -r $cfnam ]; then
+	echo >&2 "cannot read configuration file $cfnam"
+	exit 2
+fi
+
+# Read the config, define vars from it
+readCfg $cfnam
+
+if [ -z "$ip" ]; then
+	# Find the preferred IP protocol
+	#  How?
+	#   Ask the name-resolver for the mailserver host and
+	#   find what IP is listed first. If it contains dots
+	#   (.) it is IPv4, if colons (:) it is IPv6.
+	#   Can be overriden in the config (ip=4,ip=6)
+	ip=${i:-$(getent ahosts $mailer | awk '/STREAM/{if (index($1,":")>0) {print "6"};if (index($1,".")>0) {print "4"};exit}')}
+fi
+
+# For the message, we define a name for tls/tlsc
+modename=TLS
+[ $mode = tls ] && modename=StartTLS
+
+# Define MIME-type of mail-message
+msgtype=plain
+
+# Define the body that will be mailed containing
+# all parameters of the test
+read -rd '' msg <<EOI
+This test message was sent using the following parameters
+IP version: $ip
+From:       $from
+To:         $to
+Mailer:     $mailer
+Port:       $port
+Mode:       $modename
+EHLO:       $ehlo
+at $(date "+%H:%M:%S on %m/%d, %Y")
+
+©$(date +%Y) $(basename $0)$infosuffix
+EOI
+
+# Now use swaks to submit the message
+swaks $ha -$ip --ehlo $ehlo --server $mailer:$port --from $from --to $to -$mode $auth --header-Content-Type "text/${msgtype};charset=utf-8" --header-Subject "$from→$to via IPv$ip:$mailer:$port/$modename" --body "${msg}"
