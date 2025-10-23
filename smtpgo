@@ -101,6 +101,62 @@ while [ "${1:0:1}" = "-" ]
 		"-v") # Be verbose (turn off swaks --hide-all/--ha)
 			ha=
 			;;
+		"-h"|"--help")
+			cat <<-EOI
+			Usage: $me [option..] [configfile]
+			  $me takes defs from config file to send a
+			  test message through an SMTP-mailer
+			 Options:
+			  -4	use IPv4 for connection
+			  -6	use IPv6 for connection
+			  -a	process ALL config files
+			  -ci	display info for config file syntax
+			  -c	config - prompt for creating a config file
+			  -e	override EHLO from config
+			  -v	be verbose
+			  -h	display this text
+			EOI
+			exit
+			;;
+		"-c")
+			read -p "(Config-File)Name for this file: " cfnam
+			read -p "hostname of mailserver: " mailer   
+			read -p "port number (e.g. 465,587,25): " port
+			read -p "recipient: " to       
+			read -p "sender: " from
+			read -p "mode (tlsc, tls): " mode
+			echo "the hostname this host should claim to be when"
+			read -p "initiating the conversation: " ehlo
+			echo "By default the IP protocol prefered by"
+			echo "the mailserver is obtained. You can"
+			echo "override this by forcing 4 or 6. Just"
+			echo "press <CR> to use default, or enter"
+			read -p "IP protocol version to force (<CR>,4,6): " ip
+			cat <<-EOI > $cfdir/$cfnam && echo "created $cfdir/$cfnam"
+			mailer=$mailer
+			port=$port
+			from=$from
+			to=$to
+			mode=$mode
+			ehlo=$ehlo
+			ip=$ip
+			EOI
+			exit
+			;;
+		"-ci")
+			cat <<-EOI
+			Configuration variables and their values
+			 mailer   hostname of mailserver
+			 port     port number (usual: 465 for TLS
+			          587 for StartTLS, rarely 25)
+			 from     the originator's mail address
+			 to       the recipient's mail address
+			 mode     valid: tls (=StartTLS), tlsc (=TLS)
+			 ehlo     the own hostname used to begin the
+			          conversation
+			EOI
+			exit
+			;;
 		*) # unknown option given
 			echo >&2 "illegal option: $1"
 			exit 2
