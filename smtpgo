@@ -114,7 +114,7 @@ cfnam=$cfdir/${1}
 
 # Check for config dir and file, complain if absent
 if [ ! -d $cfdir ]; then
-	echo >&2 "configuration directorx $cfdir is missing"
+	echo >&2 "configuration directory $cfdir is missing"
 	exit 1
 fi
 if [ ! -r $cfnam ]; then
