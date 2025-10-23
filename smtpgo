@@ -1,0 +1,115 @@
+#!/bin/bash
+
+me=$(basename $0)
+cfdir=~/.config/$me
+
+# Read config file and define variables defined there
+#  about the config:
+#   it just contains name value pairs separated by an =-sign
+#   it could as well just be sourced, however to minimize
+#   command injection, we just parse it and only assign
+#   values to allowed variables
+#   everything not being "name=value" gives an error
+readCfg () {
+	exec 3< $1
+	read -u3 cfgline
+	until [ $? != 0 ]
+	do
+		((n++))
+		nam=${cfgline/=*/}
+		val=${cfgline/*=/}
+		case $nam in
+			from|mode|to|mailer|port|ehlo)
+				read $nam <<< $val
+				;;
+				no6|f|m|t|s|p|e)
+				read $nam <<< $val
+				;;
+			noauth)
+				auth=
+				;;
+			*)
+				echo "config line $n invalid"
+				;;
+		esac
+		read -u3 cfgline
+	done
+}
+
+type swaks > /dev/null
+[ $? != 0 ] && echo "You do not have swaks installed - exiting" && exit 4
+
+if [ -r /etc/os-release ]; then
+	. /etc/os-release
+	infosuffix=" on $(hostname) running $NAME ($VERSION_CODENAME)"
+fi
+
+ehlo=${ehlo:-mx.kardel.eu}
+auth="--auth"
+
+ha="-ha"
+while [ "${1:0:1}" = "-" ]
+	do
+	case $1 in
+		"-4")
+			i=4
+			;;
+		"-6")
+			i=6
+			;;
+		"-a")
+			shift
+			mailers=$(ls -1 ~/.config/smtpgo/)
+			for mailer in $mailers
+			do
+				$0 "$@" $mailer
+			done
+			exit;
+			;;
+		"-e")
+			shift
+			ehlo=$1
+			;;
+		"-v")
+			ha=
+			;;
+		*)
+			echo >&2 "illegal option: $1"
+			exit 2
+			;;
+	esac
+	shift
+done
+
+cfnam=$cfdir/${1:-freenet}
+
+if [ ! -d $cfdir ]; then
+	echo >&2 "configuration directorx $cfdir is missing"
+	exit 1
+fi
+if [ ! -r $cfnam ]; then
+	echo >&2 "cannot read configuration file $cfnam"
+	exit 2
+fi
+
+readCfg $cfnam
+
+ip=${i:-$(getent ahosts $mailer | awk '/STREAM/{if (index($1,":")>0) {print "6"};if (index($1,".")>0) {print "4"};exit}')}
+modename=TLS
+[ $mode = tls ] && modename=StartTLS
+msgtype=plain
+read -rd '' msg <<EOI
+This test message was sent using the following parameters
+IP version: $ip
+From:       $from
+To:         $to
+Mailer:     $mailer
+Port:       $port
+Mode:       $modename
+EHLO:       $ehlo
+at $(date "+%H:%M:%S on %m/%d, %Y")
+
+©$(date +%Y) $(basename $0)$infosuffix
+EOI
+
+swaks $ha -$ip --ehlo $ehlo --server $mailer:$port --from $from --to $to -$mode $auth --header-Content-Type "text/${msgtype};charset=utf-8" --header-Subject "$from→$to via IPv$ip:$mailer:$port/$modename" --body "${msg}"
