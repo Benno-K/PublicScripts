@@ -3,15 +3,68 @@
 tymus is a small wrapper script to send test/diagnostic email messages from the command line. It reads defaults from a per-mailserver profile (config) file, constructs a swaks command for the SMTP transaction and runs it.
 
 Important points kept concise:
-- tymus invokes swaks <br/> swaks must be installed and in PATH. The swaks documentation on the web is linked below; no separate swaks-doc package is required.
+- tymus invokes swaks <br/> swaks must be installed and in PATH. 
 - Profiles are one file per mailserver and are stored in the tymus subdirectory of the user's XDG config directory: `~/.config/tymus/<profile>`.
-- Profile parsing is strict: keys are case-sensitive and must be exactly the permitted names. Unknown or malformed lines (including blank lines or comment lines) will cause an error.
 
-## Links / cross-reference
-- swaks project and documentation: https://www.jetmore.org/john/code/swaks/
-- swaks man page (example): https://manpages.debian.org/testing/swaks/swaks.1.en.html
+## Command-line usage
+See below - output of  `tymus -h`
+```
+Usage: tymus [option..] [configfile]
+  tymus takes defs from config file to send a
+  test message through an SMTP-mailer
+ Options:
+  -4    use IPv4 for connection
+  -6    use IPv6 for connection
+  -a    process ALL config files
+  -ci   display info for config file syntax
+  -c    config - prompt for creating a config file
+  -e    override EHLO from config
+  -l    list config files in config directory
+  -v    be verbose
+  -h    display this text
+```
 
-## Requirements
+### Notes on options
+- [configfile] required except with -a<br/> profile filename to use (resolved relative to `~/.config/tymus/`)
+- -4 / -6 <br/> force IPv4 or IPv6 respectively
+- -a <br/> process ALL config files found (useful for running the same check/send against all profiles). It is not a bad idea using `-l` before using `-a`.
+- -ci <br/> show config-file syntax help (prints the exact permitted keys and examples)
+- -c <br/> prompt to create a config file (interactive helper).
+- -e <br/> override the `ehlo` value from the config on the command line
+- -l <br/> list all the configuration files in the configuration directory
+- -v <br/> verbose mode for swaks. Will display the conversation with the mailserver including (**not encrypted**,  base64-encoded) credentials in **cleartext**.[^b64enc]
+[^b64enc]:This means you will probably not even recognize the credentials in the log, but surely possible attackers will. So keep an eye on the lines following `AUTH LOGIN`! The string `VXNlcm5hbWU6` is just base64 for the server requesting `Username`.
+- -h <br/> display help (the usage text above)
+### Configuration options info
+#### Example: the `-ci` output as shown by the script
+```
+Configuration variables and their values
+ mailer   hostname of mailserver
+ port     port number (usual: 465 for TLS
+          587 for StartTLS, rarely 25)
+ from     the originator's mail address
+ to       the recipient's mail address
+ mode     valid: tls (=StartTLS), tlsc (=TLS)
+ ehlo     the own hostname used to begin the
+          conversation
+ ip       the IP protocol
+ noauth   if present, SMTP-session will not
+          try to authenticate
+Example:
+mailer=mx.freenet.de
+port=465
+from=itsme@freenet.de
+to=you@somewhere.org
+mode=tlsc
+ehlo=mymailer.mydomain.net
+```
+The ehlo can be blank (or the ehlo-line omitted.
+
+## Credentials and ~/.netrc
+swaks reads SMTP credentials from `~/.netrc` (and otherwise prompts). Because of that, tymus profile files do not contain sensitive passwords. Put authentication credentials in `~/.netrc` for non-interactive use.
+
+
+### Requirements
 - swaks (must be installed and available in PATH).
 - POSIX shell (bash/sh).
 - Typical unix utilities (cat, chmod, etc.).
@@ -51,8 +104,6 @@ sudo apt install \
 ```
 You may have to adjust package names for your distribution/release.
 
-## Credentials and ~/.netrc
-swaks reads SMTP credentials from `~/.netrc` (and otherwise prompts). Because of that, tymus profile files do not contain sensitive passwords. Put authentication credentials in `~/.netrc` for non-interactive use.
 
 ### Example `~/.netrc` entry:
 ```
@@ -109,58 +160,7 @@ ip=4
 - Unknown keys or malformed lines will cause an error and abort processing.
 - If you want the definitive key list, refer to the output of `./tymus -ci` on your system (it prints the exact valid keys and short descriptions).
 
-## Command-line usage
-See below - output of  `tymus -h`
-```
-Usage: tymus [option..] [configfile]
-  tymus takes defs from config file to send a
-  test message through an SMTP-mailer
- Options:
-  -4    use IPv4 for connection
-  -6    use IPv6 for connection
-  -a    process ALL config files
-  -ci   display info for config file syntax
-  -c    config - prompt for creating a config file
-  -e    override EHLO from config
-  -l     list config files in config directory
-  -v    be verbose
-  -h    display this text
-```
 
-### Notes on options
-- [configfile] (optional positional) <br/> path or profile filename to use (resolved relative to `~/.config/tymus/` if you pass a profile name)
-- -4 / -6 <br/> force IPv4 or IPv6 respectively
-- -a <br/> process ALL config files found (useful for running the same check/send against all profiles)
-- -ci <br/> show config-file syntax help (prints the exact permitted keys and examples)
-- -c <br/> prompt to create a config file (interactive helper).
-- -e <br/> override the `ehlo` value from the config on the command line
-- -l <br/> list all the configuration files in the configuration directory
-- -v <br/> verbose mode 
-- -h <br/> display help (the usage text above)
-
-### Configuration options info
-#### Example: the `-ci` output as shown by the script
-```
-Configuration variables and their values
- mailer   hostname of mailserver
- port     port number (usual: 465 for TLS
-          587 for StartTLS, rarely 25)
- from     the originator's mail address
- to       the recipient's mail address
- mode     valid: tls (=StartTLS), tlsc (=TLS)
- ehlo     the own hostname used to begin the
-          conversation
- ip       the IP protocol
- noauth   if present, SMTP-session will not
-          try to authenticate
-Example:
-mailer=mx.freenet.de
-port=465
-from=itsme@freenet.de
-to=you@somewhere.org
-mode=tlsc
-ehlo=mymailer.mydomain.net
-```
 ### Examples
 1) Use a profile named `my-mailserver1`:
 ```sh
