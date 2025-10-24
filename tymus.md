@@ -3,7 +3,7 @@
 tymus is a small wrapper script to send test/diagnostic email messages from the command line. It reads defaults from a per-mailserver profile (config) file, constructs a swaks command for the SMTP transaction and runs it.
 
 Important points kept concise:
-- tymus invokes swaks — swaks must be installed and in PATH. The swaks documentation on the web is linked below; no separate swaks-doc package is required.
+- tymus invokes swaks <br/> swaks must be installed and in PATH. The swaks documentation on the web is linked below; no separate swaks-doc package is required.
 - Profiles are one file per mailserver and are stored in the tymus subdirectory of the user's XDG config directory: `~/.config/tymus/<profile>`.
 - Profile parsing is strict: keys are case-sensitive and must be exactly the permitted names. Unknown or malformed lines (including blank lines or comment lines) will cause an error.
 
@@ -86,7 +86,9 @@ The script documents these exact names in its config-info output. Use these name
 - `from`<br/>originator's mail address
 - `to`<br/>recipient's mail address
 - `mode`<br/>valid values: `tls` for StartTLS, `tlsc` for implicit TLS
-- `ehlo`<br/>local hostname to use in EHLO)
+- `ehlo`<br/>local hostname to use in EHLO[^ehlo]
+[^ehlo]:A note on EHLO. Most of mailservers seem to pretty ignore what host is in the EHLO message, so it doesn't matter what you put here in
+most cases.
 - `ip`<br/>IP protocol preference; influences IPv4/IPv
 - `noauth`<br/>if present SMTP-session will not try to log on
 
@@ -103,7 +105,7 @@ ip=4
 ### Profile parsing rules (summary)
 - Each line must be a single VAR=VALUE assignment.
 - Keys are case-sensitive; `from` is not the same as `From`.
-- Blank lines or comment lines are not accepted — they will cause an error.
+- Blank lines or comment lines are not accepted <br/> they will cause an error.
 - Unknown keys or malformed lines will cause an error and abort processing.
 - If you want the definitive key list, refer to the output of `./tymus -ci` on your system (it prints the exact valid keys and short descriptions).
 
@@ -120,19 +122,21 @@ Usage: tymus [option..] [configfile]
   -ci   display info for config file syntax
   -c    config - prompt for creating a config file
   -e    override EHLO from config
+  -l     list config files in config directory
   -v    be verbose
   -h    display this text
 ```
 
 ### Notes on options
-- [configfile] (optional positional) — path or profile filename to use (resolved relative to `~/.config/tymus/` if you pass a profile name).
-- -4 / -6 — force IPv4 or IPv6 respectively.
-- -a — process ALL config files found (useful for running the same check/send against all profiles).
-- -ci — show config-file syntax help (prints the exact permitted keys and examples).
-- -c — prompt to create a config file (interactive helper).
-- -e — override the `ehlo` value from the config on the command line.
-- -v — verbose mode.
-- -h — display help (the usage text above).
+- [configfile] (optional positional) <br/> path or profile filename to use (resolved relative to `~/.config/tymus/` if you pass a profile name)
+- -4 / -6 <br/> force IPv4 or IPv6 respectively
+- -a <br/> process ALL config files found (useful for running the same check/send against all profiles)
+- -ci <br/> show config-file syntax help (prints the exact permitted keys and examples)
+- -c <br/> prompt to create a config file (interactive helper).
+- -e <br/> override the `ehlo` value from the config on the command line
+- -l <br/> list all the configuration files in the configuration directory
+- -v <br/> verbose mode 
+- -h <br/> display help (the usage text above)
 
 ### Configuration options info
 #### Example: the `-ci` output as shown by the script
@@ -195,7 +199,7 @@ ehlo=mymailer.mydomain.net
 - Do not put secrets in profile files; keep credentials in `~/.netrc` and restrict `~/.netrc` with `chmod 600`.
 - Be careful when running `-a` (all profiles) to avoid sending accidental messages to many recipients.
 
-# License & contributing
+## License & contributing
 - Follow the repository license (see LICENSE in the repo).
 - Contributions: open a PR with changes or improvements to docs or example profiles.
 

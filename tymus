@@ -103,10 +103,7 @@ while [ "${1:0:1}" = "-" ]
 			;;
 		"-e") # Override EHLO of config
 			shift
-			ehlo=$1
-			;;
-		"-v") # Be verbose (turn off swaks --hide-all/--ha)
-			ha=
+			ehloOverride=$1
 			;;
 		"-h"|"--help")
 			cat <<-EOI
@@ -120,6 +117,7 @@ while [ "${1:0:1}" = "-" ]
 			  -ci	display info for config file syntax
 			  -c	config - prompt for creating a config file
 			  -e	override EHLO from config
+			  -l	list config files in config directory
 			  -v	be verbose
 			  -h	display this text
 			EOI
@@ -174,6 +172,14 @@ while [ "${1:0:1}" = "-" ]
 			EOI
 			exit
 			;;
+		"-l") # all..profiles
+				echo "Your configs in $cfdir:"
+				ls -1 $cfdir
+				exit
+				;;
+		"-v") # Be verbose (turn off swaks --hide-all/--ha)
+			ha=
+			;;
 		*) # unknown option given
 			echo >&2 "illegal option: $1"
 			exit 2
@@ -202,6 +208,9 @@ fi
 
 # Read the config, define vars from it
 readCfg $cfnam
+if [ ! -z "$ehloOverride" ]; then
+	ehlo=$ehloOverride
+fi
 
 if [ -z "$ip" ]; then
 	# Find the preferred IP protocol
@@ -236,5 +245,6 @@ at $(date "+%H:%M:%S on %m/%d, %Y")
 ©$(date +%Y) $(basename $0)$infosuffix
 EOI
 
+ehlo=${ehlo-tymus-mailtester}
 # Now use swaks to submit the message
 swaks $ha -$ip --ehlo $ehlo --server $mailer:$port --from $from --to $to -$mode $auth --header-Content-Type "text/${msgtype};charset=utf-8" --header-Subject "$from→$to via IPv$ip:$mailer:$port/$modename" --body "${msg}"
