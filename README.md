@@ -270,6 +270,11 @@ prompted.
 Sends a timestamped test
 email. 
 
+## tymus
+
+tymus is a small wrapper script to send test/diagnostic email messages from the command line. It reads defaults from a per-mailserver profile (config) file, constructs a swaks command for the SMTP transaction and runs it.
+See [tymus.md](tymus.md) for details.
+
 ## upgchk
 
 Checks whether there are outstanding apt packages
