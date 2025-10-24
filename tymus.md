@@ -198,3 +198,72 @@ ehlo=mymailer.mydomain.net
 # License & contributing
 - Follow the repository license (see LICENSE in the repo).
 - Contributions: open a PR with changes or improvements to docs or example profiles.
+
+## Sample output
+Usually tymus does not produce any output. But if you need to
+troubleshoot a connection you can use the -v option.
+
+### Example for -v
+```
+tymus -v myprovider
+```
+could deliver the following output.
+```
+=== Trying mx.mydomain.eu:465...
+=== Connected to mx.mydomain.eu.
+=== TLS started with cipher TLSv1.3:TLS_AES_256_GCM_SHA384:256
+=== TLS client certificate not requested and not sent
+=== TLS no client certificate set
+=== TLS peer[0]   subject=[/CN=mydomain.eu]
+===               commonName=[mydomain.eu], subjectAltName=[DNS:a.mydomain.eu, DNS:b.mydomain.eu, DNS:myotherdomain.de, DNS:c.mydomain.eu, DNS:mydomain.eu, DNS:mx.mydomain.eu, DNS:mymailer.mydomain.eu, DNS:www.myotherdomain.de, DNS:www.mydomain.eu] notAfter=[2025-11-23T00:03:15Z]
+=== TLS peer certificate failed CA verification (unable to get local issuer certificate), passed host verification (using host mx.mydomain.eu to verify)
+<~  220 mymailer ESMTP Postfix
+ ~> EHLO mx.mydomain.eu
+<~  250-mymailer
+<~  250-PIPELINING
+<~  250-SIZE 104857600
+<~  250-VRFY
+<~  250-ETRN
+<~  250-AUTH PLAIN LOGIN
+<~  250-ENHANCEDSTATUSCODES
+<~  250-8BITMIME
+<~  250-DSN
+<~  250 SMTPUTF8
+ ~> AUTH LOGIN
+<~  334 VXNlcm5hbWU6
+ ~> ( left out in example)
+<~  334 UGFzc3dvcmQ6
+ ~> ( left out in example)
+<~  235 2.7.0 Authentication successful
+ ~> MAIL FROM:<myself@mydomain.eu>
+<~  250 2.1.0 Ok
+ ~> RCPT TO:<myself@provider.de>
+<~  250 2.1.5 Ok
+ ~> DATA
+<~  354 End data with <CR><LF>.<CR><LF>
+ ~> Date: Fri, 24 Oct 2025 14:34:02 +0200
+ ~> To: myself@provider.de
+ ~> From: myself@mydomain.eu
+ ~> Subject: myself@mydomain.eu→myself@provider.de via IPv6:mx.mydomain.eu:465/TLS
+ ~> Message-Id: <20251024143402.013671@mymailer.mynet.home>
+ ~> X-Mailer: swaks v20240103.0 jetmore.org/john/code/swaks/
+ ~> Content-Type: text/plain;charset=utf-8
+ ~> 
+ ~> This test message was sent using the following parameters
+ ~> IP version: 6
+ ~> From:       myself@mydomain.eu
+ ~> To:         myself@provider.de
+ ~> Mailer:     mx.mydomain.eu
+ ~> Port:       465
+ ~> Mode:       TLS
+ ~> EHLO:       mx.mydomain.eu
+ ~> at 14:34:01 on 10/24, 2025
+ ~> 
+ ~> ©2025 tymus on mymailer running Raspbian GNU/Linux (trixie)
+ ~> 
+ ~> .
+<~  250 2.0.0 Ok: queued as 6E3A0A0E9D
+ ~> QUIT
+<~  221 2.0.0 Bye
+=== Connection closed with remote host.
+```
