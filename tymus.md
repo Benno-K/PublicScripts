@@ -208,7 +208,7 @@ troubleshoot a connection you can use the -v option.
 tymus -v myprovider
 ```
 could deliver the following output.
-```
+```log
 === Trying mx.mydomain.eu:465...
 === Connected to mx.mydomain.eu.
 === TLS started with cipher TLSv1.3:TLS_AES_256_GCM_SHA384:256
