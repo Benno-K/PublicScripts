@@ -33,7 +33,7 @@ Usage: tymus [option..] [configfile]
 - -e <br/> override the `ehlo` value from the config on the command line
 - -l <br/> list all the configuration files in the configuration directory
 - -v <br/> verbose mode for swaks. Will display the conversation with the mailserver including (**not encrypted**,  base64-encoded) credentials in **cleartext**.[^b64enc]
-[^b64enc]:This means you will probably not even recognize the credentials in the log, but surely possible attackers will. So keep an eye on the lines following `AUTH LOGIN`! The string `VXNlcm5hbWU6` is just base64 for the server requesting `Username`.
+[^b64enc]:This means you will probably not even recognize the credentials in the log, but possible attackers will surely. So keep an eye on the lines following `AUTH LOGIN`! The string `VXNlcm5hbWU6` is just base64 for the server requesting `Username:`, followed by the response, then `UGFzc3dvcmQ6` which is `Password:`, followed by the response to that.
 - -h <br/> display help (the usage text above)
 ### Configuration options info
 #### Example: the `-ci` output as shown by the script
@@ -63,47 +63,6 @@ The ehlo can be blank (or the ehlo-line omitted.
 ## Credentials and ~/.netrc
 swaks reads SMTP credentials from `~/.netrc` (and otherwise prompts). Because of that, tymus profile files do not contain sensitive passwords. Put authentication credentials in `~/.netrc` for non-interactive use.
 
-
-### Requirements
-- swaks (must be installed and available in PATH).
-- POSIX shell (bash/sh).
-- Typical unix utilities (cat, chmod, etc.).
-
-Installing swaks on Debian/Ubuntu
-```sh
-sudo apt update
-sudo apt install swaks
-```
-
-## Note about swaks and Perl dependencies
-swaks is a Perl program that depends on a number of CPAN modules. Some distribution packages do not pull in every dependency and you may see Perl error messages after installing swaks. Prefer your distribution package manager over cpan/cpanm to install these dependencies.
-
-### Helpful Debian/Ubuntu packages to satisfy swaks' dependencies:
-```sh
-sudo apt update
-sudo apt install \
-  libdigest-hmac-perl \
-  libsub-exporter-perl \
-  libmodule-runtime-conflicts-perl \
-  libencode-imaputf7-perl \
-  libfile-copy-recursive-perl \
-  libnet-ssleay-perl \
-  libsocket6-perl \
-  libio-tee-perl \
-  libparse-recdescent-perl \
-  libterm-readkey-perl \
-  libunicode-string-perl \
-  libreadonly-perl \
-  libsys-meminfo-perl \
-  libregexp-common-perl \
-  libfile-tail-perl \
-  libdevel-mat-dumper-perl \
-  libgetargs-long-perl \
-  libfilesys-df-perl
-```
-You may have to adjust package names for your distribution/release.
-
-
 ### Example `~/.netrc` entry:
 ```
 machine smtp.example.com
@@ -114,6 +73,12 @@ Secure your netrc file:
 ```sh
 chmod 600 ~/.netrc
 ```
+
+## Security recommendations
+- Do not put secrets in profile files; keep credentials in `~/.netrc` and restrict `~/.netrc` with `chmod 600`.
+- Be careful when running `-a` (all profiles) to avoid sending accidental messages to many recipients.
+- Do not distribute any -v output. It will almost always reveal your credentials (even it you do not recognize this at first glance). They are encoded[^b64enc], but not encrypted.
+
 
 ## Installation of tymus
 1. Copy the `tymus` script into a directory on your PATH (e.g., `/usr/local/bin`) or run it from the repository.
@@ -159,13 +124,49 @@ ip=4
 - Unknown keys or malformed lines will cause an error and abort processing.
 - If you want the definitive key list, refer to the output of `./tymus -ci` on your system (it prints the exact valid keys and short descriptions).
 
+## Requirements
+- swaks (must be installed and available in PATH).
+- POSIX shell (bash/sh).
+- Typical unix utilities (cat, chmod, etc.).
+- PERL (as swaks depends on it)
 
-### Examples
+### Installing swaks on Debian/Ubuntu
+```sh
+sudo apt update
+sudo apt install swaks
+```
+
+### Note about swaks and Perl dependencies
+swaks is a Perl program that depends on a number of CPAN modules. Some distribution packages do not pull in every dependency and you may see Perl error messages after installing swaks. Prefer your distribution package manager over cpan/cpanm to install these dependencies.
+
+#### Helpful Debian/Ubuntu packages to satisfy swaks' dependencies:
+```sh
+sudo apt update
+sudo apt install \
+  libdigest-hmac-perl \
+  libsub-exporter-perl \
+  libmodule-runtime-conflicts-perl \
+  libencode-imaputf7-perl \
+  libfile-copy-recursive-perl \
+  libnet-ssleay-perl \
+  libsocket6-perl \
+  libio-tee-perl \
+  libparse-recdescent-perl \
+  libterm-readkey-perl \
+  libunicode-string-perl \
+  libreadonly-perl \
+  libsys-meminfo-perl \
+  libregexp-common-perl \
+  libfile-tail-perl \
+  libdevel-mat-dumper-perl
+```
+You may have to adjust package names for your distribution/release.
+
+
+## Examples of use
 1) Use a profile named `my-mailserver1`:
 ```sh
 ./tymus my-mailserver1
-# or if you prefer a full path:
-./tymus ~/.config/tymus/my-mailserver1
 ```
 
 2) Override EHLO on the command line:
@@ -193,10 +194,6 @@ ip=4
 - swaks shows Perl errors about missing modules<br/> install missing Perl packages from your distribution (see list above).
 - Profile parse errors<br/> ensure every line in the profile is a valid VAR=VALUE using one of the permitted case-sensitive keys; remove blank lines and comments.
 - Authentication failures:<br/> ensure `~/.netrc` contains the correct `machine`/`login`/`password` and has permissions `600`. When in doubt, remove the machine/mailserver from netrc. Then you will be prompted for credentials.
-
-## Security recommendations
-- Do not put secrets in profile files; keep credentials in `~/.netrc` and restrict `~/.netrc` with `chmod 600`.
-- Be careful when running `-a` (all profiles) to avoid sending accidental messages to many recipients.
 
 ## License & contributing
 - Follow the repository license (see LICENSE in the repo).
