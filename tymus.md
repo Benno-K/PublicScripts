@@ -99,7 +99,6 @@ sudo apt install \
   libfile-tail-perl \
   libdevel-mat-dumper-perl \
   libgetargs-long-perl \
-  libperl5.40 \
   libfilesys-df-perl
 ```
 You may have to adjust package names for your distribution/release.
