@@ -74,7 +74,7 @@ chmod +x /path/to/tymus
 
 ## Configuration: per-mailserver profiles
 - Profiles live in `~/.config/tymus/<profile>`.
-- Each profile file is one mailserver profile. The script accepts a profile filename/path as the optional positional `configfile` argument.
+- Each profile file is one mailserver profile. The script requires a profile filename as the optional positional argument (except when using -a option).
 - Do not include blank lines or comments in profile files: the parser treats every line as a VAR=VALUE assignment and will error on non-conforming lines.
 - Keys are case-sensitive and must match exactly the permitted variable names listed below.
 
