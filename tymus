@@ -131,7 +131,8 @@ while [ "${1:0:1}" = "-" ]
 			read -p "sender: " from
 			read -p "mode (tlsc, tls): " mode
 			echo "the hostname this host should claim to be when"
-			read -p "initiating the conversation: " ehlo
+			echo "initiating the conversation (can be empty as in"
+			read -p "here - there's a default): " ehlo
 			echo "By default the IP protocol prefered by"
 			echo "the mailserver is obtained. You can"
 			echo "override this by forcing 4 or 6. Just"
@@ -229,6 +230,9 @@ modename=TLS
 # Define MIME-type of mail-message
 msgtype=plain
 
+# Default ehlo - if not yet set by config or -e
+ehlo=${ehlo-tymus-mailtester}
+
 # Define the body that will be mailed containing
 # all parameters of the test
 read -rd '' msg <<EOI
@@ -245,6 +249,5 @@ at $(date "+%H:%M:%S on %m/%d, %Y")
 ©$(date +%Y) $(basename $0)$infosuffix
 EOI
 
-ehlo=${ehlo-tymus-mailtester}
 # Now use swaks to submit the message
 swaks $ha -$ip --ehlo $ehlo --server $mailer:$port --from $from --to $to -$mode $auth --header-Content-Type "text/${msgtype};charset=utf-8" --header-Subject "$from→$to via IPv$ip:$mailer:$port/$modename" --body "${msg}"
