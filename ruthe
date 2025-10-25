@@ -5,7 +5,7 @@ maxtry=3
 while [ -z $img ] && [ $((tries++)) -lt $maxtry ]
 	do
 		sleep $((tries-1))
-		img=$(curl --no-progress-meter  https://ruthe.de/|grep image_src |sed -E 's/.*(https.*strip_[0-9]*.jpg)">/\1/g')
+		img=$(curl 2>/dev/null --no-progress-meter  https://ruthe.de/|grep image_src |sed -E 's/.*(https.*strip_[0-9]*.jpg)">/\1/g')
 	done
 if [ $tries -gt $maxtry ]; then
 	echo "could not find image on ruthe.de after trying $((--tries)) times - giving up for now"
