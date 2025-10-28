@@ -58,7 +58,7 @@ to=you@somewhere.org
 mode=tlsc
 ehlo=mymailer.mydomain.net
 ```
-The ehlo can be blank (or the ehlo-line omitted.
+The ehlo can be blank (or the ehlo-line omitted).
 
 ## Credentials and ~/.netrc
 swaks reads SMTP credentials from `~/.netrc` (and otherwise prompts). Because of that, tymus profile files do not contain sensitive passwords. Put authentication credentials in `~/.netrc` for non-interactive use.
