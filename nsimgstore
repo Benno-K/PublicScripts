@@ -1,4 +1,27 @@
 #!/bin/bash
+
+termuxify () {
+	sed -e 's-^#!/bin/bash-#!/data/data/com.termux/files/usr/bin/bash-g' $0 > $0.termux
+}
+
+tell () {
+	if [ $(uname -o) = Android ]; then
+		echo "$@" | termux-notification -t "Non Sequitur"
+	else
+		echo "$@"
+	fi
+}
+
+if [ "$1" = "-t" ]; then
+	termuxify
+	ls -l $0.termux
+	exit
+fi
+if [ "$1" = "-tc" ]; then
+	bn=$(basename $0 .termux)
+	scp $bn.termux s24:bin/$bn
+	exit
+fi
 if [ "$1" = "-d" ]; then
 	shift
 	dflag="-d $1"
@@ -7,27 +30,46 @@ else
 	dflag=
 fi
 url="$1"
-trg=~/nonsequitur/$(date $dflag +%Y)
-while [ -z "$url" ]
+case $(uname -o) in
+	Android)
+		trg=/storage/emulated/0/Cartoons/Wiley–Miller/$(date $dflag +%Y)
+		url=$(termux-dialog text -i Url -t 'Non Sequitur'|jq -r .text)	
+		;;
+	GNU/Linux)
+		trg=~/nonsequitur/$(date $dflag +%Y)
+		;;
+	*)
+		tell >&2 "OS not recognized - storing in $HOME"
+		trg=~/$(date $dflag +%Y)
+		;;
+esac
+
+[ $(uname -o) != Android ] && while [ -z "$url" ]
 	do
 	read -p "URL: " url
 	done
+
+[ -z "$url" ] && exit
+
 imgnam=$(date $dflag +"Non-Sequitur-%Y-%m-%d")
 curl -so $imgnam.img "$url"
 imgfmt=$(identify -format "%m" $imgnam.img)
 case $imgfmt in
 	JPEG)
 		mv $imgnam.img $trg/$imgnam.jpg
+		suffix=jpg
 		;;
 	GIF)
-		convert $imgfmt:$imgnam.img $trg/$imgnam.png && rm -f $imgnam.img
+		magick $imgfmt:$imgnam.img $trg/$imgnam.png && rm -f $imgnam.img
+		suffix=png
 		;;
 	PNG)
 		mv $imgnam.img $trg/$imgnam.png
+		suffix=png
 		;;
 	*)
-		echo Format \"$imgfmt\" not supported
+		tell Format \"$imgfmt\" not supported
 		exit 1
 		;;
 esac
-echo $imgnam processed
+tell $imgnam.$suffix processed
