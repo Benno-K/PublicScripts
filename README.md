@@ -270,6 +270,22 @@ prompted.
 Sends a timestamped test
 email. 
 
+
+## throttle info
+This reads out the Rasberry Pi's throttle-info byte and interprets the bits. So you find out whether your raspi is or was throttled and why.
+
+Depending on the bit currently set, you may see one or more of the following lines:
+- Under-voltage (now)
+- ARM frequency capped (now)
+- Currently throttled
+- Soft temperature limit (now)
+- Under-voltage (has occurred since boot)
+- ARM frequency capping (has occurred)
+- Throttling (has occurred)
+- Soft temperature limit (has occurred)
+
+To use: Just run it on a Raspberry Pi.
+
 ## tymus
 
 tymus is a small wrapper script to send test/diagnostic email messages from the command line. It reads defaults from a per-mailserver profile (config) file, constructs a swaks command for the SMTP transaction and runs it.

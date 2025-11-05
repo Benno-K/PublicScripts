@@ -1,0 +1,46 @@
+#!/usr/bin/bash
+# Read and interpret raspi throttling value
+# Usage: Just run it
+#
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+#
+# Use vcgencmd to get value and ..
+# .. se sudo for vcgencmd if not root
+[ $UID != 0 ] && sudo=sudo
+hex=$(${sudo} vcgencmd get_throttled | sed 's/.*=//')
+val=$((hex))
+# Mk-Constants
+UV_NOW=1
+FREQ_CAPPED_NOW=2
+THROTTLED_NOW=4
+TEMP_SOFT_NOW=8
+UV_OCC=$((1<<16))
+FREQ_OCC=$((1<<17))
+THROTTLED_OCC=$((1<<18))
+TEMP_SOFT_OCC=$((1<<19))
+
+echo "raw: $hex (dec: $val)"
+
+test_bit() {
+  local mask=$1; local label=$2
+  if (( (val & mask) != 0 )); then
+    echo "  - $label"
+  fi
+}
+
+test_bit $UV_NOW "Under-voltage (now)"
+test_bit $FREQ_CAPPED_NOW "ARM frequency capped (now)"
+test_bit $THROTTLED_NOW "Currently throttled"
+test_bit $TEMP_SOFT_NOW "Soft temperature limit (now)"
+test_bit $UV_OCC "Under-voltage (has occurred since boot)"
+test_bit $FREQ_OCC "ARM frequency capping (has occurred)"
+test_bit $THROTTLED_OCC "Throttling (has occurred)"
+test_bit $TEMP_SOFT_OCC "Soft temperature limit (has occurred)"
