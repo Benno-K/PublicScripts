@@ -13,7 +13,7 @@
 ##
 #
 # Use vcgencmd to get value and ..
-# .. se sudo for vcgencmd if not root
+# .. use sudo for vcgencmd if not root
 [ $(id -u) != 0 ] && sudo=sudo
 hex=$(${sudo} vcgencmd get_throttled | sed 's/.*=//')
 val=$((hex))
