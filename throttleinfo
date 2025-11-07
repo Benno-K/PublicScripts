@@ -14,7 +14,7 @@
 #
 # Use vcgencmd to get value and ..
 # .. se sudo for vcgencmd if not root
-[ $UID != 0 ] && sudo=sudo
+[ $(id -u) != 0 ] && sudo=sudo
 hex=$(${sudo} vcgencmd get_throttled | sed 's/.*=//')
 val=$((hex))
 # Mk-Constants
@@ -31,7 +31,8 @@ echo "raw: $hex (dec: $val)"
 
 test_bit() {
   local mask=$1; local label=$2
-  if (( (val & mask) != 0 )); then
+	# This also works in LibreElec
+	if [ $(( ${val:-0} & ${mask:-0} )) -ne 0 ]; then
     echo "  - $label"
   fi
 }
