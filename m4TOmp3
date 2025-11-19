@@ -18,6 +18,10 @@ do
 	case $1 in
 		-d)
 			shift
+			if [ ! -d "$1" ]; then
+				echo >&2 "$1 is not a directory"
+				exit 2
+			fi
 			outdir=$1/
 			;;
 		-h)
@@ -39,10 +43,17 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-while [ ! -z "$1" ]
+#find "/base/path" -path "*/data with spaces/*/subdir/*.pdf" -print0 | while IFS= read -r -d '' file; do
+#    echo "Processing: $file"
+#done   
+
+   
+dirnam=${1%/*}
+filnam=${1##*/}
+find "${dirnam}" -name "${filnam}" -print0 | while IFS= read -r -d '' input
 do
-	input="$1"
-	shift
+	echo input=$input
+	#FIXME# 	shift
 	if [ ! -r "${input}" ]; then
 		echo >&2 "cannot read ${input}"
 		continue
