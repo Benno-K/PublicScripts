@@ -1,91 +1,32 @@
 #!/bin/bash
 
-# basename (pure bash!)
-bn=${0##*/}
+inDir=$1
+filExt=m4b
 
-usage () {
-	cat >&${1-1} <<-EOI
-	Usage: $bn [option..] [m4(a/b)-file..]
-	 Parameters: the path to one or more m4a or m4b file(s)
-	 Options:
-	  -d      (optional) directory for output files
-	  -h      this help text
-	EOI
-}
-
-while [ ${1:0:1} = "-" ]
+printf '%s\n' "${inDir}" | while IFS= read -r input
 do
-	case $1 in
-		-d)
-			shift
-			if [ ! -d "$1" ]; then
-				echo >&2 "$1 is not a directory"
-				exit 2
-			fi
-			outdir=$1/
-			;;
-		-h)
-			usage 1 # stdout
-			exit 0
-			;;
-		*)
-			usage 2 # stderr
-			echo >&2 "unrecognized option: $1"
-			exit  1
-			;;
-	esac
-	shift
+	# echo "${input}"
+	declare -A arr
+
+while IFS='=' read -r key value; do
+    arr["$key"]="$value"
+done < <(
+    ffprobe -v quiet -show_format -print_format json "$input" \
+    | jq -r '.format.tags | to_entries[] | "\(.key)=\(.value)"'
+)
+
+	trackInfo=${arr[track]}
+	curTrk=${trackInfo//\/*}
+	maxTrk=${trackInfo//*\/}
+	echo l=${#maxTrk}
+	read chap < <(printf "%0${#maxTrk}d\n" $curTrk)
+	echo $curTrk,$maxTrk
+	echo ${arr[title]}
+	title=${arr[title]%:*}
+	echo ${stitle}
+	echo ${title//$curTrk - /}
+	echo ${arr[track]}
+	echo $chap
+	echo ${arr[SERIES]}
+	echo ${arr[PART]}
 done
-
-if [ -z "$1" ]; then
-  usage 2
-	echo "No file(s) given as argument(s)"
-  exit 1
-fi
-
-#find "/base/path" -path "*/data with spaces/*/subdir/*.pdf" -print0 | while IFS= read -r -d '' file; do
-#    echo "Processing: $file"
-#done   
-
-   
-dirnam=${1%/*}
-filnam=${1##*/}
-find "${dirnam}" -name "${filnam}" -print0 | while IFS= read -r -d '' input
-do
-	echo input=$input
-	#FIXME# 	shift
-	if [ ! -r "${input}" ]; then
-		echo >&2 "cannot read ${input}"
-		continue
-	else
-		qffmpeg="ffmpeg -loglevel error -hide_banner -nostats"
-		output="${input/\.m4[ab]}.mp3"
-		if [ ! -z "${outdir}" ]; then
-			output="${outdir}${output##*/}"
-		fi
-		cover=$(mktemp -u coverXXXXX.jpg)
-
-		# Extrahiere Bitrate der Quelldatei
-		bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=nw=1 "$input" | sed 's/[^0-9]*//g')
-		bitrate_k=$((bitrate / 1000))
-
-		# Begrenze Bitrate auf max. 320 kbps (MP3-Spezifikation)
-		if [ "$bitrate_k" -gt 320 ]; then
-			bitrate_k=320
-		fi
-
-		# Extrahiere Cover (falls vorhanden)
-		$qffmpeg -i "$input" -map 0:v -c copy $cover -y > /dev/null 2>&1
-
-		# Konvertiere zu MP3 mit gleicher Bitrate und füge Cover hinzu
-		if [ -f $cover ]; then
-			$qffmpeg -i "$input" -i $cover -c:a libmp3lame -b:a "${bitrate_k}k" -id3v2_version 3 -map 0:a -map 1:v -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (front)" "$output" -y
-			rm $cover
-		else
-			$qffmpeg -i "$input" -c:a libmp3lame -b:a "${bitrate_k}k" -id3v2_version 3 "$output" -y
-		fi
-
-		echo "$output"
-	fi
-done
-exit
