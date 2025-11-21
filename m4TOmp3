@@ -6,27 +6,52 @@ filExt=m4b
 printf '%s\n' "${inDir}" | while IFS= read -r input
 do
 	# echo "${input}"
-	declare -A arr
+	declare -A tag
+	# What trick this is:
+	#  1. use ffprobe to extract all the tags
+	#     in json-format
+	#  2. use jq to get key=value line
+	#  3. read that input a populate the
+	#     tag array with that data
+	#  Here we go, this is step 3 taking
+	#  the input from step 2 which was retrieved
+	#  using step 1.
+	while IFS='=' read -r key value; do
+			tag["$key"]="$value"
+	done < <(
+			ffprobe -v quiet -show_format -print_format json "$input" \
+			| jq -r '.format.tags | to_entries[] | "\(.key)=\(.value)"'
+	)
 
-while IFS='=' read -r key value; do
-    arr["$key"]="$value"
-done < <(
-    ffprobe -v quiet -show_format -print_format json "$input" \
-    | jq -r '.format.tags | to_entries[] | "\(.key)=\(.value)"'
-)
-
-	trackInfo=${arr[track]}
+	# Get track info, get current and max track
+	trackInfo=${tag[track]}
 	curTrk=${trackInfo//\/*}
 	maxTrk=${trackInfo//*\/}
-	echo l=${#maxTrk}
+	# For the filename the track no. should have
+	# leading zeros (how much depends on the
+	# highest track no.)
 	read chap < <(printf "%0${#maxTrk}d\n" $curTrk)
-	echo $curTrk,$maxTrk
-	echo ${arr[title]}
-	title=${arr[title]%:*}
-	echo ${stitle}
-	echo ${title//$curTrk - /}
-	echo ${arr[track]}
-	echo $chap
-	echo ${arr[SERIES]}
-	echo ${arr[PART]}
+	if [[ ${tag[title]} =~ "Madame le Commissaire" ]]; then
+		stitle=${tag[title]%:*} # Kapitel is redundant in MlC, it is in track
+	else
+		stitle=${tag[title]}
+	fi
+	dirnam=${stitle//$curTrk - /}
+	stitle="${dirnam//Madame le Commissaire /MlC }"
+	vstitle="${dirnam//Madame le Commissaire /MlC${tag[PART]} }"
+	echo dbg:$vstitle
+	first=${vstitle%% *}
+	last=${vstitle##* }
+	[[ $first != "$last" ]] && dirnam="$first .. $last"||dirnam=${stitle}
+	filnam="${chap}. Kapitel"
+	#set | grep tag
+	cat <<-EOI
+	album:    ${tag[album]}
+	title:    ${stitle}
+	subtitle: ${tag[SUBTITLE]}
+	series:   ${tag[SERIES]}
+	part:     ${tag[PART]}
+	track:    $curTrk ($chap)
+	file: "${dirnam}/${filnam}"
+	EOI
 done
