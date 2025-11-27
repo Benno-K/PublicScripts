@@ -3,9 +3,10 @@
 inDir=$1
 filExt=m4b
 
-printf '%s\n' "${inDir}" | while IFS= read -r input
+ls -1 "${inDir}"/*.m4b | while IFS= read -r input
+# printf '%s\n' "${inDir}/*.m4b" | while IFS= read -r input
 do
-	# echo "${input}"
+	echo "${input}"
 	declare -A tag
 	# What trick this is:
 	#  1. use ffprobe to extract all the tags
@@ -62,9 +63,10 @@ do
 	series:   ${tag[SERIES]}
 	part:     ${tag[PART]}
 	track:    $curTrk ($chap)
-	file: "${dirnam}/${filnam}"
+	file: "$2${dirnam}/${filnam}"
 	EOI
 	echo ${dirnam}/${filnam}
 	echo "  ${mp3tag[album]}"
 	echo "    ${mp3tag[title]}"
+exit 1
 done
