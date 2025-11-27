@@ -32,26 +32,39 @@ do
 	# highest track no.)
 	read chap < <(printf "%0${#maxTrk}d\n" $curTrk)
 	if [[ ${tag[title]} =~ "Madame le Commissaire" ]]; then
-		stitle=${tag[title]%:*} # Kapitel is redundant in MlC, it is in track
+		#stitle=${tag[title]%:*} # Kapitel is redundant in MlC, it is in track
+		stitle=${tag[title]%*:* Kapitel*}
 	else
-		stitle=${tag[title]}
+		if [ ${tag[album]} = "Kluftinger" ]; then
+			stitle=${tag[title]/:*}
+		else
+			#stitle=${tag[title]}
+			stitle=${tag[title]%*:* Kapitel*}
+		fi
 	fi
 	dirnam=${stitle//$curTrk - /}
+	ftitle=$dirnam
 	stitle="${dirnam//Madame le Commissaire /MlC }"
 	vstitle="${dirnam//Madame le Commissaire /MlC${tag[PART]} }"
-	echo dbg:$vstitle
 	first=${vstitle%% *}
 	last=${vstitle##* }
-	[[ $first != "$last" ]] && dirnam="$first .. $last"||dirnam=${stitle}
+	[[ $first != "$last" ]] && dirnam="$first -- $last"||dirnam=${stitle}
 	filnam="${chap}. Kapitel"
-	#set | grep tag
-	cat <<-EOI
+	declare -A mp3tag
+	mp3tag[album]=$ftitle
+	mp3tag[title]=$filnam
+	mp3tag[track]=$curTrk
+	set | grep mp3tag
+	cat <<-EOI>/dev/null
 	album:    ${tag[album]}
-	title:    ${stitle}
+	title:    ${ftitle}
 	subtitle: ${tag[SUBTITLE]}
 	series:   ${tag[SERIES]}
 	part:     ${tag[PART]}
 	track:    $curTrk ($chap)
 	file: "${dirnam}/${filnam}"
 	EOI
+	echo ${dirnam}/${filnam}
+	echo "  ${mp3tag[album]}"
+	echo "    ${mp3tag[title]}"
 done
