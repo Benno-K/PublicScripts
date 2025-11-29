@@ -1,12 +1,95 @@
 #!/bin/bash
 
+# Convert audiobooks (m4b created from Audible
+# files using libation) into MP3 having
+# shorter names and titles (preserving the
+# cover). Target is the Music directory of
+# an Intenso VideoScooter BT player.
+##
+##
+
+# Function to process a single file
+# Args: #1	input file
+#       #2	output directory
+#       #3	output filename
+m4bProcess () {
+		local infil="$1"
+		local outdir="$2"
+		local outnam="$3"
+		local qffmpeg="ffmpeg -loglevel error -hide_banner -nostats"
+		local output="${outdir}/${outnam/\.m4[ab]}.mp3"
+		if [ ! -z "${outdir}" ]; then
+			mkdir -p "${outdir}"
+		fi
+		cover=$(mktemp -u coverXXXXX.jpg)
+
+		# Extract source bitrate
+		bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=nw=1 "$infil" | sed 's/[^0-9]*//g')
+		bitrate_k=$((bitrate / 1000))
+
+		# Limit to max. MP3 if higher
+		if [ "$bitrate_k" -gt 320 ]; then
+			bitrate_k=320
+		fi
+
+		# Extract cover (if existing)
+		$qffmpeg -i "$infil" -map 0:v -c copy $cover -y > /dev/null 2>&1
+
+		# Convert to MP3 (same bitrate) and add
+		# tags and (if exists) cover - otherwise
+		# only tags
+		if [ -f $cover ]; then
+			$qffmpeg \
+				-i "$infil" \
+				-i $cover \
+				-c:a libmp3lame \
+				-b:a "${bitrate_k}k" \
+				-id3v2_version 3 \
+				-map 0:a \
+				-map 1:v \
+				-metadata title="${mp3tag[title]}" \
+				-metadata album="${mp3tag[album]}" \
+				-metadata track="${mp3tag[track]}" \
+				-metadata:s:v title="Album cover" \
+				-metadata:s:v comment="Cover (front)" \
+				"$output" -y
+			rm $cover
+		else
+			$qffmpeg \
+				-i "$infil" \
+				-c:a libmp3lame \
+				-b:a "${bitrate_k}k" \
+				-id3v2_version 3 \
+				"$output" -y
+		fi
+		# Return the product (filespec) of our
+		# efforts
+		echo "$output"
+}
+
+# Arguments MUST be passed to this script
+#   #1	directory containing m4b- (or m4a)
+#     	files
 inDir=$1
+
+# which file-extension will be searched
 filExt=m4b
 
-ls -1 "${inDir}"/*.m4b | while IFS= read -r input
-# printf '%s\n' "${inDir}/*.m4b" | while IFS= read -r input
-do
-	echo "${input}"
+# Make sure that shell's file globbing returns
+# an empty string (instead of the pattern) if
+# no match
+shopt -s nullglob
+
+# For all files ending with filExt
+for input in "$inDir"/*.${filExt}; do
+	# This error handling should never
+	# trigger, but if we should terminate
+	if [ ! -e "${input}" ]; then
+		echo "error searching ${input}"
+		echo "input file does not exist"
+		exit 4
+	fi
+	# Need an associative array
 	declare -A tag
 	# What trick this is:
 	#  1. use ffprobe to extract all the tags
@@ -16,12 +99,12 @@ do
 	#     tag array with that data
 	#  Here we go, this is step 3 taking
 	#  the input from step 2 which was retrieved
-	#  using step 1.
-	while IFS='=' read -r key value; do
+	#  using step 1. Use FD 20 to avoid troubles
+	#  with other reads (from stdin = FD0)
+	while IFS='=' read -r key value <&20; do
 			tag["$key"]="$value"
-	done < <(
-			ffprobe -v quiet -show_format -print_format json "$input" \
-			| jq -r '.format.tags | to_entries[] | "\(.key)=\(.value)"'
+	done 20< <(
+			ffprobe -v quiet -show_format -print_format json "$input" | jq -r '.format.tags | to_entries[] | "\(.key)=\(.value)"'
 	)
 
 	# Get track info, get current and max track
@@ -32,30 +115,37 @@ do
 	# leading zeros (how much depends on the
 	# highest track no.)
 	read chap < <(printf "%0${#maxTrk}d\n" $curTrk)
-	if [[ ${tag[title]} =~ "Madame le Commissaire" ]]; then
-		#stitle=${tag[title]%:*} # Kapitel is redundant in MlC, it is in track
+	# Handle shortening of different titles
+	if [[ "${tag[title]}" =~ "Madame le Commissaire" ]]; then
 		stitle=${tag[title]%*:* Kapitel*}
 	else
-		if [ ${tag[album]} = "Kluftinger" ]; then
+		if [ "${tag[album]}" = "Kluftinger" ]; then
 			stitle=${tag[title]/:*}
 		else
-			#stitle=${tag[title]}
 			stitle=${tag[title]%*:* Kapitel*}
 		fi
 	fi
+	# Build output directory name
 	dirnam=${stitle//$curTrk - /}
+	# use it as title-tag as well
 	ftitle=$dirnam
+	# shorten to MlC
+	#  without part
 	stitle="${dirnam//Madame le Commissaire /MlC }"
+	#  with part
 	vstitle="${dirnam//Madame le Commissaire /MlC${tag[PART]} }"
+	# Forgot wht this is for
 	first=${vstitle%% *}
 	last=${vstitle##* }
 	[[ $first != "$last" ]] && dirnam="$first -- $last"||dirnam=${stitle}
+	# Short filename
 	filnam="${chap}. Kapitel"
+	# Mp3 tags
 	declare -A mp3tag
 	mp3tag[album]=$ftitle
 	mp3tag[title]=$filnam
 	mp3tag[track]=$curTrk
-	set | grep mp3tag
+	# Debug output (disabled)
 	cat <<-EOI>/dev/null
 	album:    ${tag[album]}
 	title:    ${ftitle}
@@ -65,8 +155,9 @@ do
 	track:    $curTrk ($chap)
 	file: "$2${dirnam}/${filnam}"
 	EOI
+	# Show what we are working on
 	echo ${dirnam}/${filnam}
-	echo "  ${mp3tag[album]}"
-	echo "    ${mp3tag[title]}"
-exit 1
+	mp3fil=$(m4bProcess "$input" "$2/${dirnam}" "${filnam}")
+	# and the outcome
+	echo "  -> ${mp3fil}" >&2
 done
