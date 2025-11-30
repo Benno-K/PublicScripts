@@ -8,6 +8,33 @@
 ##
 ##
 
+while [ ${1:0:1} = "-" ]
+do
+	case $1 in
+		-dry)
+			dry=on
+			;;
+		-debug|-dbg|-d)
+			debug=on
+			;;
+		*)
+			echo >&2 "Illegal option: $1"
+			exit 1
+			;;
+	esac
+	shift
+done
+if [ $# != 2 ]; then
+	cat <<-EOI
+	Usage: ${0/*\/} [input-dir] [output-dir]
+	  where
+	    input-dir contains .m4b-files
+	  and
+	    output-dir will contain the .mp3 files
+	EOI
+	exit 2
+fi
+
 # Function to process a single file
 # Args: #1	input file
 #       #2	output directory
@@ -24,8 +51,12 @@ m4bProcess () {
 		cover=$(mktemp -u coverXXXXX.jpg)
 
 		# Extract source bitrate
-		bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=nw=1 "$infil" | sed 's/[^0-9]*//g')
-		bitrate_k=$((bitrate / 1000))
+		if [ -z "$dry" ]; then
+			bitrate=$(ffprobe -v quiet -show_entries format=bit_rate -of default=nw=1 "$infil" | sed 's/[^0-9]*//g')
+			bitrate_k=$((bitrate / 1000))
+		else
+			bitrate_k=$((128))
+		fi
 
 		# Limit to max. MP3 if higher
 		if [ "$bitrate_k" -gt 320 ]; then
@@ -33,13 +64,13 @@ m4bProcess () {
 		fi
 
 		# Extract cover (if existing)
-		$qffmpeg -i "$infil" -map 0:v -c copy $cover -y > /dev/null 2>&1
+		[ -z "$dry" ] && $qffmpeg -i "$infil" -map 0:v -c copy $cover -y > /dev/null 2>&1
 
 		# Convert to MP3 (same bitrate) and add
 		# tags and (if exists) cover - otherwise
 		# only tags
 		if [ -f $cover ]; then
-			$qffmpeg \
+			[ -z "$dry" ] && $qffmpeg \
 				-i "$infil" \
 				-i $cover \
 				-c:a libmp3lame \
@@ -55,7 +86,7 @@ m4bProcess () {
 				"$output" -y
 			rm $cover
 		else
-			$qffmpeg \
+			[ -z "$dry" ] && $qffmpeg \
 				-i "$infil" \
 				-c:a libmp3lame \
 				-b:a "${bitrate_k}k" \
@@ -118,12 +149,12 @@ for input in "$inDir"/*.${filExt}; do
 	# Handle shortening of different titles
 	if [[ "${tag[title]}" =~ "Madame le Commissaire" ]]; then
 		stitle=${tag[title]%*:* Kapitel*}
+	elif [[ "${tag[album]}" =~ "The Cuckoo's Egg" ]]; then
+		stitle="Cuckoo's Egg"
+	elif [ "${tag[album]}" = "Kluftinger" ]; then
+		stitle=${tag[title]/:*}
 	else
-		if [ "${tag[album]}" = "Kluftinger" ]; then
-			stitle=${tag[title]/:*}
-		else
-			stitle=${tag[title]%*:* Kapitel*}
-		fi
+		stitle=${tag[title]%*:* Kapitel*}
 	fi
 	# Build output directory name
 	dirnam=${stitle//$curTrk - /}
@@ -134,19 +165,20 @@ for input in "$inDir"/*.${filExt}; do
 	stitle="${dirnam//Madame le Commissaire /MlC }"
 	#  with part
 	vstitle="${dirnam//Madame le Commissaire /MlC${tag[PART]} }"
-	# Forgot wht this is for
+	# Title still too long? Then shorten
+	# by using first and last word
 	first=${vstitle%% *}
 	last=${vstitle##* }
-	[[ $first != "$last" ]] && dirnam="$first -- $last"||dirnam=${stitle}
+	[ ${#vstitle} -gt 30 ] && dirnam="$first -- $last"||dirnam=${stitle}
 	# Short filename
 	filnam="${chap}. Kapitel"
-	# Mp3 tags
+	# Define Mp3 tags to be written
 	declare -A mp3tag
 	mp3tag[album]=$ftitle
 	mp3tag[title]=$filnam
 	mp3tag[track]=$curTrk
-	# Debug output (disabled)
-	cat <<-EOI>/dev/null
+	# Debug output
+	[ ! -z "$debug" ] && cat <<-EOI
 	album:    ${tag[album]}
 	title:    ${ftitle}
 	subtitle: ${tag[SUBTITLE]}
