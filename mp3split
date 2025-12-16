@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# Exit on error or unset variables
+set -euo pipefail
+
+# Check arguments
+if [[ $# -ne 2 ]]; then
+    echo "Usage: split <min-per-subdir> <subdir-prefix>"
+    exit 1
+fi
+
+minPerSubdir="$1"
+subdirPrefix="$2"
+
+# Convert minutes to seconds
+maxDurationSeconds=$((minPerSubdir * 60))
+
+currentIndex=1
+currentDuration=0
+
+# Create first subdirectory
+currentSubdir="${subdirPrefix}-${currentIndex}"
+mkdir -p "$currentSubdir"
+
+# Loop over MP3 files (sorted by name)
+for mp3File in *.mp3; do
+    # Get duration in seconds (float)
+    fileDuration=$(ffprobe -v error \
+        -show_entries format=duration \
+        -of default=noprint_wrappers=1:nokey=1 \
+        "$mp3File")
+
+    # Convert to integer seconds
+    fileDuration=${fileDuration%.*}
+
+    # Check if adding this file exceeds the limit
+    if (( currentDuration + fileDuration > maxDurationSeconds )); then
+        currentIndex=$((currentIndex + 1))
+        currentDuration=0
+        currentSubdir="${subdirPrefix}-${currentIndex}"
+        mkdir -p "$currentSubdir"
+    fi
+
+    # Move file into current subdirectory
+    mv "$mp3File" "$currentSubdir/"
+
+    # Update accumulated duration
+    currentDuration=$((currentDuration + fileDuration))
+done
+
