@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
 
-# Exit on error or unset variables
 set -euo pipefail
+
+dryRun=false
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -d|--dry-run)
+            dryRun=true
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 # Check arguments
 if [[ $# -ne 2 ]]; then
-    echo "Usage: split <min-per-subdir> <subdir-prefix>"
+    echo "Usage: split [-d|--dry-run] <min-per-subdir> <subdir-prefix>"
     exit 1
 fi
 
@@ -17,34 +31,34 @@ maxDurationSeconds=$((minPerSubdir * 60))
 
 currentIndex=1
 currentDuration=0
+currentSubdir="${subdirPrefix}-$(printf "%02d" "$currentIndex")"
 
 # Create first subdirectory
-currentSubdir="${subdirPrefix}-${currentIndex}"
-mkdir -p "$currentSubdir"
+$dryRun || mkdir -p "$currentSubdir"
 
-# Loop over MP3 files (sorted by name)
+# Loop over MP3 files sorted by name
 for mp3File in *.mp3; do
-    # Get duration in seconds (float)
+    # Get duration in seconds
     fileDuration=$(ffprobe -v error \
         -show_entries format=duration \
         -of default=noprint_wrappers=1:nokey=1 \
         "$mp3File")
 
-    # Convert to integer seconds
     fileDuration=${fileDuration%.*}
 
-    # Check if adding this file exceeds the limit
+    # Create new subdirectory if limit would be exceeded
     if (( currentDuration + fileDuration > maxDurationSeconds )); then
         currentIndex=$((currentIndex + 1))
         currentDuration=0
-        currentSubdir="${subdirPrefix}-${currentIndex}"
-        mkdir -p "$currentSubdir"
+	currentSubdir="${subdirPrefix}-$(printf "%02d" "$currentIndex")"
+        $dryRun || mkdir -p "$currentSubdir"
     fi
 
-    # Move file into current subdirectory
-    mv "$mp3File" "$currentSubdir/"
+    if $dryRun; then
+        printf "[DRY-RUN] mv \"%s\" \"%s/\"\n" "$mp3File" "$currentSubdir"
+    else
+        mv "$mp3File" "$currentSubdir/"
+    fi
 
-    # Update accumulated duration
     currentDuration=$((currentDuration + fileDuration))
 done
-
