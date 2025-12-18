@@ -1,0 +1,41 @@
+#!/bin/bash
+mod=SM-S928B
+url="https://doc.samsungmobile.com/${mod}/029279240224/eng.html"
+store=~/.${0##*/}.store
+apsfil=~/.${0##*/}.aps
+if [ -r ${apsfil} ]; then
+	read apiKey < $apsfil
+else
+	cat <<-EOI
+	You need an API-key from browserless.io
+	for this script to work.
+	Get one for free from https://browserless.io
+	and store it as the only single line
+	in $apsfil
+	and run ${0##*/} again
+	EOI
+	exit 1
+fi
+
+read build reldate patchlvl < <(\
+curl -s -X POST \
+  -H "Content-Type: application/json" \
+	-H 'Cache-Control: no-cache' \
+	-d "{\"url\": \"$url\"}" \
+  "https://chrome.browserless.io/content?token=$apiKey" | awk '/Build/{printf("%s ",substr($5,10,13))};/Release/{printf("%s ",substr($5,10,10))};/patch/{print substr($6,10,10);exit}')
+fw="$build/$reldate/$patchlvl"
+if [ -r ${store} ];then
+	read ofw < $store
+else
+	ofw=unknown
+fi
+if [ "$fw" != "$ofw" ]; then
+	cat <<-EOI
+	New firmware detected for ${mod}
+	    ${build}
+	      ${reldate}
+	      ${patchlvl}
+	  (previous was $ofw)
+	EOI
+	echo $fw > $store
+fi
