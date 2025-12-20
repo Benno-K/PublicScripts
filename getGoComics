@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# comic name and date
+comic=${1:-nonsequitur}	# default comic
+today=$(date +%Y/%m/%d)	# todays date
+fetchDate=${2:-$today}	# default date
+
+# destination directory - based on comic name and year
+dstDir=~/${comic}/${fetchDate:0:4}
+
+# build the output file name based on comic & date
+# handle cases where file name prefix is to be set to other
+# than $comic
+case ${comic} in
+	nonsequitur)
+		outFil="Non-Sequitur-${fetchDate//\//-}"
+		;;
+	*)
+		outFil="${comic}-${fetchDate//\//-}"
+		;;
+esac
+
+# browserless.io API-Key needed - as ext apk is used
+# otherwise we use aps which stands for API secret
+# if there is generic one take it otherwise go for specific
+apsdefault=~/.browserless.io.aps
+apsspecific=~/.${0##*/}.aps
+
+if [ -r  ${apsdefault} ]; then
+	apsfil=${apsdefault}
+else
+	apsfil=${apsspecific}
+fi
+if [ -r ${apsfil} ]; then
+        read apiKey < $apsfil
+else
+	cat <<-EOI
+	You need an API-key from browserless.io
+	for this script to work.
+	Get one for free from https://browserless.io
+	and store it as the only single line
+	in $apsspecific or
+	in $apsdefault
+	and run ${0##*/} again
+	EOI
+	exit 1
+fi
+read apiKey < ~/.browserless.io.aps
+
+# target url on GoComics
+url="https://www.gocomics.com/${comic}/${fetchDate}"
+
+# due to their s... CMS we need to scrape the page using
+# browserless.io to get usable HTML - otherwise you
+# only get tons of JavaScript without the image's url
+imgUrl=$(curl -s -X POST \
+  -H "Content-Type: application/json" \
+  -H 'Cache-Control: no-cache' \
+  -d "{\"url\": \"$url\"}" \
+  "https://chrome.browserless.io/content?token=$apiKey" | \
+perl -nle 'print $1 if /<meta property="og:image" content="([^"]+)"/')
+if [ -z "${imgUrl}" ]; then
+	echo >&2 "cannot retrieve image file url"
+	echo >&2 " from ${url}"
+	echo >&2 " via https://chrome.browserless.io/content"
+	exit 1
+fi
+
+# temporary file to download image - make sure it is removed
+tmpOut=$(mktemp "${HOME}/.${0##*/}-XXXXXXXD.tmp")
+trap "rm -f ${tmpOut}" EXIT
+
+# get content-type of downloaded file while
+# downloading it
+cType=$(curl -s -w "%{content_type}" -o "${tmpOut}" "${imgUrl}")
+
+# parts of content-type needed to determine extension
+major=${cType%/*}
+minor=${cType#*/}
+
+case "$major" in
+	image)
+		case "$minor" in
+				jpeg) ext="jpg" ;;
+				*)    ext=${minor}  ;;
+		esac
+		;;
+	text) 			ext=${minor} ;;
+	*) 					ext="bin" ;;
+esac
+
+# move the file to it's destination
+case ${ext} in
+	gif)
+		# special: convert GIF to PNG
+		outSpec="${dstDir}/${outFil}.png"
+		convert "${tmpOut}" "${outSpec}"
+		touch -d ${fetchDate//\//-} "${outSpec}"
+		;;
+		# standard move it as it is - stop trap as there is
+		# nothing left to delete
+	jpg|png)
+		outSpec="${dstDir}/${outFil}.${ext}"
+		mv "${tmpOut}" "${outSpec}"
+		trap - EXIT
+		touch -d ${fetchDate//\//-} "${outSpec}"
+		;;
+	*)
+		echo >&2 "invalid content: ${cType}"
+		echo >&2 " for ${imgUrl}"
+		exit 1
+esac
+exit # (deleting temporary file due to trap)
