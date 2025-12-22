@@ -171,7 +171,8 @@ if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
 		-s "${title}" \
 		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
 		-hl "${title}" \
-		-bl '©Wiley Miller - https://gocomics.com/nonsequitur/' \
+		-bl ''©'${fetchDate:0:4}' Wiley Ink, Ltd. -
+https://gocomics.com/nonsequitur/'' \
 		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
 fi
 exit # (deleting temporary file due to trap)
