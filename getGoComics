@@ -2,17 +2,28 @@
 
 # comic name and date
 comic=${1:-nonsequitur}	# default comic
+title=${comic}
 today=$(date +%Y/%m/%d)	# todays date
 fetchDate=${2:-$today}	# default date
 
 # destination directory - based on comic name and year
 dstDir=~/${comic}/${fetchDate:0:4}
 
+# Mail recipients - if all are empty NO mail is sent
+mailTo=pi
+mailCC=
+mailBCC=
+mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
+
+# source function to send image by mail
+. ${0%/*}/sendInlImgMai
+
 # build the output file name based on comic & date
 # handle cases where file name prefix is to be set to other
 # than $comic
 case ${comic} in
 	nonsequitur)
+		title="Non Sequitur"
 		outFil="Non-Sequitur-${fetchDate//\//-}"
 		;;
 	*)
@@ -53,17 +64,56 @@ url="https://www.gocomics.com/${comic}/${fetchDate}"
 # due to their s... CMS we need to scrape the page using
 # browserless.io to get usable HTML - otherwise you
 # only get tons of JavaScript without the image's url
-imgUrl=$(curl -s -X POST \
+
+
+imgUrl=$(
+curl -s -X POST \
   -H "Content-Type: application/json" \
   -H 'Cache-Control: no-cache' \
   -d "{\"url\": \"$url\"}" \
-  "https://chrome.browserless.io/content?token=$apiKey" | \
-perl -nle 'print $1 if /<meta property="og:image" content="([^"]+)"/')
+  "https://chrome.browserless.io/content?token=$apiKey" |
+perl -ne '
+  # date that GoComics actually serves
+  if (!defined $serv &&
+      /<link rel="canonical" href="https:\/\/www\.gocomics\.com\/[^\/]+\/(\d{4}\/\d{2}\/\d{2})"/) {
+    $serv = $1;
+  }
+
+  # image URL
+  if (/<meta property="og:image" content="([^"]+)"/) {
+    $img = $1;
+  }
+
+  END {
+    if (defined $serv && $serv ne "'$fetchDate'") {
+      print "date:$serv\n";
+    } else {
+      print "$img\n" if defined $img;
+    }
+  }
+'
+)
+
 if [ -z "${imgUrl}" ]; then
 	echo >&2 "cannot retrieve image file url"
 	echo >&2 " from ${url}"
 	echo >&2 " via https://chrome.browserless.io/content"
 	exit 1
+else
+	if [[ "${imgUrl:0:5}" == "date:" ]]; then
+		echo >&2 "Date mismatch"
+		echo >&2 " requested ${fetchDate}"
+		echo >&2 " delivered ${imgUrl:5}"
+		exit 2
+	fi
+fi
+
+# Is there already a cartoon for this day?
+#   Note: Make sure to have wildcard outside quotes!
+if compgen -G "${dstDir}/${outFil}".??? >/dev/null; then
+	# Exit silently - as file exists
+	tty -s && echo >&2 "already downloaded for ${fetchDate}"
+	exit 0
 fi
 
 # temporary file to download image - make sure it is removed
@@ -110,4 +160,18 @@ case ${ext} in
 		echo >&2 " for ${imgUrl}"
 		exit 1
 esac
+
+# Send mail at least one recipient is defined
+if [ ! -z "$mailFrom" ];then
+	fromOpt="-f"
+fi
+if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
+	sendInlImgMai \
+		${fromOpt} "${mailFrom}"\
+		-s "${title}" \
+		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
+		-hl "${title}" \
+		-bl '©Wiley Miller - https://gocomics.com/nonsequitur/' \
+		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
+fi
 exit # (deleting temporary file due to trap)

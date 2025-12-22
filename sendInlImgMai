@@ -1,0 +1,162 @@
+sendInlImgMai() {
+    # -d        : dump mode (print mail to stdout, do not send)
+    # imgFilPat : full path to image file (jpg/jpeg/png/gif)
+    # toAdrLst  : comma-separated To addresses
+    # ccAdrLst  : comma-separated Cc addresses or "-" to skip
+    # bccAdrLst : comma-separated Bcc addresses (optional)
+
+    local dumModFlg=0
+		local subject="Inline Image Test"
+		local headLine="Inline image example"
+		local caption=
+		local bottomline=
+		local mailFrom=
+
+		while [[ "${1:0:1}" == "-" ]]
+		do
+			case $1 in
+				-d)
+					# Handle optional -d flag
+					dumModFlg=1
+					;;
+				-f)
+					# Handle bottomline (above image)
+					shift
+					mailFrom="$1"
+					;;
+				-bl)
+					# Handle bottomline (above image)
+					shift
+					bottomLine="$1"
+					;;
+				-c)
+					# Handle caption (above image)
+					shift
+					caption="$1"
+					;;
+				-hl)
+					# Handle headline (above image)
+					shift
+					headLine="$1"
+					;;
+				-s)
+					shift
+					subject="$1"
+					;;
+				*)
+					echo >&2 "Illegal option: $1"
+					exit 2
+					;;
+			esac
+			shift
+		done
+    local imgFilPat="$1"
+    local toAdrLst="$2"
+    local ccAdrLst="$3"
+    local bccAdrLst="$4"
+
+    # Basic parameter validation
+    if [[ -z "$imgFilPat" || -z "$toAdrLst" ]]; then
+        echo "Usage: sendInlImgMai [-d] <imagefile> <to> [cc|-] [bcc]" >&2
+        return 1
+    fi
+
+    # Check if image exists
+    if [[ ! -f "$imgFilPat" ]]; then
+        echo "Image not found: $imgFilPat" >&2
+        return 2
+    fi
+
+    # Extract filename and extension using parameter expansion
+    local imgFilNam
+    imgFilNam="${imgFilPat##*/}"
+
+    local imgExtRaw
+    imgExtRaw="${imgFilNam##*.}"
+
+    # Normalize extension to lowercase
+    local imgExtLow
+    imgExtLow="${imgExtRaw,,}"
+
+    # Determine mime type by extension
+    local imgMimeTyp
+    case "$imgExtLow" in
+        jpg|jpeg)
+            imgMimeTyp="image/jpeg"
+            ;;
+        png)
+            imgMimeTyp="image/png"
+            ;;
+        gif)
+            imgMimeTyp="image/gif"
+            ;;
+        *)
+            echo "Unsupported image extension: .$imgExtRaw" >&2
+            return 3
+            ;;
+    esac
+
+    # Generate MIME boundary and content-id
+    local maiBouStr
+    maiBouStr="===BOU_$(date +%s)_$$==="
+
+    local imgConId
+    imgConId="img001"
+
+    # Build mail content
+    local maiConStr
+    maiConStr="$(
+        {
+            # Mail headers
+            [[ -n "$mailFrom" ]] && echo "From: $mailFrom"
+            echo "To: $toAdrLst"
+            [[ -n "$ccAdrLst" && "$ccAdrLst" != "-" ]] && echo "Cc: $ccAdrLst"
+            [[ -n "$bccAdrLst" ]] && echo "Bcc: $bccAdrLst"
+            echo "Subject: $subject"
+            echo "MIME-Version: 1.0"
+            echo "Content-Type: multipart/related; boundary=\"$maiBouStr\""
+            echo
+
+            # HTML body part
+            echo "--$maiBouStr"
+            echo "Content-Type: text/html; charset=UTF-8"
+            echo "Content-Transfer-Encoding: 7bit"
+            echo
+            cat <<EOF
+<!DOCTYPE html>
+<html>
+  <body>
+    <h1>${headLine}</h1>
+		<p><b>${caption}</b></p>
+    <img src="cid:$imgConId" alt="Inline Image">
+    <p>${bottomLine}</p>
+  </bod$y>
+</html>
+EOF
+            echo
+
+            # Inline image part
+            echo "--$maiBouStr"
+            echo "Content-Type: $imgMimeTyp; name=\"$imgFilNam\""
+            echo "Content-Transfer-Encoding: base64"
+            echo "Content-ID: <$imgConId>"
+            echo "Content-Disposition: inline; filename=\"$imgFilNam\""
+            echo
+            base64 "$imgFilPat"
+            echo
+
+            # Final boundary
+            echo "--$maiBouStr--"
+        }
+    )"
+
+    # Dump or send
+    if [[ "$dumModFlg" -eq 1 ]]; then
+        echo "$maiConStr"
+    else
+        echo "$maiConStr" | sendmail -t
+    fi
+}
+# Invoke function passing all args if not
+# sourced
+[ "${BASH_SOURCE}" == "${0}" ] && ${0##*/} "$@"
