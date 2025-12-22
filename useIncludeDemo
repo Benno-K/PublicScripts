@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Inherit function demo defined in file demo
+. bashIncludeDemo
+# Use it
+bashIncludeDemo called from $0

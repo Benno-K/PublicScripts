@@ -1,0 +1,32 @@
+#!/bin/bash
+
+bashIncludeDemo () {
+	# For usage notes of status messages we
+	# may need a basename ($me). It is set
+	# to the function name when sourced but
+	# set to the script name when executed
+	[ "${BASH_SOURCE}" == "${0}" ] && me=${0##*/} || me=${FUNCNAME}
+	cat <<-EOI
+	This is the ${me} function
+	 invoked with these args
+	EOI
+	while [[ ! -z "$1" ]]
+	do
+		echo "  $((n++)): $1"
+		shift
+	done
+}
+
+# When this file is *source*d then don't 
+# execute anything (as only define the
+# functions shouldget defined), but ..
+# .. *execute* the function when this script is
+# executed itself (is not being sourced)
+# So you can test the function from the 
+# command-line
+# Hint: ${0##*/} return the basename of $0
+#       where $0 is the script's name
+#       so you if you call your file
+#       "idunno" it'll invoke the functionm
+#       "idunno" and pass all parameters to
+[ "${BASH_SOURCE}" == "${0}" ] && ${0##*/} "$@"
