@@ -1,5 +1,26 @@
 #!/bin/bash
 
+#Abstract:
+# This script fetches the comic-strip of a
+# certain kind from gocomics.com for a
+# certain date.
+# The default kind is nonsequitur.
+# The default date is today.
+# It replaces the nonsequitur-script which
+# ceased to work with the latest 
+# restructuring in 2025 of the GoComics 
+# CMS-generated website
+#
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
 # comic name and date
 comic=${1:-nonsequitur}	# default comic
 title=${comic}
