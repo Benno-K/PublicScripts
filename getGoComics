@@ -21,27 +21,27 @@
 # file LICENSE)
 ##
 
-# comic name and date
+# Variables for comic name and date
 comic=${1:-nonsequitur}	# default comic
 title=${comic}
 today=$(date +%Y/%m/%d)	# todays date
 fetchDate=${2:-$today}	# default date
 
-# destination directory - based on comic name and year
+# Destination dir, based on comic and year
 dstDir=~/${comic}/${fetchDate:0:4}
 
-# Mail recipients - if all are empty NO mail is sent
+# Mail recipients - all empty = NO mail is sent
 mailTo=pi
 mailCC=
 mailBCC=
 mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
 
-# source function to send image by mail
+# Source the function used to mail image
 . ${0%/*}/sendInlImgMai
 
-# build the output file name based on comic & date
-# handle cases where file name prefix is to be set to other
-# than $comic
+# Output file name based on comic & date
+# handle cases where file name prefix is to be 
+# set to other than $comic
 case ${comic} in
 	nonsequitur)
 		title="Non Sequitur"
@@ -52,17 +52,20 @@ case ${comic} in
 		;;
 esac
 
-# browserless.io API-Key needed - as ext apk is used
-# otherwise we use aps which stands for API secret
-# if there is generic one take it otherwise go for specific
+# API-Key needed for browserless.io - as ext apk is used
+# There is a generic file  and an 
+# app-specific file where it can be stored
+# prefer the least.
 apsdefault=~/.browserless.io.aps
 apsspecific=~/.${0##*/}.aps
 
-if [ -r  ${apsdefault} ]; then
-	apsfil=${apsdefault}
-else
+if [ -r  ${apsspecific} ]; then
 	apsfil=${apsspecific}
+else
+	apsfil=${apsdefault}
 fi
+# Read the API-key when file exists,
+# otherwise declare the necessity and cry
 if [ -r ${apsfil} ]; then
         read apiKey < $apsfil
 else
@@ -77,50 +80,66 @@ else
 	EOI
 	exit 1
 fi
-read apiKey < ~/.browserless.io.aps
 
-# target url on GoComics
+# build target url on GoComics
 url="https://www.gocomics.com/${comic}/${fetchDate}"
 
-# due to their s... CMS we need to scrape the page using
-# browserless.io to get usable HTML - otherwise you
-# only get tons of JavaScript without the image's url
+# As retrieving the URL is time-consuming
+# and counts for the amount of requests
+# per browserless.io API key, we store
+# the URL of the image for later use. This
+# significantly speeds up repeated attempts!
+urlStore="${dstDir}/.urlstore"
+if [ ! -d "${urlStore}" ]; then
+	mkdir -p "${urlStore}"
+fi
+storeFil="$urlStore/${fetchDate//\//-}"
 
+if [ -r "${storeFil}" ]; then
+	# use stored URL if it exists
+	# this saves time and API-invocations
+	read imgUrl <"${storeFil}"
+else
+	# Due to their s... CMS we need to scrape the
+	# page using browserless.io to get HTML
+	# - otherwise you only get tons of JavaScript
+	# not containing the image's url
+	imgUrl=$(
+	curl -s -X POST \
+		-H "Content-Type: application/json" \
+		-H 'Cache-Control: no-cache' \
+		-d "{\"url\": \"$url\"}" \
+		"https://chrome.browserless.io/content?token=$apiKey") |
+		perl -ne '
+			# Date that GoComics actually serves
+			if (!defined $serv &&
+					/<link rel="canonical" href="https:\/\/www\.gocomics\.com\/[^\/]+\/(\d{4}\/\d{2}\/\d{2})"/) {
+				$serv = $1;
+			}
+			# Image URL
+			if (/<meta property="og:image" content="([^"]+)"/) {
+				$img = $1;
+			}
+			# Tell bash either URL or mismatched date
+			END {
+				if (defined $serv && $serv ne "'$fetchDate'") {
+					print "date:$serv\n";
+				} else {
+					print "$img\n" if defined $img;
+				}
+			}
+		)'
+fi
 
-imgUrl=$(
-curl -s -X POST \
-  -H "Content-Type: application/json" \
-  -H 'Cache-Control: no-cache' \
-  -d "{\"url\": \"$url\"}" \
-  "https://chrome.browserless.io/content?token=$apiKey" |
-perl -ne '
-  # date that GoComics actually serves
-  if (!defined $serv &&
-      /<link rel="canonical" href="https:\/\/www\.gocomics\.com\/[^\/]+\/(\d{4}\/\d{2}\/\d{2})"/) {
-    $serv = $1;
-  }
-
-  # image URL
-  if (/<meta property="og:image" content="([^"]+)"/) {
-    $img = $1;
-  }
-
-  END {
-    if (defined $serv && $serv ne "'$fetchDate'") {
-      print "date:$serv\n";
-    } else {
-      print "$img\n" if defined $img;
-    }
-  }
-'
-)
-
+# Nothing got, cannot continue
 if [ -z "${imgUrl}" ]; then
 	echo >&2 "cannot retrieve image file url"
 	echo >&2 " from ${url}"
 	echo >&2 " via https://chrome.browserless.io/content"
 	exit 1
 else
+	# Check requested against received date
+	# and give up on mismatch
 	if [[ "${imgUrl:0:5}" == "date:" ]]; then
 		echo >&2 "Date mismatch"
 		echo >&2 " requested ${fetchDate}"
@@ -130,22 +149,25 @@ else
 fi
 
 # Is there already a cartoon for this day?
-#   Note: Make sure to have wildcard outside quotes!
+#   Note: Make sure to have wildcard outside
+#         the quotes!
 if compgen -G "${dstDir}/${outFil}".??? >/dev/null; then
-	# Exit silently - as file exists
+	# Exit silently in batch if file exists
+	# but inform an interactive user
 	tty -s && echo >&2 "already downloaded for ${fetchDate}"
 	exit 0
 fi
 
-# temporary file to download image - make sure it is removed
+# Create temporary file to download image 
 tmpOut=$(mktemp "${HOME}/.${0##*/}-XXXXXXXD.tmp")
+# Make sure it is removed on exit
 trap "rm -f ${tmpOut}" EXIT
 
-# get content-type of downloaded file while
+# Get content-type of downloaded file while
 # downloading it
 cType=$(curl -s -w "%{content_type}" -o "${tmpOut}" "${imgUrl}")
 
-# parts of content-type needed to determine extension
+# Parts of content-type needed to determine extension
 major=${cType%/*}
 minor=${cType#*/}
 
@@ -160,32 +182,39 @@ case "$major" in
 	*) 					ext="bin" ;;
 esac
 
-# move the file to it's destination
+# Move the file to it's destination
 case ${ext} in
 	gif)
-		# special: convert GIF to PNG
+		# Special: convert GIF to PNG
 		outSpec="${dstDir}/${outFil}.png"
 		convert "${tmpOut}" "${outSpec}"
 		touch -d ${fetchDate//\//-} "${outSpec}"
 		;;
-		# standard move it as it is - stop trap as there is
+		# Standard: move it as it is
+		# and stop trap as there is
 		# nothing left to delete
 	jpg|png)
+		# These can just be moved to destination
+		# and trap for file deletion is cancelled
 		outSpec="${dstDir}/${outFil}.${ext}"
 		mv "${tmpOut}" "${outSpec}"
 		trap - EXIT
+		# Set the creation date accordingly
 		touch -d ${fetchDate//\//-} "${outSpec}"
 		;;
 	*)
+		# We received something unexpected
 		echo >&2 "invalid content: ${cType}"
 		echo >&2 " for ${imgUrl}"
 		exit 1
 esac
 
-# Send mail at least one recipient is defined
+# Need -f flag is from-address is given
 if [ ! -z "$mailFrom" ];then
 	fromOpt="-f"
 fi
+
+# Send mail if at least one recipient is given
 if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
 	sendInlImgMai \
 		${fromOpt} "${mailFrom}"\
