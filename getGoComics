@@ -151,63 +151,63 @@ fi
 # Is there already a cartoon for this day?
 #   Note: Make sure to have wildcard outside
 #         the quotes!
-if compgen -G "${dstDir}/${outFil}".??? >/dev/null; then
+outSpec=$(compgen -G "${dstDir}/${outFil}".???)
+if [ ! -z "${outSpec}" ]; then
 	# Exit silently in batch if file exists
 	# but inform an interactive user
-	tty -s && echo >&2 "already downloaded for ${fetchDate}"
-	exit 0
+	tty -s && echo >&2 "already downloaded ${outSpec}"
+else
+	# Create temporary file to download image 
+	tmpOut=$(mktemp "${HOME}/.${0##*/}-XXXXXXXD.tmp")
+	# Make sure it is removed on exit
+	trap "rm -f ${tmpOut}" EXIT
+
+	# Get content-type of downloaded file while
+	# downloading it
+	cType=$(curl -s -w "%{content_type}" -o "${tmpOut}" "${imgUrl}")
+
+	# Parts of content-type needed to determine extension
+	major=${cType%/*}
+	minor=${cType#*/}
+
+	case "$major" in
+		image)
+			case "$minor" in
+					jpeg) ext="jpg" ;;
+					*)    ext=${minor}  ;;
+			esac
+			;;
+		text) 			ext=${minor} ;;
+		*) 					ext="bin" ;;
+	esac
+
+	# Move the file to it's destination
+	case ${ext} in
+		gif)
+			# Special: convert GIF to PNG
+			outSpec="${dstDir}/${outFil}.png"
+			convert "${tmpOut}" "${outSpec}"
+			touch -d ${fetchDate//\//-} "${outSpec}"
+			;;
+			# Standard: move it as it is
+			# and stop trap as there is
+			# nothing left to delete
+		jpg|png)
+			# These can just be moved to destination
+			# and trap for file deletion is cancelled
+			outSpec="${dstDir}/${outFil}.${ext}"
+			mv "${tmpOut}" "${outSpec}"
+			trap - EXIT
+			# Set the creation date accordingly
+			touch -d ${fetchDate//\//-} "${outSpec}"
+			;;
+		*)
+			# We received something unexpected
+			echo >&2 "invalid content: ${cType}"
+			echo >&2 " for ${imgUrl}"
+			exit 1
+	esac
 fi
-
-# Create temporary file to download image 
-tmpOut=$(mktemp "${HOME}/.${0##*/}-XXXXXXXD.tmp")
-# Make sure it is removed on exit
-trap "rm -f ${tmpOut}" EXIT
-
-# Get content-type of downloaded file while
-# downloading it
-cType=$(curl -s -w "%{content_type}" -o "${tmpOut}" "${imgUrl}")
-
-# Parts of content-type needed to determine extension
-major=${cType%/*}
-minor=${cType#*/}
-
-case "$major" in
-	image)
-		case "$minor" in
-				jpeg) ext="jpg" ;;
-				*)    ext=${minor}  ;;
-		esac
-		;;
-	text) 			ext=${minor} ;;
-	*) 					ext="bin" ;;
-esac
-
-# Move the file to it's destination
-case ${ext} in
-	gif)
-		# Special: convert GIF to PNG
-		outSpec="${dstDir}/${outFil}.png"
-		convert "${tmpOut}" "${outSpec}"
-		touch -d ${fetchDate//\//-} "${outSpec}"
-		;;
-		# Standard: move it as it is
-		# and stop trap as there is
-		# nothing left to delete
-	jpg|png)
-		# These can just be moved to destination
-		# and trap for file deletion is cancelled
-		outSpec="${dstDir}/${outFil}.${ext}"
-		mv "${tmpOut}" "${outSpec}"
-		trap - EXIT
-		# Set the creation date accordingly
-		touch -d ${fetchDate//\//-} "${outSpec}"
-		;;
-	*)
-		# We received something unexpected
-		echo >&2 "invalid content: ${cType}"
-		echo >&2 " for ${imgUrl}"
-		exit 1
-esac
 
 # Need -f flag is from-address is given
 if [ ! -z "$mailFrom" ];then
