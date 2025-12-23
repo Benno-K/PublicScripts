@@ -221,7 +221,7 @@ if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
 		-s "${title}" \
 		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
 		-hl "${title}" \
-		-bl '©'${fetchDate:0:4}' Wiley Ink, Ltd. -
+		-bl '©'${fetchDate:0:4}'Wiley Ink, Ltd. -
 https://gocomics.com/nonsequitur/' \
 		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
 fi
