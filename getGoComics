@@ -43,9 +43,16 @@ mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
 # handle cases where file name prefix is to be 
 # set to other than $comic
 case ${comic} in
+	babyblues)
+		title="Baby Blues"
+		outFil="Baby-Blues-${fetchDate//\//-}"
+		mailFrom='Baby Blues<babyblues@kardel.eu>'
+		btmLine='©&nbsp;Kirkman & Scott&nbsp;'${fetchDate:0:4}'&nbsp; · https://gocomics.com/babyblues/'
+		;;
 	nonsequitur)
 		title="Non Sequitur"
 		outFil="Non-Sequitur-${fetchDate//\//-}"
+		mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
 		btmLine='©&nbsp;'${fetchDate:0:4}'&nbsp;Wiley Ink, Ltd. · https://gocomics.com/nonsequitur/'
 		;;
 	*)
