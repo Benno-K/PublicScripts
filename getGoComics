@@ -23,7 +23,6 @@
 
 # Variables for comic name and date
 comic=${1:-nonsequitur}	# default comic
-title=${comic}
 today=$(date +%Y/%m/%d)	# todays date
 fetchDate=${2:-$today}	# default date
 
@@ -45,21 +44,33 @@ mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
 case ${comic} in
 	babyblues)
 		title="Baby Blues"
+		by="Kirkman & Scott"
 		outFil="Baby-Blues-${fetchDate//\//-}"
 		mailFrom='Baby Blues<babyblues@kardel.eu>'
-		btmLine='©&nbsp;Kirkman & Scott&nbsp;'${fetchDate:0:4}'&nbsp; · https://gocomics.com/babyblues/'
 		;;
 	nonsequitur)
 		title="Non Sequitur"
+		by="Wiley Miller"
 		outFil="Non-Sequitur-${fetchDate//\//-}"
 		mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
-		btmLine='©&nbsp;'${fetchDate:0:4}'&nbsp;Wiley Ink, Ltd. · https://gocomics.com/nonsequitur/'
+		;;
+	zackhill)
+		title="Zack Hill"
+		by="Deering & Newcomb"
+		prefix=$(echo "${title}" | tr ' ' '-')
+		outFil="${prefix}-${fetchDate//\//-}"
+		mailFrom="${title}"' <'${comic}'@kardel.eu>'
 		;;
 	*)
+		title=${comic}
 		outFil="${comic}-${fetchDate//\//-}"
-		btmLine=
+		by=
 		;;
 esac
+
+		prefix=$(echo "${title}" | tr ' ' '-')
+		outFil="${prefix}-${fetchDate//\//-}"
+		mailFrom="${title}"' <'${comic}'@kardel.eu>'
 
 # API-Key needed for browserless.io - as ext apk is used
 # There is a generic file  and an 
@@ -221,7 +232,6 @@ fi
 
 # Need -f flag is from-address is given
 [ ! -z "$mailFrom" ] && fOpt="-f"
-[ ! -z "$btmLine" ] && blOpt="-bl"
 
 # Send mail if at least one recipient is given
 if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
@@ -230,7 +240,7 @@ if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
 		-s "${title}" \
 		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
 		-hl "${title}" \
-		${blOpt} "${btmLine}" \
+		-bl '©&nbsp;'"$by"'&nbsp;'${fetchDate:0:4}'&nbsp; · https://gocomics.com/'${comic} \
 		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
 fi
 exit # (deleting temporary file due to trap)
