@@ -109,7 +109,7 @@ else
 		-H "Content-Type: application/json" \
 		-H 'Cache-Control: no-cache' \
 		-d "{\"url\": \"$url\"}" \
-		"https://chrome.browserless.io/content?token=$apiKey") |
+		"https://chrome.browserless.io/content?token=$apiKey" |
 		perl -ne '
 			# Date that GoComics actually serves
 			if (!defined $serv &&
@@ -128,7 +128,7 @@ else
 					print "$img\n" if defined $img;
 				}
 			}
-		)'
+		')
 fi
 
 # Nothing got, cannot continue
@@ -185,6 +185,7 @@ else
 	case ${ext} in
 		gif)
 			# Special: convert GIF to PNG
+			#  gif will be deleted on exit by trap
 			outSpec="${dstDir}/${outFil}.png"
 			convert "${tmpOut}" "${outSpec}"
 			touch -d ${fetchDate//\//-} "${outSpec}"
