@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron rbackup sshdRestarter mmutt tymus throttleinfo getGoComics sendInlImgMai
-UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk
+UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk yqUpdCheck
 PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
 

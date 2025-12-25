@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# yqUpdCheck
+# Check for new yq release (Mike Farah) with camelCase variables
+# No output if yq is up-to-date
+
+set -e
+
+bin=$(command -v yq)
+[ -z $bin ] && echo >&2 "command yq is not defined" && exit 1
+
+# Determine architecture
+arch=$(uname -m)
+case "$arch" in
+    x86_64) download="yq_linux_amd64" ;;
+    aarch64) download="yq_linux_arm64" ;;
+    armv7l|armv6l) download="yq_linux_arm" ;;
+    *) exit 0 ;;  # unsupported, silently exit
+esac
+
+# Current installed version
+if [[ -x "$bin" ]]; then
+    currentVersion=$("$bin" --version 2>/dev/null | awk '{print $4}')
+else
+    currentVersion="none"
+fi
+
+# Latest version from GitHub
+latestVersion=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest \
+    | grep -oP '"tag_name": "\K(.*)(?=")')
+
+# Compare
+if [[ "$currentVersion" == "$latestVersion" ]]; then
+    exit 0  # up-to-date, no output
+fi
+
+# Output hint for update
+echo "yq update available!"
+echo " Current version: $currentVersion"
+echo " Latest version:  $latestVersion"
+echo "To update run:"
+echo "  sudo wget -q https://github.com/mikefarah/yq/releases/download/$latestVersion/$download -O $bin && yq --version"
