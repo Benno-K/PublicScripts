@@ -21,10 +21,29 @@
 # file LICENSE)
 ##
 
+loadComicsFromYaml() {
+    local yamlFile="$1"
+
+    # Read all comics in one yq call (TSV: key <tab> title <tab> by)
+    while IFS=$'\t' read -r key comicTitle comicBy; do
+        title["$key"]="$comicTitle"
+        by["$key"]="$comicBy"
+    done < <(
+        yq e -o=tsv '
+            . as $root
+            | keys[]
+            | . as $key
+            | [$key, $root[$key].title // "", $root[$key].by // ""]
+        ' "$yamlFile"
+    )
+}
+
 # Variables for comic name and date
 comic=${1:-nonsequitur}	# default comic
 today=$(date +%Y/%m/%d)	# todays date
 fetchDate=${2:-$today}	# default date
+declare -A title
+declare -A by
 
 # Destination dir, based on comic and year
 dstDir=~/${comic}/${fetchDate:0:4}
@@ -33,7 +52,7 @@ dstDir=~/${comic}/${fetchDate:0:4}
 mailTo=pi
 mailCC=
 mailBCC=
-mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
+mailFrom="\"GoComics Mailer\" <gocomics@${mailFromDomain}>"
 
 # Source the function used to mail image
 . ${0%/*}/sendInlImgMai
@@ -41,36 +60,26 @@ mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
 # Output file name based on comic & date
 # handle cases where file name prefix is to be 
 # set to other than $comic
-case ${comic} in
-	babyblues)
-		title="Baby Blues"
-		by="Kirkman & Scott"
-		outFil="Baby-Blues-${fetchDate//\//-}"
-		mailFrom='Baby Blues<babyblues@kardel.eu>'
-		;;
-	nonsequitur)
-		title="Non Sequitur"
-		by="Wiley Miller"
-		outFil="Non-Sequitur-${fetchDate//\//-}"
-		mailFrom='Non Sequitur <nonsequitur@kardel.eu>'
-		;;
-	zackhill)
-		title="Zack Hill"
-		by="Deering & Newcomb"
-		prefix=$(echo "${title}" | tr ' ' '-')
-		outFil="${prefix}-${fetchDate//\//-}"
-		mailFrom="${title}"' <'${comic}'@kardel.eu>'
-		;;
-	*)
-		title=${comic}
-		outFil="${comic}-${fetchDate//\//-}"
-		by=
-		;;
-esac
 
-		prefix=$(echo "${title}" | tr ' ' '-')
-		outFil="${prefix}-${fetchDate//\//-}"
-		mailFrom="${title}"' <'${comic}'@kardel.eu>'
+rcFil=~/.config/getGoComics-maildom
+if [ ! -r "${rcFil}" ]; then
+	mailFromDomain=example.me
+else
+	read mailFromDomain < "$rcFil"
+fi
+
+cfgFil="./getGoComics.yml"
+loadComicsFromYaml "${cfgFil}"
+
+if [ -z "${title[$comic]}" ]; then
+	echo >&2 "Sorry, $comic not found in ${cfgFil}"
+	exit 3
+fi
+
+# Replace spaces with dashes for file /prefix
+prefix=$(echo "${title[$comic]}" | tr  ' ' '-')
+outFil="${prefix}-${fetchDate//\//-}"
+mailFrom="\"${comic}\" <${comic}@${mailFromDomain}>"
 
 # API-Key needed for browserless.io - as ext apk is used
 # There is a generic file  and an 
@@ -230,17 +239,16 @@ else
 	esac
 fi
 
-# Need -f flag is from-address is given
-[ ! -z "$mailFrom" ] && fOpt="-f"
+mailFrom="\"${title[$comic]}\" <${comic}@${mailFromDomain}>"
 
 # Send mail if at least one recipient is given
 if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
 	sendInlImgMai \
-		${fOpt} "${mailFrom}" \
-		-s "${title}" \
+		-f "${mailFrom}" \
+		-s "${title[$comic]}" \
 		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
-		-hl "${title}" \
-		-bl '©&nbsp;'"$by"'&nbsp;'${fetchDate:0:4}'&nbsp; · https://gocomics.com/'${comic} \
+		-hl "${title[$comic]}" \
+		-bl '©&nbsp;'"${by[$comic]}"'&nbsp;'${fetchDate:0:4}'&nbsp;  https://gocomics.com/'${comic} \
 		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
 fi
 exit # (deleting temporary file due to trap)
