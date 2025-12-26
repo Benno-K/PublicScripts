@@ -3,7 +3,9 @@ TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2
 UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk yqUpdCheck
 PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
+CTARGETS=getGoComicsList.yml getGoComicsParams.yml
 
+LCFGDIR = /home/pi/.config
 LBINDIR = /usr/local/bin
 UBINDIR = ~/bin
 PBINDIR = /data/www
@@ -13,10 +15,18 @@ POWNER  = www-data
 PGROUP  = www-data
 PSTYLES	= dark-theme light-theme webgit-layout
 
-install: $(TARGETS) $(UTARGETS) $(STARGETS)
-	@for n in $(UTARGETS);\
+install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS)
+	@for n in $(CTARGETS);\
 	do \
-	diff -q $$n $(UBINDIR)/$$n > /dev/null;\
+	[ -r $(LCFGDIR)/$$n ] && diff -q $$n $(LCFGDIR)/$$n > /dev/null;\
+	if [ "$$?" != "0"	];then \
+	   echo install -m 744 -t $(LCFGDIR) $$n;\
+	   install -m 744 -t $(LCFGDIR) $$n;\
+	fi;\
+	done
+		@for n in $(UTARGETS);\
+	do \
+	[ -r $(UBINDIR)/$$n ] && diff -q $$n $(UBINDIR)/$$n > /dev/null;\
 	if [ "$$?" != "0"	];then \
 	   echo install -m 755 -t $(UBINDIR) $$n;\
 	   install -m 755 -t $(UBINDIR) $$n;\
@@ -24,7 +34,7 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS)
 	done
 	@for n in $(TARGETS);\
 	do \
-	diff -q $$n $(LBINDIR)/$$n > /dev/null;\
+	[ -r $(LBINDIR)/$$n ] && diff -q $$n $(LBINDIR)/$$n > /dev/null;\
 	if [ "$$?" != "0"	];then \
 	   echo sudo install -m 755 -t $(LBINDIR) $$n;\
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
@@ -32,7 +42,7 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS)
 	done
 	@for n in $(STARGETS);\
 	do \
-	diff -q $$n.service $(STRGDIR)/$$n.service > /dev/null;\
+	[ -r $(STRGDIR)/$$n.service ] && diff -q $$n.service $(STRGDIR)/$$n.service > /dev/null;\
 	if [ "$$?" != "0"	];then \
 	   echo install -m 755 -t $(STRGDIR) $$n.service;\
 	   sudo install -m 755 -t $(STRGDIR) $$n.service;\

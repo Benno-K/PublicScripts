@@ -21,7 +21,28 @@
 # file LICENSE)
 ##
 
-loadComicsFromYaml() {
+loadConfigYml() {
+    local yamlFile="$1"
+
+    declare -gA para
+
+    while IFS=$'\t' read -r key value; do
+        para["$key"]="$value"
+    done < <(
+        yq e -o=tsv '
+          to_entries
+          | .[]
+          | select(.value | type == "!!map")
+          | .key as $section
+          | .value
+          | to_entries
+          | .[]
+          | [$section + "." + .key, (.value | tostring)]
+        ' "$yamlFile"
+    )
+}
+
+loadComicsYml() {
     local yamlFile="$1"
 
     # Read all comics in one yq call (TSV: key <tab> title <tab> by)
@@ -44,35 +65,35 @@ today=$(date +%Y/%m/%d)	# todays date
 fetchDate=${2:-$today}	# default date
 declare -A title
 declare -A by
+declare -A para
 
 # Destination dir, based on comic and year
 dstDir=~/${comic}/${fetchDate:0:4}
 
+# Read from config
 # Mail recipients - all empty = NO mail is sent
-mailTo=pi
-mailCC=
-mailBCC=
-mailFrom="\"GoComics Mailer\" <gocomics@${mailFromDomain}>"
-
+#
 # Source the function used to mail image
 . ${0%/*}/sendInlImgMai
 
-# Output file name based on comic & date
-# handle cases where file name prefix is to be 
-# set to other than $comic
+comicCfg=~/.config/getGoComicsList.yml
+paramCfg=~/.config/getGoComicsParams.yml
 
-rcFil=~/.config/getGoComics-maildom
-if [ ! -r "${rcFil}" ]; then
-	mailFromDomain=example.me
-else
-	read mailFromDomain < "$rcFil"
-fi
+# Example config YAML (no tab chars!):
+#mail:
+#  to: root
+#  cc: pi@example.com
+#  bcc: John.Doe@nowhere.org
+#  from: pi
+#   if from: starts with an @, the from value
+#   will be prefixed by the value of $comic.
+loadConfigYml "${paramCfg}";
 
-cfgFil="./getGoComics.yml"
-loadComicsFromYaml "${cfgFil}"
+# the comic "database"
+loadComicsYml "${comicCfg}"
 
 if [ -z "${title[$comic]}" ]; then
-	echo >&2 "Sorry, $comic not found in ${cfgFil}"
+	echo >&2 "Sorry, $comic not found in ${comicCfg}"
 	exit 3
 fi
 
@@ -239,16 +260,17 @@ else
 	esac
 fi
 
-mailFrom="\"${title[$comic]}\" <${comic}@${mailFromDomain}>"
+# If "from" starts with @, do prefix it with $comic
+mailFrom="\"${title[$comic]}\" <${para[mail.from]/#@/${comic}@}>"
 
 # Send mail if at least one recipient is given
-if [ ! -z "${mailTo}${mailCC}${mailBCC}" ]; then
+if [ ! -z "${para[mail.to]}${para[mail.cc]}${para[mail.bcc]}" ]; then
 	sendInlImgMai \
 		-f "${mailFrom}" \
 		-s "${title[$comic]}" \
 		-c "${fetchDate:8:2}.${fetchDate:5:2}.${fetchDate:0:4}" \
 		-hl "${title[$comic]}" \
 		-bl '©&nbsp;'"${by[$comic]}"'&nbsp;'${fetchDate:0:4}'&nbsp;  https://gocomics.com/'${comic} \
-		"${outSpec}" "${mailTo}" "${mailCC}" "${mailBCC}"
+		"${outSpec}" "${para[mail.to]}" "${para[mail.cc]}" "${para[mail.bcc]}"
 fi
 exit # (deleting temporary file due to trap)
