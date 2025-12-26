@@ -87,6 +87,15 @@ paramCfg=~/.config/getGoComicsParams.yml
 #  from: pi
 #   if from: starts with an @, the from value
 #   will be prefixed by the value of $comic.
+# create default config if nothing there
+[ ! -r "${paramCfg}" ] && cat > "${paramCfg}" <<EOI
+mail:
+  to: ${USER}
+  from: ${USER}
+#  cc: pi@example.com
+#  bcc: John.Doe@nowhere.org
+EOI
+
 loadConfigYml "${paramCfg}";
 
 # the comic "database"

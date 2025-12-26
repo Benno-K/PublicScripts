@@ -3,7 +3,7 @@ TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2
 UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk yqUpdCheck
 PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
-CTARGETS=getGoComicsList.yml getGoComicsParams.yml
+CTARGETS=getGoComicsList.yml
 
 LCFGDIR = /home/pi/.config
 LBINDIR = /usr/local/bin
