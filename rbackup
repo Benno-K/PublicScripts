@@ -285,6 +285,10 @@ main() {
 	# Capacity check (skipped for dry-run); exit on failure
 	[ "$dryRun" -eq 0 ] && checkTargetCapacity "$trgDev"
 	trgMntGlobal=$(mountTrg "$trgUuid" "$dryRun")
+	# Above should return a mountpoint (which
+	# exists) but can return eror text, in
+	# that case we need to exit
+	[ -e $trgMntGlobal ] || (echo "ERROR: mount returned \"$trgMntGlobal\" instead of a mount point";exit 33)
 
 	doRsync
 	log "rbackup $@ completed successfully"
