@@ -193,7 +193,6 @@ writeParamFile() {
 		printf '# Approved: %s\n' "$(date --iso-8601=seconds)"
 		printf '# Source: %s (PARTUUID=%s)\n' "$srcDevInfo" "$srcUuid"
 		printf '# Target: %s (PARTUUID=%s)\n' "$trgDevInfo" "$trgUuid"
-		printf '# Note: Approved manually\n'
 	} > "$pf"
 	chmod 600 "$pf"
 	log "Wrote param file $pf"
