@@ -282,7 +282,7 @@ main() {
 		read -r -p "Your choice (run/approve/quit) [r/a/q]: " ans >&2
 		case "${ans:0:1}" in
 			r)
-				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
+				# doRsync will run later
 				;;
 			a)
 				writeParamFile "$srcUuid" "$trgUuid" "$dryRun" "$@"
