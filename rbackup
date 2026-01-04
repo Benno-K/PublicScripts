@@ -20,9 +20,27 @@ set -euo pipefail
 progNam=$(basename "$0")
 logFil="/var/log/${progNam}.log"
 tmpMntBase="/mnt/${progNam}"
+# CAUTION: ${HOME} is bad as root's home is on
+#          the root-fs /. Therefore approvals
+#          can differ when backup root is
+#          booted which can cause unwantingly
+#          overwriting the source.
+#          Ideas to prevent this:
+#             a) store elsewhere
+#             b) delete permission files on
+#                target
+#             c) do exclude permission files
+#                from rsync (the better b)
+# I testwise implemented c), tests needed
 paramDir="${HOME}"
 rsyncOpts=(-aHAXx --numeric-ids --delete --partial)
-rsyncExcl=(--exclude=/tmp --exclude=/var/tmp)
+#rsyncExcl=(--exclude=/tmp --exclude=/var/tmp)
+rsyncExcl=(
+  --exclude=/tmp
+  --exclude=/var/tmp
+  --exclude='**/.rbackup.*-??.*-??.?.params'
+)
+
 
 # Print message to stderr
 echO() {
