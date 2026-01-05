@@ -48,7 +48,7 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	if [ "$$?" != "0"	];then \
 	   echo install -m 755 -t $(SBTRGDIR) $$n;\
 	   sudo install -m 755 -t $(SBTRGDIR) $$n;\
-		 [ $$n = rpi-rootctl ] && cd $(SBTRGDIR) && sudo ln -s rpi-rootctl r2c; \
+		 [ $$n = rpi-rootctl ] && cd $(SBTRGDIR) && sudo ln -sf rpi-rootctl r2c; \
 	fi;\
 	done
 
