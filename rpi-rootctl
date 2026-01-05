@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 
+# rpi-rootctl
+# `rpi-rootctl` is a small, defensive command-line utility for Raspberry Pi systems with **multiple bootable root filesystems** (A/B setups).
+
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+
 # -e : exit immediately on error
 # -u : treat unset variables as an error
 # -o pipefail : fail if any command in a pipeline fails
