@@ -67,6 +67,8 @@ showHelp() {
 	Usage: $progNam [--dry-run] [-h|--help] [--] [...]
 
 	Options:
+	  --cleanup   Check existing approvals
+	              and ask for keep/delete
 	  --dry-run   Perform trial run (no data copied)
 	  -h, --help  Show this help text
 	  --          All following options will be appended to
@@ -183,6 +185,35 @@ mountTrg() {
 	echo "$mnt"
 }
 
+# Cleanup parameter files
+doClean() {
+	local pfGlob=${paramDir}/.${progNam}.*.*.*.params
+	local pf
+	shopt -s nullglob
+	for pf in ${pfGlob}
+		do
+		echo ${pf##*/}
+		echo "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+		cat $pf
+		echo "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+		while :; do
+			read -rp "Delete that ([n]/y/q): " del
+			# Default: n
+			del=${del:-n}
+			case "$del" in
+				y|n|q)
+					break
+					;;
+				*)
+					echo "Please enter y, n or q."
+					;;
+			esac
+		done
+		[ $del = q ] && exit 0
+		[ $del == y ] && rm $pf
+	done
+}
+
 # Record approved parameters to a file in the user's home directory
 writeParamFile() {
 	local srcUuid="$1" trgUuid="$2" dryRun="$3";shift 3
@@ -227,6 +258,7 @@ main() {
 	# Parse command-line arguments
 	for arg in "$@"; do
 		case "$arg" in
+			--cleanup|-c) doClean;exit 0 ;;
 			--dry-run) dryRun=1; rsyncOpts+=(--dry-run);;
 			-h|--help) showHelp; exit 0 ;;
 			--) rsyncOptsPassed+=${arg} ;;

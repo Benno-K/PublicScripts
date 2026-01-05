@@ -17,6 +17,9 @@ So, if you want information, what files are or would have been be processed, you
 
 ## Options
 
+- `-c`, `--cleanup`  
+  List previous approvals and offer to delete
+  them
 - `--dry-run`  
   Perform a trial run. Exits silently on success. To see what files are processed use `--dry-run -- -i' and look at the note above.
 
