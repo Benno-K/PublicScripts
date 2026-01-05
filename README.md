@@ -253,6 +253,11 @@ Features:
   - Hidden -X # option to stop after # modules (for testing)
 
 
+# rpi-rootctl
+`rpi-rootctl` is a small, defensive command-line utility for Raspberry Pi systems with **multiple bootable root filesystems** (A/B setups).
+
+See [rpi-rootctl.md](rpi-rootctl.md) for details.
+
 ## shredLenovoWSg
 Perl script to shred specific unwanted mails in
 my IMAP INBOX. (I subscribed getting some 

@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+
+# -e : exit immediately on error
+# -u : treat unset variables as an error
+# -o pipefail : fail if any command in a pipeline fails
+set -euo pipefail
+
+toolName="rpi-rootctl"
+toolVersion="1.0.0"
+
+cmdLineFile="/boot/cmdline.txt"
+cmdLineBackup="/boot/cmdline.txt.bak.$(date +%Y%m%d-%H%M%S)"
+
+dryRun=false
+
+usage() {
+  cat <<EOF
+Usage: $toolName [OPTION]
+
+Options:
+  --dry-run, -dry, -3   Show modified cmdline.txt on stdout, do not write changes
+  --version             Show version information and exit
+  -h, --help            Show this help and exit
+EOF
+}
+
+# -------------------------
+# Option parsing (strict)
+# -------------------------
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run|-dry|-3)
+      dryRun=true
+      ;;
+    --version)
+      echo "$toolName version $toolVersion"
+      exit 0
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      {
+        echo "ERROR: Unknown option: $arg"
+        echo
+        usage
+      } >&2
+      exit 1
+      ;;
+    *)
+      {
+        echo "ERROR: Unexpected argument: $arg"
+        echo
+        usage
+      } >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Re-run with sudo if not executed as root
+if [[ $EUID -ne 0 ]]; then
+  exec sudo "$0" "$@"
+fi
+
+if [[ ! -f $cmdLineFile ]]; then
+  echo "ERROR: $cmdLineFile not found"
+  exit 1
+fi
+
+echo "Searching for root filesystem partitions..."
+echo
+
+# Currently booted root filesystem
+curRootDev=$(findmnt -n -o SOURCE /)
+curRootPartUUID=$(blkid -s PARTUUID -o value "$curRootDev")
+
+# Collect candidate rootfs partitions
+mapfile -t rootParts < <(
+  lsblk -rpno NAME,FSTYPE,PARTUUID |
+  awk '$2 ~ /ext4|f2fs|btrfs/ && $3 != "" {print $1}'
+)
+
+if [[ ${#rootParts[@]} -eq 0 ]]; then
+  echo "ERROR: No suitable root filesystem partitions found"
+  exit 1
+fi
+
+echo "Detected root filesystem partitions:"
+echo "------------------------------------------------------------"
+
+idx=1
+declare -A partMap
+
+for partDev in "${rootParts[@]}"; do
+  partUUID=$(blkid -s PARTUUID -o value "$partDev")
+  partLabel=$(blkid -s LABEL -o value "$partDev" || echo "-")
+	[ "$partLabel" != "rootfs" ] && continue
+  fsType=$(blkid -s TYPE -o value "$partDev")
+  partSize=$(lsblk -no SIZE "$partDev")
+  mntPoint=$(lsblk -no MOUNTPOINT "$partDev" || echo "-")
+  transport=$(lsblk -no TRAN "$partDev" | sed 's/^$/internal/')
+  parentDev=$(lsblk -no PKNAME "$partDev")
+  devModel=$(lsblk -no MODEL "/dev/$parentDev" 2>/dev/null | sed 's/^$/-/')
+
+  isActive=""
+  if [[ "$partUUID" == "$curRootPartUUID" ]]; then
+    isActive=" <== CURRENTLY BOOTED"
+  fi
+
+  printf "[%d] %s
+" "$idx" "$partDev"
+  printf "    partUUID : %s%s
+" "$partUUID" "$isActive"
+  printf "    fsType   : %s
+" "$fsType"
+  printf "    label    : %s
+" "$partLabel"
+  printf "    size     : %s
+" "$partSize"
+  printf "    mntPoint : %s
+" "${mntPoint:--}"
+  printf "    device   : %s (%s)
+" "$devModel" "$transport"
+  echo
+
+  partMap[$idx]="$partUUID"
+  ((idx++))
+done
+
+read -rp "Select target root filesystem number: " choice
+
+if [[ -z "${partMap[$choice]:-}" ]]; then
+  echo "ERROR: Invalid selection"
+  exit 1
+fi
+
+trgPartUUID="${partMap[$choice]}"
+
+if grep -q "root=PARTUUID=$trgPartUUID" "$cmdLineFile"; then
+  echo "INFO: Selected root filesystem is already configured"
+  exit 0
+fi
+
+if $dryRun; then
+  echo
+  echo "DRY RUN MODE ENABLED"
+  echo "cmdline.txt would be changed to:"
+  echo "------------------------------------------------------------"
+  sed -E "s|root=PARTUUID=[a-fA-F0-9-]+|root=PARTUUID=$trgPartUUID|" "$cmdLineFile"
+  echo "------------------------------------------------------------"
+  echo "No changes have been written."
+  exit 0
+fi
+
+echo "Creating backup of cmdline.txt → $cmdLineBackup"
+cp "$cmdLineFile" "$cmdLineBackup"
+
+echo "Updating cmdline.txt..."
+sed -i -E "s|root=PARTUUID=[a-fA-F0-9-]+|root=PARTUUID=$trgPartUUID|" "$cmdLineFile"
+
+echo
+echo "SUCCESS: Root filesystem switched"
+echo "New root=PARTUUID=$trgPartUUID"
+echo
+echo "Reboot required:"
+echo "  sudo reboot"

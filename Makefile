@@ -4,6 +4,7 @@ UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk y
 PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
 CTARGETS=getGoComicsList.yml
+SBTARGETS=rpi-rootctl
 
 LCFGDIR = /home/pi/.config
 LBINDIR = /usr/local/bin
@@ -11,11 +12,12 @@ UBINDIR = ~/bin
 PBINDIR = /data/www
 PSTYDIR = $(PBINDIR)/webgit-style
 STRGDIR = /usr/lib/systemd/system
+SBTRGDIR = /usr/sbin
 POWNER  = www-data
 PGROUP  = www-data
 PSTYLES	= dark-theme light-theme webgit-layout
 
-install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS)
+install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	@for n in $(CTARGETS);\
 	do \
 	[ -r $(LCFGDIR)/$$n ] && diff -q $$n $(LCFGDIR)/$$n > /dev/null;\
@@ -40,6 +42,16 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS)
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
 	done
+	@for n in $(SBTARGETS);\
+	do \
+	[ -r $(STRGDIR)/$$n ] && diff -q $$n $(STRGDIR)/$$n > /dev/null;\
+	if [ "$$?" != "0"	];then \
+	   echo install -m 755 -t $(SBTRGDIR) $$n;\
+	   sudo install -m 755 -t $(SBTRGDIR) $$n;\
+		 [ $$n = rpi-rootctl ] && cd $(SBTRGDIR) && sudo ln -s rpi-rootctl r2c; \
+	fi;\
+	done
+
 	@for n in $(STARGETS);\
 	do \
 	[ -r $(STRGDIR)/$$n.service ] && diff -q $$n.service $(STRGDIR)/$$n.service > /dev/null;\
