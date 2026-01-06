@@ -159,9 +159,17 @@ getDevInfo() {
 
 # Cleanup function: unmount and remove mountpoint if still mounted
 caught() {
+	local maxTries=5
 	if [ ! -z ${trgMntGlobal+X} ]; then
 		if mountpoint -q "$trgMntGlobal"; then
-			umount "$trgMntGlobal" && rmdir "$trgMntGlobal"
+			while mountpoint -q "$trgMntGlobal"; do
+  (( i++ >= maxTries )) && {
+					echo "umount timed out: $trgMntGlobal" >&2
+					exit 1
+				}
+				sleep 0.5
+			done
+			umount "$trgMntGlobal" && sleep 5 && rmdir "$trgMntGlobal"
 			log "Unmounted and removed $trgMntGlobal"
 		fi
 	fi
