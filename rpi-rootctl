@@ -20,7 +20,7 @@
 set -euo pipefail
 
 toolName="rpi-rootctl"
-toolVersion="1.0.0"
+toolVersion="1.0.1"
 
 cmdLineFile="/boot/cmdline.txt"
 cmdLineBackup="/boot/cmdline.txt.bak.$(date +%Y%m%d-%H%M%S)"
@@ -143,12 +143,15 @@ for partDev in "${rootParts[@]}"; do
   ((idx++))
 done
 
-read -rp "Select target root filesystem number: " choice
+choice=
+while [[ -z "$choice" ]] || [[ -z "${partMap[$choice]:-}" ]]
+do
+	read -rp "Select target root filesystem number: " choice
+	[[ -z "$choice" ]] && exit 0
+	[[ -z "${partMap[$choice]:-}" ]] && echo "ERROR: Invalid selection"
+done
 
-if [[ -z "${partMap[$choice]:-}" ]]; then
-  echo "ERROR: Invalid selection"
-  exit 1
-fi
+[[ -z "$choice" ]] && exit 0
 
 trgPartUUID="${partMap[$choice]}"
 
