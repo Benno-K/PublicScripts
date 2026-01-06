@@ -161,15 +161,18 @@ getDevInfo() {
 caught() {
 	local maxTries=5
 	if [ ! -z ${trgMntGlobal+X} ]; then
+		# First umount ..
+		umount "$trgMntGlobal"
 		if mountpoint -q "$trgMntGlobal"; then
+		  # .. then wait for umount completion
 			while mountpoint -q "$trgMntGlobal"; do
   (( i++ >= maxTries )) && {
-					echo "umount timed out: $trgMntGlobal" >&2
+					log "umount timed out: $trgMntGlobal"
 					exit 1
 				}
 				sleep 0.5
 			done
-			umount "$trgMntGlobal" && sleep 5 && rmdir "$trgMntGlobal"
+			rmdir "$trgMntGlobal"
 			log "Unmounted and removed $trgMntGlobal"
 		fi
 	fi
