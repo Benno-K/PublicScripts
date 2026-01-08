@@ -118,6 +118,15 @@ when you don't pass any as arguments,
 
 are: / /boot /ssd /data"
 
+## fsERASE
+
+Abstract - re-initialize, scrub, empty
+a given filesystem,while keeping it's 
+label and UUIDs 
+
+Display device and fs-info before asking
+for permission.
+
 
 ## fritzip, extip, extip4, extip6
 Script to determine the external IP

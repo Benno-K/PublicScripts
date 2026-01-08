@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb testmail clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify spamlearn doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron rbackup sshdRestarter mmutt tymus throttleinfo getGoComics sendInlImgMai
-UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk yqUpdCheck
+UTARGETS=nsimgurl shredLenovoWSg diskmon nsmail nsimgstore s24-firmware-updchk yqUpdCheck fsERASE
 PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
 CTARGETS=getGoComicsList.yml
@@ -44,7 +44,7 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	done
 	@for n in $(SBTARGETS);\
 	do \
-	[ -r $(STRGDIR)/$$n ] && diff -q $$n $(STRGDIR)/$$n > /dev/null;\
+	[ -r $(SBTRGDIR)/$$n ] && diff -q $$n $(SBBTRGDIR)/$$n > /dev/null;\
 	if [ "$$?" != "0"	];then \
 	   echo install -m 755 -t $(SBTRGDIR) $$n;\
 	   sudo install -m 755 -t $(SBTRGDIR) $$n;\

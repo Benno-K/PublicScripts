@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Abstract - re-initialize, scrub, empty
+# a given filesystem,while keeping it's 
+# label and UUIDs 
+#
+# Display device and fs-info before asking
+# for permission.
+
+##
+# Author: Benno K.
+# Email: benno@xyz.de
+# Github: https://www.github.com/Benno-K
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
+
+device=$1
+
+if [ -z "$device" ]; then
+  echo "Usage: $0 <device>"
+  exit 1
+fi
+
+# Display device info
+echo "=== Device Information ==="
+lsblk -o NAME,SIZE,TYPE,MODEL "$device"
+echo ""
+echo "=== Filesystem Info (Label & UUID) ==="
+blkid "$device" -o full
+
+# Suggest mkfs command
+uuid=$(blkid "$device" -s UUID -o value)
+label=$(blkid "$device" -s LABEL -o value)
+echo ""
+echo "Suggested reformat command:"
+echo "sudo mkfs.ext4 -U ${uuid:-<UUID>} -L ${label:-<LABEL>} $device"
+echo ""
+
+# Confirm execution
+echo "Answering y will !!!ERASE ALL DATA!!! on $1"
+read -p "Execute this command? (y/N): " confirm
+if [[ "$confirm" =~ ^[Yy]$ ]]; then
+  sudo mkfs.ext4 -U "$uuid" -L "$label" "$device"
+  echo "Reformat completed."
+else
+  echo "Operation cancelled."
+fi
