@@ -44,7 +44,7 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	done
 	@for n in $(SBTARGETS);\
 	do \
-	[ -r $(SBTRGDIR)/$$n ] && diff -q $$n $(SBBTRGDIR)/$$n > /dev/null;\
+	[ -r $(SBTRGDIR)/$$n ] && diff -q $$n $(SBTRGDIR)/$$n > /dev/null;\
 	if [ "$$?" != "0"	];then \
 	   echo install -m 755 -t $(SBTRGDIR) $$n;\
 	   sudo install -m 755 -t $(SBTRGDIR) $$n;\
