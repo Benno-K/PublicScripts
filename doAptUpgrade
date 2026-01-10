@@ -47,7 +47,6 @@ log=$(mktemp /tmp/upglog-XXXXXXXX.tmp)
 # ------------------------------
 DEBIAN_FRONTEND=noninteractive \
 sudo apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" full-upgrade 2>&1 | grep -v "$aptwarn" >"$log"
-#sudo apt upgrade -y 2>&1 | grep -v "$aptwarn" >"$log"
 
 # ------------------------------
 # Extract package change counts from the log
