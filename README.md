@@ -136,7 +136,7 @@ The `dovecot-lda-wrapper` acts as a flexible replacement for the standard `dovec
 You can include the wrapper in your repository as `dldawrap.md` and install it on your mail server:
 
 ```bash
-sudo cp dldawrap.md /usr/local/bin/dovecot-lda-wrapper
+sudo cp dovecot-lda-wrapper /usr/local/bin/dovecot-lda-wrapper
 sudo chmod +x /usr/local/bin/dovecot-lda-wrapper
 ```
 
