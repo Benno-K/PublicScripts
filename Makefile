@@ -13,6 +13,7 @@ PBINDIR = /data/www
 PSTYDIR = $(PBINDIR)/webgit-style
 STRGDIR = /usr/lib/systemd/system
 SBTRGDIR = /usr/sbin
+MBXRULED = /etc/dovecot
 POWNER  = www-data
 PGROUP  = www-data
 PSTYLES	= dark-theme light-theme webgit-layout
@@ -41,6 +42,14 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	   echo sudo install -m 755 -t $(LBINDIR) $$n;\
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
+	done
+	@for n in mboxrules;\
+	do \
+	  [ -r $(MBXRULED)/$$n ] && diff -q $$n $(MBXRULED)/$$n > /dev/null;\
+  if [ "$$?" != "0" ];then \
+     echo sudo install -m 755 -t $(MBXRULED) $$n;\
+     sudo install -m 755 -t $(MBXRULED) $$n;\
+  fi;\
 	done
 	@for n in $(SBTARGETS);\
 	do \
