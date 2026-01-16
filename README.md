@@ -118,6 +118,29 @@ when you don't pass any as arguments,
 
 are: / /boot /ssd /data"
 
+## dovecot-lda-wrapper
+
+The `dovecot-lda-wrapper` acts as a flexible replacement for the standard `dovecot-lda`. It reads the full email message, evaluates headers or content against a configurable **rule file** (`/etc/dovecot/mboxrules`), and adds corresponding LDA options (like `-m Junk`) before invoking `dovecot-lda`. This allows SpamAssassin-flagged messages to be delivered to `Junk` while keeping legitimate messages in `INBOX`, without relying on Sieve or reinjection.
+
+### Rule Syntax
+
+- Each line in the rule file represents a single rule.
+- Format: `<REGEX><space><lda-option>`
+- Regex is evaluated against the entire email content.
+- Use `[[:space:]]` to match whitespace where needed.
+- Multiple rules can be defined; lda-options are appened rule after rule;of course multiple `-m`rules are ALL passed to dovecot-lda, which is taking the **last `-m`** option to determine the folder.
+- Typical LDA options: `-m <folder>` (e.g., `-m Junk`).
+
+### Download / Installation
+
+You can include the wrapper in your repository as `dldawrap.md` and install it on your mail server:
+
+```bash
+sudo cp dldawrap.md /usr/local/bin/dovecot-lda-wrapper
+sudo chmod +x /usr/local/bin/dovecot-lda-wrapper
+```
+
+Make sure your Postfix `master.cf` points to the wrapper and that your `mboxrules` file exists and is readable by the Postfix user.
 ## fsERASE
 
 Abstract - re-initialize, scrub, empty
