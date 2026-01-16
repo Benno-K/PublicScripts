@@ -32,6 +32,11 @@
 # file LICENSE)
 ##
 
+set -euo pipefail
+# -e : exit immediately on error
+# -u : treat unset variables as an error
+# -o pipefail : fail if any command in a pipeline fails
+
 # Local delivery agent to invoke
 lda=/usr/lib/dovecot/dovecot-lda
 # Regex/Mbox pairs
@@ -42,6 +47,12 @@ reFil=/etc/dovecot/mboxrules
 # POSIXy $(basename $0)
 me=${0##*/}
 
+if [ ! -e "$reFil" ]; then
+	msg="missing rule file $reFil"
+	logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
+	echo >&2 $msg
+	exit 1
+fi
 # Tempfile to hold mail 
 #  is grepped for each regexp in $reFil and
 #  finally passed on to the lda 
