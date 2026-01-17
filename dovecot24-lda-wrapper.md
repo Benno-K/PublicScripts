@@ -65,63 +65,81 @@ spamassassin_virtual unix - n n - - pipe
   argv=/usr/bin/spamc -e /usr/local/bin/dovecot-lda-wrapper -f ${sender} -d ${user}
 ```
 
-> Entscheidend hier:
-Den ursprünglichen Dovecot-Delivery-Agent
+>**Entscheidend hier**:<br/>
+Den ursprünglichen Dovecot-Delivery-Agent<br/>
 **```/usr/lib/dovecot/dovecot-lda```**
 mit
-**```/usr/local/bin/dovecot-lda-wrapper```**
-ersetzen!
+**```/usr/local/bin/dovecot-lda-wrapper```** ersetzen!
 
 ---
 
 ### Wrapper-Skript
-Die aktuelle Version befindet sich unter [Github -> Benno-K-> PublicScripts](https://github.com/Benno-K/PublicScripts/) als [dovecot-lda-wrapper](https://github.com/Benno-K/PublicScripts/blob/main/dovecot-lda-wrapper). Das Script befindet sich dort im 
-[aktuellen Release](https://github.com/Benno-K/PublicScripts/releases/latest).
+Die aktuelle Version befindet sich unter 
+- [Github -> Benno-K-> PublicScripts](https://github.com/Benno-K/PublicScripts/) als
+- [dovecot-lda-wrapper](https://github.com/Benno-K/PublicScripts/blob/main/dovecot-lda-wrapper).
+ <br/>Das Script befindet sich dort im 
+- [aktuellen Release](https://github.com/Benno-K/PublicScripts/releases/latest).
 
 Zum Download empfehle ich:
 ```sh
 curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq -r '.zipball_url' | xargs -r curl -L 2>/dev/null | unzip -p - '*/dovecot-lda-wrapper' > dovecot-lda-wrapper
 ```
+(so kompliziert ist das Kommando, weil gezielt ein Script aus der ganzen Sammlung extrahiert wird)
 
-Beispielcode (unterscheidet sich vom aktuellen Release)[^basename].
+#### Beispielcode
+(unterscheidet sich vom aktuellen Release)[^basename].
 [^basename]: Fragen zu "```me=${0##*/}```" ???<br/> Nun, das POSIX-Konstrukt ```${0##*/}```  erfüllt dieselbe Aufgabe wie ```$(basename $0)```, nur durch Variablen-Substitution und ohne Kommando-Ausführung in einer Subshell. Übrigens: Statt ```dirname $0```  geht auch ```${0%/*}```. Neugierig, was da noch alles geht:
 unter
 [https://tldp.org/LDP/abs/html/parameter-substitution.html](https://tldp.org/LDP/abs/html/parameter-substitution.html) gibt's noch viel mehr.
 ```bash
 #!/bin/bash
-# Wrapper around Dovecot LDA
-# decides Inbox or Junk based on mail content
+# Wrapper-Skript für Dovecot LDA
+# Entscheidet anhand des Mail-Inhalts, ob die Mail ins Postfach oder Junk geht
 
 set -eou pipefail
-# -e : exit immediately on error
-# -u : treat unset variables as an error
-# -o pipefail : fail if any command in a pipeline fails
+# -e : sofort abbrechen, wenn ein Befehl mit Fehler endet
+# -u : Verwendung nicht gesetzter Variablen als Fehler behandeln
+# -o pipefail : Pipeline schlägt fehl, wenn irgendein Teilbefehl fehlschlägt
 
 lda=/usr/lib/dovecot/dovecot-lda
 reFil=/etc/dovecot/mboxrules
 me=${0##*/}
 
+# Temporäre Datei anlegen (für die vollständige Mail)
 tmp="$(mktemp /tmp/${me}.XXXXXX)" || exit 75
+
+# Aufräumfunktion für die temporäre Datei
 cleanup() {
   [ -e "$tmp" ] && rm -f "$tmp"
 }
+
+# Cleanup bei normalem Ende und bei Signalen sicherstellen
 trap cleanup EXIT HUP INT TERM
 
-# Preserve full message
+# Vollständige Nachricht unverändert in die temporäre Datei schreiben
 cat > "$tmp"
 
+# Regeln aus der Regeldatei zeilenweise lesen
 while IFS= read -r reLine; do
+  # Regulärer Ausdruck: alles bis zum ersten Leerzeichen
   regexp=${reLine%% *}
+
+  # LDA-Option(en): alles nach dem ersten Leerzeichen
   suffix=${reLine#* }
+
+  # Wenn der reguläre Ausdruck in der Mail gefunden wird,
+  # die zugehörigen Optionen sammeln
   if grep -Eq "$regexp" "$tmp"; then
     opts+="$suffix "
   fi
 done < "$reFil"
 
+# Falls Optionen hinzugefügt wurden, ins Log schreiben
 if [ -n "$opts" ]; then
   logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts% }\" to lda-command"
 fi
 
+# Dovecot LDA mit den ermittelten Optionen aufrufen
 $lda $opts "$@" <"$tmp"
 exit $?
 ```
