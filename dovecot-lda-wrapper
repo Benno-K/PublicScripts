@@ -32,8 +32,7 @@
 # file LICENSE)
 ##
 
-set -euo pipefail
-# -e : exit immediately on error
+set -uo pipefail
 # -u : treat unset variables as an error
 # -o pipefail : fail if any command in a pipeline fails
 
@@ -68,18 +67,17 @@ cat > "$tmp"
 
 # Read the definitions from file
 opts=
+lc=0
 while IFS= read -r reLine; 
 	do
 	regexp=${reLine%% *}
 	suffix=${reLine#* }
+	lc=$((lc+1))
 	if grep -Eq "$regexp" "$tmp"; then
 		opts+="$suffix "
 	else
-		if [ $? = 2 ]; then
-			logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in file $reFil"
-		fi
+		[ $? = 2 ] && logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in line $lc of $reFil"
 	fi
-
 	done < "$reFil"
 [ ! -z "$opts" ] && logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
 
