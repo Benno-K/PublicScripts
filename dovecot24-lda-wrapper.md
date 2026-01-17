@@ -124,7 +124,7 @@ reFil=/etc/dovecot/mboxrules
 # Skriptname (POSIX-kompatibel)
 me=${0##*/}
 
-# Fehlende Regeldatei melden und Skript beenden
+- Fehlende Regeldatei melden und Skript beenden
 if [ ! -e "$reFil" ]; then
     msg="missing rule file $reFil"
     logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
