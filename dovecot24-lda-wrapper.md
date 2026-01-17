@@ -92,20 +92,6 @@ curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq 
 unter
 [https://tldp.org/LDP/abs/html/parameter-substitution.html](https://tldp.org/LDP/abs/html/parameter-substitution.html) gibt's noch viel mehr.
 ```bash
-
-```
-> Das ist dann aber leider mehr zu tippen ;-)
-
----
-
-### Logging / Debugging
-
-- Wrapper loggt über `logger -p mail.info`
-- Zeitstempel ISO-8601 mit Mikrosekunden
-- Testbar z. B. mit GTUBE-Mails
-
-Beispiel:
-```bash
 #!/bin/bash
 #
 # Wrapper für Dovecot LDA
@@ -124,10 +110,7 @@ Beispiel:
 #  Kein Sieve
 # Nachteil:
 #  Mail wird temporär kopiert
-#
-# Autor: Benno K.
-# GPL V3
-##
+
 set -uo pipefail
 # -u: Fehler bei ungesetzten Variablen
 # -o pipefail: Fehler bei Pipeline-Fehlern
@@ -141,6 +124,7 @@ reFil=/etc/dovecot/mboxrules
 # Skriptname (POSIX-kompatibel)
 me=${0##*/}
 
+# Fehlende Regeldatei melden und Skript beenden
 if [ ! -e "$reFil" ]; then
     msg="missing rule file $reFil"
     logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
@@ -179,9 +163,86 @@ done < "$reFil"
     "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
 
 # Nicht per exec aufrufen, sonst wird tmp vorzeitig gelöscht
-$lda $opts "$@" <"$tmp"
+# $lda $opts "$@" <"$tmp"
 
 exit
+
+# Autor: Benno K.
+# GPL V3
+##
+set -uo pipefail
+# -u: Fehler bei ungesetzten Variablen
+# -o pipefail: Fehler bei Pipeline-Fehlern
+
+# Dovecot LDA
+lda=/usr/lib/dovecot/dovecot-lda
+
+# Regeldatei (Regex → LDA-Option)
+reFil=/etc/dovecot/mboxrules
+
+# Skriptname (POSIX-kompatibel)
+me=${0##*/}
+
+# Die Datei mit den Regeln muss existieren
+if [ ! -e "$reFil" ]; then
+    msg="missing rule file $reFil"
+    logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
+    echo >&2 "$msg"
+    exit 1
+fi
+
+# Temporäre Datei für Mailinhalt
+tmp="$(mktemp /tmp/${me}.XXXXXX)" || exit 75
+
+# Aufräumfunktion - definieren und etablieren
+cleanup() {
+    [ -e "$tmp" ] && rm -f "$tmp"
+}
+trap cleanup EXIT HUP INT TERM
+
+# Mail vollständig sichern (stdin)
+cat > "$tmp"
+
+# Regeln auswerten
+opts=
+lc=0
+while IFS= read -r reLine; do
+    regexp=${reLine%% *}
+    suffix=${reLine#* }
+    lc=$((lc+1))
+    # Auf Übereinstimmung prüfen
+    if grep -Eq "$regexp" "$tmp"; then
+        opts+="$suffix "
+    else
+        # Bei Fehler in der Regel: Logmeldung
+        [ $? = 2 ] && logger -p mail.info \
+            "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in line $lc of $reFil"
+    fi
+done < "$reFil"
+
+# Logmrldung wenn lda-Optionen gefunden
+[ -n "$opts" ] && logger -p mail.info \
+    "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
+
+# original lda starten
+# (Nicht per exec aufrufen, sonst wird tmp vorzeitig gelöscht)
+$lda $opts "$@" <"$tmp"
+# exit führt cleanup durch
+exit
+```
+> Das ist dann aber leider mehr zu tippen ;-)
+
+---
+
+### Logging / Debugging
+
+- Wrapper loggt über `logger -p mail.info`
+- Zeitstempel ISO-8601 mit Mikrosekunden
+- Testbar z. B. mit GTUBE-Mails
+
+Beispiel:
+```text
+dovecot-lda-wrapper: added "-m Junk" to lda-command
 ```
 
 ---
