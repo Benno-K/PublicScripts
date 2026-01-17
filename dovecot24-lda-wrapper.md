@@ -27,7 +27,7 @@ In der Praxis scheitert das klassische Setup jedoch:
 
 ➡ Ergebnis: **Mit Bordmitteln ist „Spam → Junk“ nicht stabil lösbar.**[^chat]
 
-[^chat]: Nachdem ich tagelang gerungen und sehr viele Kombinationen probiert habe, war am Ende sogar mein - durchaus nicht um Lösungen verlegener - Sparring-Partner (ChatGPT) davon überzeugt, dass es keine Standard-Lösung für dieses Problem gibt. Denn auch keiner der dort empfohlenen Wege erwies sich als gangbar. Aber immerhin lehrreich waren diese Irrwege.
+[^chat]: Nachdem ich mehrere Tage gerungen und sehr viele Kombinationen probiert habe, war am Ende sogar mein - durchaus nicht um Lösungen verlegener - Sparring-Partner ChatGPT davon überzeugt, dass es keine Standard-Lösung für dieses Problem gibt. Keine der vielen, im Laufe der tagelangen Sitzung vorgeschlagenen, Lösungen erwies sich letztlich als brauchbar. Aber es war lehrreich.
 
 --
 
