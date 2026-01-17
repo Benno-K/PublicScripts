@@ -73,12 +73,12 @@ while IFS= read -r reLine;
 	do
 	regexp=${reLine%% *}
 	suffix=${reLine#* }
-	((lc++))
+	lc=$((lc++))
 	if grep -Eq "$regexp" "$tmp"; then
 		opts+="$suffix "
 	else
-		if [ $? -eq 2 ]; then
-			logger -p mail.err "$me: invalid regex in line $lc of $reFil: $regexp"
+		if [ $? = 2 ]; then
+			logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" - line $lc in $reFil"
 		fi
 	fi
 
