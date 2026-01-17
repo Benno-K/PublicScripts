@@ -27,7 +27,7 @@ In der Praxis scheitert das klassische Setup jedoch:
 
 ➡ Ergebnis: **Mit Bordmitteln ist „Spam → Junk“ nicht stabil lösbar.**[^chat]
 
-[^chat]: Nachdem ich tagelang gerungen und sehr viele Kombinationen probiert habe  war am Ende sogar mein - durchaus nicht um Lösungen verlegener - Sparring-Partner (ChatGPT) davon überzeugt, dass es keine Standard-Lösung für dieses Problem gibt. Denn auch keiner der dort empfohlenen Wege erwies sich als gangbar. Aber immerhin lehrreich waren diese Irrwege.
+[^chat]: Nachdem ich tagelang gerungen und sehr viele Kombinationen probiert habe, war am Ende sogar mein - durchaus nicht um Lösungen verlegener - Sparring-Partner (ChatGPT) davon überzeugt, dass es keine Standard-Lösung für dieses Problem gibt. Denn auch keiner der dort empfohlenen Wege erwies sich als gangbar. Aber immerhin lehrreich waren diese Irrwege.
 
 --
 
@@ -75,7 +75,6 @@ ersetzen!
 ---
 
 ### Wrapper-Skript
-
 Die aktuelle Version befindet sich unter [Github -> Benno-K-> PublicScripts](https://github.com/Benno-K/PublicScripts/) als [dovecot-lda-wrapper](https://github.com/Benno-K/PublicScripts/blob/main/dovecot-lda-wrapper). Das Script befindet sich dort im 
 [aktuellen Release](https://github.com/Benno-K/PublicScripts/releases/latest).
 
@@ -84,8 +83,8 @@ Zum Download empfehle ich:
 curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq -r '.zipball_url' | xargs -r curl -L 2>/dev/null | unzip -p - '*/dovecot-lda-wrapper' > dovecot-lda-wrapper
 ```
 
-Beispielcode[^basename], unterscheidet sich geringfügig vom aktuellen Release.
-[^basename]: ```me=${0##*/}``` ??? Nun, dieses POSIX-Konstrukt ```${0##*/}```  erfüllt dieselbe Aufgabe wie ```$(basename $0)```, nur durch Variablen-Substitution und ohne Kommando-Ausführung in einer Subshell. Übrigens: Statt ```dirname $0```  geht auch ```${0%/*}```. Neugierig, was da noch alles geht:
+Beispielcode (unterscheidet sich vom aktuellen Release)[^basename].
+[^basename]: Fragen zu "```me=${0##*/}```" ???<br/> Nun, das POSIX-Konstrukt ```${0##*/}```  erfüllt dieselbe Aufgabe wie ```$(basename $0)```, nur durch Variablen-Substitution und ohne Kommando-Ausführung in einer Subshell. Übrigens: Statt ```dirname $0```  geht auch ```${0%/*}```. Neugierig, was da noch alles geht:
 unter
 [https://tldp.org/LDP/abs/html/parameter-substitution.html](https://tldp.org/LDP/abs/html/parameter-substitution.html) gibt's noch viel mehr.
 ```bash
@@ -176,8 +175,6 @@ dovecot-lda-wrapper: added "-m Junk" to lda-command
 | LMTP | optional | bevorzugt, stabil |
 | Spam-Sortierung ohne Sieve | möglich | nur über Wrapper / externe Lösung |
 | Sieve-Abhängigkeit | optional | offiziell empfohlen |
-
-> Empfehlung: Für dieses Setup Dovecot **2.3** verwenden oder Wrapper-Lösung strikt beibehalten.
 
 ---
 
