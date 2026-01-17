@@ -68,17 +68,15 @@ cat > "$tmp"
 
 # Read the definitions from file
 opts=
-lc=0
 while IFS= read -r reLine; 
 	do
 	regexp=${reLine%% *}
 	suffix=${reLine#* }
-	lc=$((lc++))
 	if grep -Eq "$regexp" "$tmp"; then
 		opts+="$suffix "
 	else
 		if [ $? = 2 ]; then
-			logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" - line $lc in $reFil"
+			logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in file $reFil"
 		fi
 	fi
 
