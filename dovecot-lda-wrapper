@@ -67,13 +67,21 @@ trap cleanup EXIT HUP INT TERM
 cat > "$tmp"
 
 # Read the definitions from file
+opts=
+lc=0
 while IFS= read -r reLine; 
 	do
 	regexp=${reLine%% *}
 	suffix=${reLine#* }
+	((lc++))
 	if grep -Eq "$regexp" "$tmp"; then
 		opts+="$suffix "
+	else
+		if [ $? -eq 2 ]; then
+			logger -p mail.err "$me: invalid regex in line $lc of $reFil: $regexp"
+		fi
 	fi
+
 	done < "$reFil"
 [ ! -z "$opts" ] && logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
 
