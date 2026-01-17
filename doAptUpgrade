@@ -45,8 +45,12 @@ log=$(mktemp /tmp/upglog-XXXXXXXX.tmp)
 # Redirect both stdout and stderr to grep to filter out the warning
 # Save the resulting output into the temporary log file
 # ------------------------------
-DEBIAN_FRONTEND=noninteractive \
-sudo apt -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" full-upgrade 2>&1 | grep -v "$aptwarn" >"$log"
+sudo env DEBIAN_FRONTEND=noninteractive \
+apt-get -y \
+  -o Dpkg::Options::="--force-confdef" \
+  -o Dpkg::Options::="--force-confold" \
+  full-upgrade \
+2>&1 | grep -v "$aptwarn" >"$log"
 
 # ------------------------------
 # Extract package change counts from the log
