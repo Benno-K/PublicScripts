@@ -124,65 +124,6 @@ reFil=/etc/dovecot/mboxrules
 # Skriptname (POSIX-kompatibel)
 me=${0##*/}
 
-- Fehlende Regeldatei melden und Skript beenden
-if [ ! -e "$reFil" ]; then
-    msg="missing rule file $reFil"
-    logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
-    echo >&2 "$msg"
-    exit 1
-fi
-
-# Temporäre Datei für Mailinhalt
-tmp="$(mktemp /tmp/${me}.XXXXXX)" || exit 75
-
-cleanup() {
-    [ -e "$tmp" ] && rm -f "$tmp"
-}
-trap cleanup EXIT HUP INT TERM
-
-# Mail vollständig sichern
-cat > "$tmp"
-
-# Regeln auswerten
-opts=
-lc=0
-while IFS= read -r reLine; do
-    regexp=${reLine%% *}
-    suffix=${reLine#* }
-    lc=$((lc+1))
-
-    if grep -Eq "$regexp" "$tmp"; then
-        opts+="$suffix "
-    else
-        [ $? = 2 ] && logger -p mail.info \
-            "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in line $lc of $reFil"
-    fi
-done < "$reFil"
-
-[ -n "$opts" ] && logger -p mail.info \
-    "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
-
-# Nicht per exec aufrufen, sonst wird tmp vorzeitig gelöscht
-# $lda $opts "$@" <"$tmp"
-
-exit
-
-# Autor: Benno K.
-# GPL V3
-##
-set -uo pipefail
-# -u: Fehler bei ungesetzten Variablen
-# -o pipefail: Fehler bei Pipeline-Fehlern
-
-# Dovecot LDA
-lda=/usr/lib/dovecot/dovecot-lda
-
-# Regeldatei (Regex → LDA-Option)
-reFil=/etc/dovecot/mboxrules
-
-# Skriptname (POSIX-kompatibel)
-me=${0##*/}
-
 # Die Datei mit den Regeln muss existieren
 if [ ! -e "$reFil" ]; then
     msg="missing rule file $reFil"
@@ -220,7 +161,7 @@ while IFS= read -r reLine; do
     fi
 done < "$reFil"
 
-# Logmrldung wenn lda-Optionen gefunden
+# Logmeldung wenn lda-Optionen gefunden
 [ -n "$opts" ] && logger -p mail.info \
     "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
 
