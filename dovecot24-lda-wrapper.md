@@ -92,81 +92,7 @@ curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq 
 unter
 [https://tldp.org/LDP/abs/html/parameter-substitution.html](https://tldp.org/LDP/abs/html/parameter-substitution.html) gibt's noch viel mehr.
 ```bash
-#!/bin/bash
-# Wrapper-Skript für Dovecot LDA
-# Entscheidet anhand des Mail-Inhalts, ob die Mail ins Postfach oder Junk geht
 
-set -eou pipefail
-# -e : sofort abbrechen, wenn ein Befehl mit Fehler endet
-# -u : Verwendung nicht gesetzter Variablen als Fehler behandeln
-# -o pipefail : Pipeline schlägt fehl, wenn irgendein Teilbefehl fehlschlägt
-
-lda=/usr/lib/dovecot/dovecot-lda
-reFil=/etc/dovecot/mboxrules
-me=${0##*/}
-
-# Temporäre Datei anlegen (für die vollständige Mail)
-tmp="$(mktemp /tmp/${me}.XXXXXX)" || exit 75
-
-# Aufräumfunktion für die temporäre Datei
-cleanup() {
-  [ -e "$tmp" ] && rm -f "$tmp"
-}
-
-# Cleanup bei normalem Ende und bei Signalen sicherstellen
-trap cleanup EXIT HUP INT TERM
-
-# Vollständige Nachricht unverändert in die temporäre Datei schreiben
-cat > "$tmp"
-
-# Regeln aus der Regeldatei zeilenweise lesen
-while IFS= read -r reLine; do
-  # Regulärer Ausdruck: alles bis zum ersten Leerzeichen
-  regexp=${reLine%% *}
-
-  # LDA-Option(en): alles nach dem ersten Leerzeichen
-  suffix=${reLine#* }
-
-  # Wenn der reguläre Ausdruck in der Mail gefunden wird,
-  # die zugehörigen Optionen sammeln
-  if grep -Eq "$regexp" "$tmp"; then
-    opts+="$suffix "
-  fi
-done < "$reFil"
-
-# Falls Optionen hinzugefügt wurden, ins Log schreiben
-if [ -n "$opts" ]; then
-  logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts% }\" to lda-command"
-fi
-
-# Dovecot LDA mit den ermittelten Optionen aufrufen
-$lda $opts "$@" <"$tmp"
-exit $?
-```
-
----
-
-### Regeldatei
-
-Pfad: `/etc/dovecot/mboxrules`
-
-Beispiel:
-
-```config
-^X-Spam-Status:[[:space:]]*Y[eE][sS] -m Junk
-```
-
-**Format:**
-```
-<REGEX><space><lda-option>
-```
-- Regex **ohne** Leerzeichen (oder mit `[[:space:]]`) 
-- LDA-Option wird direkt ergänzt (z. B. `-m Junk`)
-- Mehrere Regeln möglich, letzte passende Option gewinnt
-
-Wer diesen Einzeiler nicht selbst anlegen will,  könnte ihn aus dem Release herunterladen:
-```sh
-curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq -r '.zipball_url' | xargs -r curl -L 2>/dev/null | unzip -p - '*/mboxrules' > mboxrules
 ```
 > Das ist dann aber leider mehr zu tippen ;-)
 
@@ -179,8 +105,83 @@ curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq 
 - Testbar z. B. mit GTUBE-Mails
 
 Beispiel:
-```text
-dovecot-lda-wrapper: added "-m Junk" to lda-command
+```bash
+#!/bin/bash
+#
+# Wrapper für Dovecot LDA
+#  entscheidet Inbox oder Junk (bei Spam)
+#  Steuerung über Regeldatei
+#  Format: Regex + Space + LDA-Option
+#  Regex darf keine Leerzeichen enthalten
+#  (außer explizit als [[:space:]])
+#  Beispiel:
+#   ^X-Spam-Status:[[:space:]]*Y[eE][sS] -m Junk
+#  fügt "-m Junk" zum lda-Befehl hinzu
+#
+# Vorteile:
+#  Keine Reinjektion
+#  Keine Postfix-Filter
+#  Kein Sieve
+# Nachteil:
+#  Mail wird temporär kopiert
+#
+# Autor: Benno K.
+# GPL V3
+##
+set -uo pipefail
+# -u: Fehler bei ungesetzten Variablen
+# -o pipefail: Fehler bei Pipeline-Fehlern
+
+# Dovecot LDA
+lda=/usr/lib/dovecot/dovecot-lda
+
+# Regeldatei (Regex → LDA-Option)
+reFil=/etc/dovecot/mboxrules
+
+# Skriptname (POSIX-kompatibel)
+me=${0##*/}
+
+if [ ! -e "$reFil" ]; then
+    msg="missing rule file $reFil"
+    logger -p mail.info "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: $msg"
+    echo >&2 "$msg"
+    exit 1
+fi
+
+# Temporäre Datei für Mailinhalt
+tmp="$(mktemp /tmp/${me}.XXXXXX)" || exit 75
+
+cleanup() {
+    [ -e "$tmp" ] && rm -f "$tmp"
+}
+trap cleanup EXIT HUP INT TERM
+
+# Mail vollständig sichern
+cat > "$tmp"
+
+# Regeln auswerten
+opts=
+lc=0
+while IFS= read -r reLine; do
+    regexp=${reLine%% *}
+    suffix=${reLine#* }
+    lc=$((lc+1))
+
+    if grep -Eq "$regexp" "$tmp"; then
+        opts+="$suffix "
+    else
+        [ $? = 2 ] && logger -p mail.info \
+            "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: error in regexp \"$regexp\" in line $lc of $reFil"
+    fi
+done < "$reFil"
+
+[ -n "$opts" ] && logger -p mail.info \
+    "$(date +%Y-%m-%dT%H:%M:%S.%6N%:z) $me: added \"${opts%* }\" to lda-command"
+
+# Nicht per exec aufrufen, sonst wird tmp vorzeitig gelöscht
+$lda $opts "$@" <"$tmp"
+
+exit
 ```
 
 ---
