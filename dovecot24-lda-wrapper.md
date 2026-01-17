@@ -171,8 +171,26 @@ $lda $opts "$@" <"$tmp"
 # exit führt cleanup durch
 exit
 ```
-> Das ist dann aber leider mehr zu tippen ;-)
+---
+### Regeldatei
+Pfad: `/etc/dovecot/mboxrules`
+Beispiel:
+```config
+^X-Spam-Status:[[:space:]]*Y[eE][sS] -m Junk
+```
+**Format:**
+```
+<REGEX><space><lda-option>
+```
+- Regex **ohne** Leerzeichen (oder mit `[[:space:]]`)
+- LDA-Option wird direkt ergänzt (z. B. `-m Junk`)
+- Mehrere Regeln möglich, letzte passende Option gewinnt
 
+Wer diesen Einzeiler nicht selbst anlegen will,  könnte ihn aus dem Release herunterladen:
+```sh
+curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq -r '.zipball_url' | xargs -r curl -L 2>/dev/null | unzip -p - '*/mboxrules' > mboxrules
+```
+> Das Kommando ist aber länger als die Regel selbst. Selbst erstellen spart also Tipparbeit.  ;-)
 ---
 
 ### Logging / Debugging
