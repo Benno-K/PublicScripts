@@ -552,7 +552,7 @@ case $mode in
 			else
 				lastIPs="? ?"
 			fi
-			ipv4=$(fritzip $tzbox{fritzbox})
+			ipv4=$(fritzip ${fritzbox})
 			ipv6=$(myip6)
 			IPs="$ipv4 $ipv6"
 			if [ "${IPs}" != "${lastIPs}" ];then
