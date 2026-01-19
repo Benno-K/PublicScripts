@@ -34,25 +34,6 @@ readrc () {
 	ddns=$(echo $s2|rev|base64 -d|rev)
 	u=$(echo $ue|rev|base64 -d|rev)
 	p=$(echo $pe|rev|base64 -d|rev)
-  if \
-    [ -z "$fritzbox" ] || \
-    [ -z "$dns" ] || \
-    [ -z "$ddns" ] || \
-    [ -z "$u" ] || \
-    [ -z "$p" ] ; then
-			echo >&2 "Error parsing $crfil
-fb=$fb
-s1=$s1
-s2=s2
-ue=$ue
-pe=$pe
-fritzbox=$fritzbox
-dns=$dns
-ddns=$ddns
-u=$u
-p=$p
------"
-  fi
 }
 
 creddbg () {
@@ -552,7 +533,7 @@ case $mode in
 			else
 				lastIPs="? ?"
 			fi
-			ipv4=$(fritzip ${fritzbox})
+			ipv4=$(fritzip $tzbox{fritzbox})
 			ipv6=$(myip6)
 			IPs="$ipv4 $ipv6"
 			if [ "${IPs}" != "${lastIPs}" ];then
