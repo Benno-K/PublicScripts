@@ -29,41 +29,30 @@ mailto=${1:-root}
 . $(dirname $0)/htmlwrap
 
 # ------------------------------
-# Warning string to ignore in apt output
-# Some versions of apt print this warning that we want to suppress
-# ------------------------------
-aptwarn="WARNING: apt does not have a stable CLI interface"
-
-# ------------------------------
 # Create a temporary log file for apt upgrade output
 # mktemp ensures a unique temporary filename
 # ------------------------------
 log=$(mktemp /tmp/upglog-XXXXXXXX.tmp)
 
 # ------------------------------
-# Run apt upgrade non-interactively, suppressing the warning
-# Redirect both stdout and stderr to grep to filter out the warning
-# Save the resulting output into the temporary log file
+# Run apt-get full-upgrade non-interactively
+# Redirect both stdout and stderr to
+# output into the temporary log file
+# ensure english messages
 # ------------------------------
-sudo env DEBIAN_FRONTEND=noninteractive \
+sudo env LC_ALL=C \
+DEBIAN_FRONTEND=noninteractive \
 apt-get -y \
   -o Dpkg::Options::="--force-confdef" \
   -o Dpkg::Options::="--force-confold" \
   full-upgrade \
-2>&1 | grep -v "$aptwarn" >"$log"
-
-# ------------------------------
-# Extract package change counts from the log
-# Example line: "Aktualisiert: 3 Installiert: 1 Entfernt: 0 ..."
-# awk picks the 2nd, 4th, 6th, and 9th fields (numbers)
-# ------------------------------
-counts=$(awk '/Aktu.*:/{print $2,$4,$6,$9}' "$log")
+2>&1 >"$log"
 
 # ------------------------------
 # Only send an email if there were changes
-# Here we check if counts are different from all zeros
+# Here we check if counts are different from all zero
 # ------------------------------
-if [ "$counts" != "0, 0, 0, 0" ]; then
+if ! grep -qE '^0 .*0 .*0 .*0 +.*\.$' "$log" ; then
     # ------------------------------
     # Wrap the log in HTML using wrapTextHtml
     # --plain $log       : the main log content
