@@ -1,1 +1,1 @@
-^X-Spam-Status:[[:space:]]*Y[eE][sS] -m Junk
+^X-Spam.*:[[:space:]]*Y[eE][sS] -m Junk
