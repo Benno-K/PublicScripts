@@ -1,0 +1,117 @@
+#!/bin/bash
+# mtest – einfache Mailtests mit swaks
+# feste Absender, Empfänger per Arg oder $USER
+
+set -uo pipefail
+
+MODE="ham"
+SNDACC="deliver@vmail"
+USR=${SNDACC%@*}
+TMP=$(echo $SNDACC | rev | base64)
+
+if [[ "${1:-}" == "-s" ]]; then
+    MODE="spam"
+    shift
+elif [[ "${1:-}" == "-g" ]]; then
+    MODE="gtube"
+    shift
+fi
+
+RCPT="${1:-$USER}"
+ID="$(mktemp -u XXXXX)"
+
+myip=$(ip -4 -o addr show scope global \
+ | awk '{print $4}' \
+ | cut -d/ -f1 \
+ | head -n1)
+SMTP="$myip"
+SMTP="localhost"
+PORT="20587"
+
+case "$MODE" in
+    ham)
+        FROM="benno@kardel.eu"
+        SUBJECT="Testmail ($ID)"
+        BODY=$(cat <<EOF
+Dies ist eine normale Testmail.
+
+Viele Grüße
+$ID
+EOF
+)
+        ;;
+    spam)
+        FROM='"Online Pharmacy" <promo@cheap-meds-direct247.biz>'
+        SUBJECT="RE: IMPORTANT - V1AGRA 80% OFF TODAY ONLY!!!"
+        BODY=$(cat <<EOF
+Testid: $ID
+Dear Customer,
+
+We are glad to inform you that you have been selected for a SPECIAL OFFER!
+
+Buy V1AGRA, C1ALIS and other premium medications with 80% DISCOUNT.
+No prescription needed. 100% discreet shipping worldwide.
+
+This is a limited time opportunity. Order now before stock runs out.
+
+Click here now:
+http://cheap-meds-direct247.biz/buy-now/index.php?promo=FREEPILLS
+
+Why pay more at local pharmacy?
+SAVE BIG MONEY TODAY!!!
+
+Best regards,
+Online Pharmacy Support Team
+
+To unsubscribe reply with REMOVE in subject.
+Testid: $ID
+EOF
+)
+        ;;
+    gtube)
+        FROM="tube@kardel.eu"
+        SUBJECT="GTUBE test ($ID)"
+        BODY=$(cat <<EOF
+This is the GTUBE, the
+        Generic
+        Test for
+        Unsolicited
+        Bulk
+        Email
+
+If your spam filter supports it, this message
+will be detected as spam.
+
+XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X
+
+Testid: $ID
+EOF
+)
+        ;;
+esac
+
+ssh s24-benno bin/mailtunnel
+maxtry=34 # 34x0,25s = 8s
+tries=0
+false
+while [ $? != 0 ] && [ $((++tries)) -lt $maxtry ]
+	do
+	printf .
+	sleep 0.25
+	ss -tlnp | grep -q $PORT
+	done
+[ $? = 0 ] && echo " now mailing ..." && swaks \
+    --server "$SMTP" \
+    --port "$PORT" \
+		--header "Message-ID: <20260203140212.$ID@cheap-meds-direct247.biz>" \
+		--header "Content-Type: text/plain; charset=UTF-8" \
+		--tls \
+		--auth-user "$USR" \
+		--auth-password "$TMP"\
+    --from "$FROM" \
+    --to "$RCPT" \
+    --header "Subject: $SUBJECT" \
+		--header "Content-Type: text/plain; charset=UTF-8" \
+    --body "$BODY" \
+		|| echo "Tunnel creation timeout"
+ssh s24-benno bin/mailtunnel -k
