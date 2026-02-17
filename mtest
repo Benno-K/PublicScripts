@@ -1,4 +1,13 @@
 #!/bin/bash
+##
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
+##
 # mtest – einfache Mailtests mit swaks
 # feste Absender, Empfänger per Arg oder $USER
 
