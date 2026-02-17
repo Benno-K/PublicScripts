@@ -8,15 +8,17 @@
 #   D(own)
 #   L(oader)
 #
-# Author: Benno K.
-# Email: benno@xyz.de
-# Github: https://www.github.com/Benno-K
-	Version=1.0-023
+Version=1.0-023
 # (Please do not comment out above line)
+##
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
 # 
 # This script is available for
 # public use under GPL V3 (see
 # file LICENSE)
+##
 #
 # Credits:
 # This script was heavily inspired by
