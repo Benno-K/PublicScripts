@@ -6,6 +6,13 @@
 # cover). Target is the Music directory of
 # an Intenso VideoScooter BT player.
 ##
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ##
 
 while [ ${1:0:1} = "-" ]

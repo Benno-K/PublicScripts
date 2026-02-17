@@ -1,32 +1,21 @@
-## friedl
-([english version is here](friedl.md))
-
-friedl steht für
-```
-F
-R
-I tzbox
-E ventlog
-D own
-L oader
-```
-
-Es handelt sich um ein bash-Skript das eine lokale
-Kopie aller FRITZ!Box Ereignisse bereitstellt und aktualisiert.
-Es wird pro Jahr eine Datei angelegt.
-
+### Was macht das Skript
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ### Was macht das Skript
 Es verbindet sich mit Deiner FRITZ!Box und holt sich die Ereignismeldungen. Dann speichert es sie in einer Datei. Beim nächsten Aufruf prüft es welche Ereignisse bereits in der Datei enthalten sind und hängt neue Ereignisse am Ende der Datei an.
 Dies kann man per cron auch regelmäßig automatisch erledigen lassen.
 
-### Los geht's
 mit
 - einem Benutzerkonto auf der FRITZ!Box mit der Berechtigung die Konfiguration zu lesen (welche leider auch die Schreibberechtigung beinhaltet). Empfohlen sei ein eigenes Konto für diesen Zweck das zudem mit einem guten[^1]  Kennwort gesichert sein sollte.
 [^1]: Ich schlage einen Mix aus Nummern, Groß- und Kleinbuchstaben und den Zeichen `+-=?~.:` vor, bei einer Länge von mindestens 20 Zeichen.
 
 - einem Verzeichnis in welchem die Ereignis-Dateien gespeichert werden sollen. Die Voreinstellung ist "`fblogs`" im Heimatverzeichnis des Nutzers (das ist mit `mkdir ~/fblogs` gleich getan to). Wer einen anderen Speicherort bevorzugt, kann die Option `-d` verwenden.
 
-### Ignorierte Ereignisse
 Das Holen der Ereignisse erzeugt seinerseits ein
 Login-Ereignis, das Skript ignoriert daher alle Login-Ereignisse des zum Download benutzten Kontos. Deswegen empfiehlt sich ein eigenes Konto für das Skript. Wer jedoch **alle** Ereignisse speichern möchte (auch die o. g. Logins), kann die Option -D oder --do-not-filter verwenden.
  
@@ -61,11 +50,8 @@ Login-Ereignis, das Skript ignoriert daher alle Login-Ereignisse des zum Downloa
   -v --version  report own version number
   ```
 
-## Wo gibt es das Skript?
 Es steht zum Download  [hier](https://raw.githubusercontent.com/Benno-K/PublicScripts/refs/heads/main/friedl) bereit.
 
-## Verwendete Umgebung
-### Zur Entwicklung
 |Computer||
 |--------|------|
 |Device |Raspberry Pi Model B Rev. 1.1| 
@@ -73,7 +59,6 @@ Es steht zum Download  [hier](https://raw.githubusercontent.com/Benno-K/PublicSc
 |Box      |FRITZ!Box 7590|
 |Box OS|FRITZ!OS 8.02|
 
-### Getestet unter
 
 |Computer||
 |--------|------|
@@ -98,5 +83,4 @@ Ich überlege, das Skript auch unter Windows 11 per WSL (Windows subsystem for L
 
 [^2]: Termux erschließt die Möglichkeiten des Android Betriebsystems für die Kommandozeile, beispielsweise das Nutzen von Skripten wie diesem. Termux läuft auf allen modernen Android-Systemen, es benötigt **keinerlei** root-Rechte. Siehe unter [https://termux.dev/](https://termux.dev/)
 
-#### Kontact 
 Am liebsten per github (Benno-K). Wer dort kein Konto hat, kann auch Mail an `benno (at-sign) xyz .de` senden.

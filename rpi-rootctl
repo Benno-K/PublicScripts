@@ -4,9 +4,9 @@
 # `rpi-rootctl` is a small, defensive command-line utility for Raspberry Pi systems with **multiple bootable root filesystems** (A/B setups).
 
 ##
-# Author: Benno K.
-# Email: benno@xyz.de
-# Github: https://www.github.com/Benno-K
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
 # 
 # This script is available for
 # public use under GPL V3 (see

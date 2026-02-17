@@ -10,16 +10,20 @@ So to get the IP-address you can call
 - `myip -4` or `myip4` for IPv4
 - `myip -6` or `myip6` for IPv6
 
-## Behind a FRITZ!Box
-If your computer is behind a FRITZ!Box you may also want the external IP-address of it. See [`fritzip`](fritzip.md) for this purpose.
-
+## Creating the links
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ## Creating the links
 For your convenience there is an (otherwise) undocumented feature
 `--makelinks` which will create the symlinks. It will use/request sudo permission, if
 the user has no write-permission for the directory
 where myip resides (no sudo, no links).
 
-## Examples
 ```
 # myip -4
 192.168.178.28
@@ -31,7 +35,6 @@ where myip resides (no sudo, no links).
 2003:cc:9f26:9900:ba27:ebff:fe06:849
 ```
 
-## Remark
 Because not explicitly handled/forbidden in the code, you might even call
  
   - `myip4 -4`

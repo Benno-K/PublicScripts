@@ -5,20 +5,14 @@ Each section lists the user prompts in order, with brief descriptions.
 
 ---
 
-## Bash Script Prompts
-
-1. **Prompt:**  
-   _I want a bash script that monitors the free/used space on several filesystems, shows the current and previous usage (previous being the last time the script was run), and only prints output if the change exceeds a given percentage threshold (default 5%). It should store its state in the user’s home directory. If no filesystems are specified, use the ones from the previous run. A “quiet” mode is nice to have, and I’d like the command line to be restorable with minimal effort._
-
-2. **Prompt:**  
-   _the perl version gives "f:? u:?" for all filesystems - please fix that to show zsed and free_  
-   *(While this is aimed at Perl, the Bash and Perl scripts were being developed in parallel with similar structure.)*
-
-3. **Prompt:**  
-   _Ok, for both versions (bash and perl) I would like all error messages, like wrong args,  to go to stderr while the script normal output still goes to stdout. Helpmsg should also go to stderr._  
-
----
-
+## Perl Script Prompts
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ## Perl Script Prompts
 
 1. **Prompt:**  
@@ -29,7 +23,6 @@ Each section lists the user prompts in order, with brief descriptions.
 
 ---
 
-## DCL Script Prompts
 
 1. **Prompt:**  
    _Now port it to a OpenVMS DCL command script that could run on a VAX or Alpha_
@@ -51,7 +44,6 @@ Each section lists the user prompts in order, with brief descriptions.
 
 ---
 
-## Documentation and Session Statistics Prompts
 
 1. **Prompt:**  
    _By the way: can you give me some statistical information on how many prompts i needed for each of the versions (bash,perl,dcl) and how much time we spent on all this?_
@@ -70,13 +62,11 @@ Each section lists the user prompts in order, with brief descriptions.
 
 ---
 
-## Session Time Statistics
 
 - **Session start:** 2025-07-03 15:30 UTC (estimated, based on earliest prompt)
 - **Session end:** 2025-07-03 17:55 UTC (based on latest prompt)
 - **Total elapsed time:** ~2 hours 25 minutes
 
-### Breakdown Table
 
 | Version | Prompts | Estimated Time (min) |
 |---------|---------|----------------------|
@@ -90,7 +80,6 @@ Each section lists the user prompts in order, with brief descriptions.
 
 ---
 
-## Notes
 
 - The Bash and Perl scripts were developed in parallel and share similar prompt history.
 - The DCL script required more iterative refinement and discussion, especially regarding style, lexicals, and argument parsing.

@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
 ##
-# Author: Benno K.
-# Email: benno@xyz.de
-# Github: https://www.github.com/Benno-K
-#
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
 # This script is available for
 # public use under GPL V3 (see
 # file LICENSE)
-#
-# rbackup - Automated Rsync-based System Backup Utility
-#
-# This script creates a full backup of the root filesystem to another partition labeled 'rootfs' (other than the current root).
-# It checks for sufficient space, supports interactive and batch/cron modes, and enforces manual approval of options for safety.
-# It uses rsync with safe defaults and logs all actions. Useful for SD card or disk cloning on Linux systems.
 ##
 
 set -euo pipefail

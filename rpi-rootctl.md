@@ -8,25 +8,20 @@ A short symlink alias `r2c` ("root to change") can be used for convenience.
 
 ---
 
-## Features
-
-- Detects all candidate root filesystem partitions
-- Shows detailed information (device, filesystem, size, transport, model)
-- Highlights the currently booted root filesystem
-- Interactive selection
-- Automatic backup of `/boot/cmdline.txt`
-- Strict option handling
-- `--dry-run` mode (no changes)
-
----
-
+## Usage
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ## Usage
 
 ```bash
 rpi-rootctl [OPTION]
 ```
 
-### Options
 
 - `--dry-run`, `-dry`, `-3`
   - Show the modified `cmdline.txt` on stdout
@@ -40,7 +35,6 @@ rpi-rootctl [OPTION]
 
 ---
 
-## Installation
 
 ```bash
 sudo install -m 0755 rpi-rootctl /usr/local/sbin/rpi-rootctl
@@ -49,7 +43,6 @@ sudo ln -s rpi-rootctl /usr/local/sbin/r2c
 
 ---
 
-## Safety Notes
 
 Changing the root filesystem affects system boot.
 Always keep a known-good fallback.

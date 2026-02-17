@@ -2,28 +2,14 @@
 Modern scripting languages have the ability
 to use some include directives to implement re-usable code and modularize code. This is somehow missing for bash as you can only `source` code (using `. filename`).
 
-## The idea
-To provide re-usable code, the idea was to 
-create code, that can be sourced to inherit it's function and, in addition to that, on the can execute it's function (which is useful for testing the function). 
-To make it easy and straightforward:
-1. Name file and function in it identical
-2. Store file in the same directory as the script
-
-Now you can use your code by
-1. Sourcing the file (defines function)
-2. Using the function
-
-Assuming you are coding sth. named `mytool` and you store the "include"s along with the script and if you go with 
-only one function per file and further assuming name that function after the file, the use can be used straightforward[^1][^2][^3].
-``` bash
-#!/bin/bash
-# Somewhere before it is used: source it
-. ${0%/*}/mytool
-# Further down in the code: use it
-mytool arg1 arg2 ...
-```
-See [^4] for what `${0%/*}` does.
-
+## Demo code
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ## Demo code
 To demonstrate this I provided two files:
 - bashIncludeDemo

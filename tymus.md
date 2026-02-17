@@ -6,24 +6,14 @@ Important points kept concise:
 - tymus invokes swaks <br/> swaks must be installed and in PATH. 
 - Profiles are one file per mailserver and are stored in the tymus subdirectory of the user's XDG config directory: `~/.config/tymus/<profile>`.
 
-## Command-line usage
-See below - output of  `tymus -h`
-```
-Usage: tymus [option..] [configfile]
-  tymus takes defs from config file to send a
-  test message through an SMTP-mailer
- Options:
-  -4    use IPv4 for connection
-  -6    use IPv6 for connection
-  -a    process ALL config files
-  -ci   display info for config file syntax
-  -c    config - prompt for creating a config file
-  -e    override EHLO from config
-  -l    list config files in config directory
-  -v    be verbose
-  -h    display this text
-```
-
+### Notes on options
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ### Notes on options
 - [configfile] required except with -a<br/> profile filename to use (resolved relative to `~/.config/tymus/`)
 - -4 / -6 <br/> force IPv4 or IPv6 respectively
@@ -35,8 +25,6 @@ Usage: tymus [option..] [configfile]
 - -v <br/> verbose mode for swaks. Will display the conversation with the mailserver including (**not encrypted**,  base64-encoded) credentials in **cleartext**.[^b64enc]
 [^b64enc]:This means you will probably not even recognize the credentials in the log, but possible attackers will surely. So keep an eye on the lines following `AUTH LOGIN`! The string `VXNlcm5hbWU6` is just base64 for the server requesting `Username:`, followed by the response, then `UGFzc3dvcmQ6` which is `Password:`, followed by the response to that.
 - -h <br/> display help (the usage text above)
-### Configuration options info
-#### Example: the `-ci` output as shown by the script
 ```
 Configuration variables and their values
  mailer   hostname of mailserver
@@ -60,10 +48,8 @@ ehlo=mymailer.mydomain.net
 ```
 The ehlo can be blank (or the ehlo-line omitted).
 
-## Credentials and ~/.netrc
 swaks reads SMTP credentials from `~/.netrc` (and otherwise prompts). Because of that, tymus profile files do not contain sensitive passwords. Put authentication credentials in `~/.netrc` for non-interactive use.
 
-### Example `~/.netrc` entry:
 ```
 machine smtp.example.com
   login myusername
@@ -74,26 +60,22 @@ Secure your netrc file:
 chmod 600 ~/.netrc
 ```
 
-## Security recommendations
 - Do not put secrets in profile files; keep credentials in `~/.netrc` and restrict `~/.netrc` with `chmod 600`.
 - Be careful when running `-a` (all profiles) to avoid sending accidental messages to many recipients.
 - Do not distribute any -v output. It will almost always reveal your credentials (even it you do not recognize this at first glance). They are encoded[^b64enc], but not encrypted.
 
 
-## Installation of tymus
 1. Copy the `tymus` script into a directory on your PATH (e.g., `/usr/local/bin`) or run it from the repository.
 2. Make it executable:
 ```sh
 chmod +x /path/to/tymus
 ```
 
-## Configuration: per-mailserver profiles
 - Profiles live in `~/.config/tymus/<profile>`.
 - Each profile file is one mailserver profile. The script requires a profile filename as argument (except when using -a option).
 - Do not include blank lines or comments in profile files: the parser treats every line as a VAR=VALUE assignment and will error on non-conforming lines.
 - Keys are case-sensitive and must match exactly the permitted variable names listed below.
 
-### Permitted profile variables (case-sensitive)
 The script documents these exact names in its config-info output. Use these names exactly:
 
 - `mailer`<br/>hostname of mailserver)
@@ -107,7 +89,6 @@ most cases.
 - `ip`<br/>IP protocol preference; influences IPv4/IPv
 - `noauth`<br/>if present SMTP-session will not try to log on
 
-### Example profile file `~/.config/tymus/my-mailserver1`:
 ```
 mailer=mx.freenet.de
 port=465
@@ -117,29 +98,24 @@ mode=tlsc
 ehlo=mymailer.mydomain.net
 ip=4
 ```
-### Profile parsing rules (summary)
 - Each line must be a single VAR=VALUE assignment.
 - Keys are case-sensitive; `from` is not the same as `From`.
 - Blank lines or comment lines are not accepted <br/> they will cause an error.
 - Unknown keys or malformed lines will cause an error and abort processing.
 - If you want the definitive key list, refer to the output of `./tymus -ci` on your system (it prints the exact valid keys and short descriptions).
 
-## Requirements
 - swaks (must be installed and available in PATH).
 - POSIX shell (bash/sh).
 - Typical unix utilities (cat, chmod, etc.).
 - PERL (as swaks depends on it)
 
-### Installing swaks on Debian/Ubuntu
 ```sh
 sudo apt update
 sudo apt install swaks
 ```
 
-### Note about swaks and Perl dependencies
 swaks is a Perl program that depends on a number of CPAN modules. Some distribution packages do not pull in every dependency and you may see Perl error messages after installing swaks. Prefer your distribution package manager over cpan/cpanm to install these dependencies.
 
-#### Helpful Debian/Ubuntu packages to satisfy swaks' dependencies:
 ```sh
 sudo apt update
 sudo apt install \
@@ -163,7 +139,6 @@ sudo apt install \
 You may have to adjust package names for your distribution/release.
 
 
-## Examples of use
 1) Use a profile named `my-mailserver1`:
 ```sh
 ./tymus my-mailserver1
@@ -189,21 +164,17 @@ You may have to adjust package names for your distribution/release.
 ./tymus -ci
 ```
 
-## Troubleshooting
 - swaks not found<br/>ensure `swaks` is installed and in PATH (`which swaks` or `swaks --version`).
 - swaks shows Perl errors about missing modules<br/> install missing Perl packages from your distribution (see list above).
 - Profile parse errors<br/> ensure every line in the profile is a valid VAR=VALUE using one of the permitted case-sensitive keys; remove blank lines and comments.
 - Authentication failures:<br/> ensure `~/.netrc` contains the correct `machine`/`login`/`password` and has permissions `600`. When in doubt, remove the machine/mailserver from netrc. Then you will be prompted for credentials.
 
-## License & contributing
 - Follow the repository license (see LICENSE in the repo).
 - Contributions: open a PR with changes or improvements to docs or example profiles.
 
-## Sample output
 Usually tymus does not produce any output. But if you need to
 troubleshoot a connection you can use the -v option.
 
-### Example for -v
 ```
 tymus -v myprovider
 ```

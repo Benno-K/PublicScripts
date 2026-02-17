@@ -5,13 +5,14 @@ It’s name combines **cron** and **chronologic** – the script is all about pu
 
 ---
 
-## Why?
-
-When a cron job sends you an error mail, you usually only know the **time** of the failure from the header of the mail, but not necessarily which cronjob triggered it.  
-With `chron`, you can immediately locate the failing job in its chronological context, making troubleshooting much easier and faster.
-
----
-
+## Features
+# Author: HimbeerToni
+# Email: Toni.Himbeer@fn.de
+# Repos: https://codeberg.org/Himbeertoni/PublicScripts
+# 
+# This script is available for
+# public use under GPL V3 (see
+# file LICENSE)
 ## Features
 
 - **Chronological listing** of all cron jobs (primary feature).
@@ -26,14 +27,11 @@ With `chron`, you can immediately locate the failing job in its chronological co
 
 ---
 
-## Usage
 
 ```bash
 chron <user-or-cronfile>
 ```
 
-## Example
-### Unordered Crontab
 
 Below is an unordered crontab example with comments:
 
@@ -56,7 +54,6 @@ Below is an unordered crontab example with comments:
 
 ---
 
-### Example Output (`chron' $`USER`)
 
 When run through `chron` $`USER`, the above entries would be listed in chronological order:
 
