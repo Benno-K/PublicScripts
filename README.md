@@ -10,18 +10,15 @@ Some of the scripts may need
 to be run under specific
 accounts to access some files.
 
-## chron
-# Author: HimbeerToni
-# Email: Toni.Himbeer@fn.de
-# Repos: https://codeberg.org/Himbeertoni/PublicScripts
-# 
-# This script is available for
-# public use under GPL V3 (see
-# file LICENSE)
+## ascreens
+Very simple script to list all "screen" sessions
+on the system.
+
 ## chron
 Command to list crontab entries in chronologial order
 (see [chron.md](chron.md)).
 
+## clean
 Very simple wrapper around
 a grep command that removes
 all comment lines (starting
@@ -31,6 +28,7 @@ zero or more filenames as
 parameters as of you would
 do with grep.
 
+## crondtab
 Easily edit or list files in
 /etc/cron.d which usually
 come with some software that
@@ -41,6 +39,7 @@ paramwters you like to handover
 to ctab at the end of the
 crondtab -c command to
 create the file with a single command line
+#### Examples
 > crondtab -c testit 20 30 w '\\*' pi '/usr/sbin/nologin'
 
 will create the file
@@ -65,10 +64,13 @@ command: /usr/sbin/nologin
 
 this runs nologin every day
 at 08:00 as user pi
+## ctab
 Little helper to manage cron
 files in /etc/cron.d/.
+### Usage
 > ctab [options...] [filename]
 
+#### Options
 - -c create a crontab file
 -  -s show a crontab file
 -  -l (without filename) list all crontab files
@@ -76,6 +78,7 @@ files in /etc/cron.d/.
  the reqired data. You can
  pass all the data asked as
  parameters.
+#### Example
 > ctab -c testit 20 30 w \\* pi /usr/sbin/nologin
 
 will create the file
@@ -85,11 +88,14 @@ the line
 
 which will invoke /usr/sbin/nologin every day at 20:30 as user pi 
 
+## ddnstool
 Manage your dynamic DNS entries.
 See [here](ddnstool.md)
 
+## diskmon
 See [diskmon.md](diskmon.md)
 
+## diskusage (obsolete)
 Replaced by [diskmon](#diskmon).
 Checks the usage of some file-systems
 for changes. Actually it does 
@@ -112,9 +118,11 @@ when you don't pass any as arguments,
 
 are: / /boot /ssd /data"
 
+## dovecot-lda-wrapper
 
 The `dovecot-lda-wrapper` acts as a flexible replacement for the standard `dovecot-lda`. It reads the full email message, evaluates headers or content against a configurable **rule file** (`/etc/dovecot/mboxrules`), and adds corresponding LDA options (like `-m Junk`) before invoking `dovecot-lda`. This allows SpamAssassin-flagged messages to be delivered to `Junk` while keeping legitimate messages in `INBOX`, without relying on Sieve or reinjection.
 
+### Rule Syntax
 
 - Each line in the rule file represents a single rule.
 - Format: `<REGEX><space><lda-option>`
@@ -123,6 +131,7 @@ The `dovecot-lda-wrapper` acts as a flexible replacement for the standard `dovec
 - Multiple rules can be defined; lda-options are appened rule after rule;of course multiple `-m`rules are ALL passed to dovecot-lda, which is taking the **last `-m`** option to determine the folder.
 - Typical LDA options: `-m <folder>` (e.g., `-m Junk`).
 
+### Download / Installation
 
 You can include the wrapper in your repository as `dldawrap.md` and install it on your mail server:
 
@@ -132,6 +141,7 @@ sudo chmod +x /usr/local/bin/dovecot-lda-wrapper
 ```
 
 Make sure your Postfix `master.cf` points to the wrapper and that your `mboxrules` file exists and is readable by the Postfix user.
+## fsERASE
 
 Abstract - re-initialize, scrub, empty
 a given filesystem,while keeping it's 
@@ -141,19 +151,24 @@ Display device and fs-info before asking
 for permission.
 
 
+## fritzip, extip, extip4, extip6
 Script to determine the external IP
 address of your FRITZ!box, which is your hosts IP as well in most cases. 
 See [fritzip](fritzip.md).
 
+## friedl
 Keep a copy of all events logged on a FRITZ!Box.
 See [friedl](friedl.md).
 
+## ghrelease
 Add github token to github
 config files
 
+## githooks
 Manage git hook scripts. See comments in the script for
 more information.
 
+## kpclean
 Clean out a directory where
 Keepass stores its database.
 Keepass stores a copy of the
@@ -179,6 +194,7 @@ See
 
 to find out how to specify.
 
+## myip, myip4, myip6
 Get your computers (first global) IP address.
 Can return IPv4 or IPv6, depending on your request
 (-4 or -6, myip4 or myip6)
@@ -186,6 +202,7 @@ See
 [myip](myip.md)
 and possibly also [fritzip](fritzip.md).
 
+## nonsequitur
 
 Script to fetch and store a specific cartoon by Wiley Miller,
 named "Non Sequitur"
@@ -198,6 +215,7 @@ image for a specific date and for today.
 Intended to run daily. Don't 
 run before 08:45 CET, the cartoon isn't available much earlier, otherwise you get yesterdays cartoon.
 
+### Usage
 /usr/local/bin/nonsequitur [-M] [-d YYYY/MM/DD ]
 
 -M  do not send mail
@@ -206,6 +224,7 @@ run before 08:45 CET, the cartoon isn't available much earlier, otherwise you ge
 
 -o  once a day (no download, if called repeatedly and file exists)
 
+### Why is this script public?
 It could reside in the user's
 ~/bin as well, it needs no
 permissions. I just put it 
@@ -213,11 +232,13 @@ to /usr/local/bin so that
 every authorized user can
 invoke it.
 
+## rbackup
 
 **Automated Rsync-based System Backup Utility**
 This script creates a full backup of the root filesystem to another device partition labeled `rootfs` (except the current
 root). See [rbackup.md](rbackup.md) for details.
 
+## screenify.sh
 
 See "man screen" to learn about the screen command 
 
@@ -241,11 +262,13 @@ It has been working perfectly for about a decade now.
 
 Better make sure that invocation can be temporarily disabled
 in the rare cause of a malfunctioning screenify. Otherwise you might lock out yourself.
+### Example
 ```
 if  [ ! -r ~/noscreenify ] && [ ! -r /etc/noscreenify ]; then  /usr/local/bin/screenify;[ $? > 9 ] && exit 0
 fi
 ```
 
+## pmcheck - perl module check
 
 Script created by ChatGPT, designed by 
 Purpose: Check Perl scripts in $PATH, detect missing modules, suggest apt packages, and list CPAN-only modules
@@ -267,6 +290,7 @@ Features:
 
 See [rpi-rootctl.md](rpi-rootctl.md) for details.
 
+## shredLenovoWSg
 Perl script to shred specific unwanted mails in
 my IMAP INBOX. (I subscribed getting some 
 notifications about new versions regarding my
@@ -274,14 +298,17 @@ purchase but got annoyed of getting daily
 notified about changes in the Safety and 
 Warranty manual.)
 
+### Parameters:
 - Recipient
 If not specified it will be
 prompted.
 
+## testmail
 Sends a timestamped test
 email. 
 
 
+## throttle info
 This reads out the Rasberry Pi's throttle-info byte and interprets the bits. So you find out whether your raspi is or was throttled and why.
 
 Depending on the bit currently set, you may see one or more of the following lines:
@@ -296,10 +323,12 @@ Depending on the bit currently set, you may see one or more of the following lin
 
 To use: Just run it on a Raspberry Pi.
 
+## tymus
 
 tymus is a small wrapper script to send test/diagnostic email messages from the command line. It reads defaults from a per-mailserver profile (config) file, constructs a swaks command for the SMTP transaction and runs it.
 See [tymus.md](tymus.md) for details.
 
+## upgchk
 
 Checks whether there are outstanding apt packages
 for upgrade. Sends a mail if there are upgrades.
@@ -309,6 +338,7 @@ initiate such an update (using sudo if not ran
 as root}.
 
 
+## zero-out-rootfs-freespace
 
 When using dd piped into gzip
 for backing up filesystems that are actually used, it pays to fill the
