@@ -29,12 +29,7 @@ fi
 RCPT="${1:-$USER}"
 ID="$(mktemp -u XXXXX)"
 
-myip=$(ip -4 -o addr show scope global \
- | awk '{print $4}' \
- | cut -d/ -f1 \
- | head -n1)
-SMTP="$myip"
-SMTP="localhost"
+MAILHOST="localhost"
 PORT="20587"
 
 case "$MODE" in
@@ -110,10 +105,8 @@ while [ $? != 0 ] && [ $((++tries)) -lt $maxtry ]
 	ss -tlnp | grep -q $PORT
 	done
 [ $? = 0 ] && echo " now mailing ..." && swaks \
-    --server "$SMTP" \
+    --server "$MAILHOST" \
     --port "$PORT" \
-		--header "Message-ID: <20260203140212.$ID@cheap-meds-direct247.biz>" \
-		--header "Content-Type: text/plain; charset=UTF-8" \
 		--tls \
 		--auth-user "$USR" \
 		--auth-password "$TMP"\
