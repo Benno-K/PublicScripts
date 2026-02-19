@@ -1,0 +1,9 @@
+#!/bin/sh
+MAILUSER="${RECIPIENT:-unknown}"
+
+if /usr/bin/rspamc learn_${1:-spam}; then
+    logger -p mail.info -t dovecot-rspam -t "SUCCESS: learned $1 for $MAILUSER"
+else
+    logger -p mail.err -t dovecot-rspa"FAIL: learning $1 for $MAILUSER"
+fi
+#exec /usr/bin/rspamc "learn_${1:-spam}"
