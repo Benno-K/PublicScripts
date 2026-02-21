@@ -1,10 +1,9 @@
-#!/bin/sh
-# $1 ist entweder "spam" oder "ham"
-ACTION=${1:-spam}
-MAILUSER="${RECIPIENT:-unknown}"
+#!/bin/bash
+# $1 ist ham oder spam oder leer
+Action="${1:-spam}"
 
-if /usr/bin/rspamc learn_$ACTION; then
-    logger -p mail.info -t dovecot-rspamd "SUCCESS: learned $ACTION for $MAILUSER"
+if /usr/bin/rspamc learn_$Action; then
+    logger -p mail.info -t dovecot-rspamd "learned $Action"
 else
-    logger -p mail.err -t dovecot-rspamd "FAIL: learning $ACTION for $MAILUSER"
+    logger -p mail.err -t dovecot-rspamd "FAIL: learning $Action"
 fi
