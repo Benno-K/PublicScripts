@@ -4,7 +4,7 @@
 
 # Your FRITZ!Box address (or name)
 # e.g. 192.168.178.1 (or fritz.box)
-######      but not below this      ######
+##
 # Author: HimbeerToni
 # Email: Toni.Himbeer@fn.de
 # Repos: https://codeberg.org/Himbeertoni/PublicScripts
@@ -12,7 +12,10 @@
 # This script is available for
 # public use under GPL V3 (see
 # file LICENSE)
-######      but not below this      ######
+##
+#***** You may need to change this  ******
+fritzbox=fritz.box
+#***** but no changes after this    ******
 
 # My own basename - how this script is called
 bn=$(basename $0)

@@ -1,9 +1,14 @@
 #!/bin/bash
 # $1 ist ham oder spam oder leer
 Action="${1:-spam}"
-
+if [ -z "$2" ]; then
+	Message="a user classified message as $Action"
+else
+	Message="user $2 classified message as $Action"
+fi
+User=", user $2"
 if /usr/bin/rspamc learn_$Action; then
-    logger -p mail.info -t dovecot-rspamd "learned $Action"
+    logger -p mail.info -t dovecot-rspamd "$Message"
 else
     logger -p mail.err -t dovecot-rspamd "FAIL: learning $Action"
 fi
