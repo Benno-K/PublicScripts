@@ -2,14 +2,10 @@
 
 You can simple use `fritzip` to get the external IP-address of your FRITZ!Box. It must be configured to answer UPNP requests, which is the default,  but may have been disabled by some paranoid FRITZ!Box admin.
 
-## Possible sources of confusion
-# Author: HimbeerToni
-# Email: Toni.Himbeer@fn.de
-# Repos: https://codeberg.org/Himbeertoni/PublicScripts
-# 
-# This script is available for
-# public use under GPL V3 (see
-# file LICENSE)
+## Commands to use
+
+Use `fritzip -4` to get the IPv4 address. Use `fritzip -6` to get the IPv6 address.
+
 ## Possible sources of confusion
 If you only have the good old IP Version 4 running on your system you *can stop to read* at this point.
 
@@ -33,6 +29,7 @@ And if this is not already confusing enough, if you want to use `fritzbox.dunno.
 To give you another headache, you could try to obtain a SSL-certificate for `fritzbox.dunno.com` using the computer hosting `mysrv.dunno.com` where the challenge-response mechanism fails to  upload the challenge-file to `fritzbox.dunno.com` (which does not serve files in the path required for the response at all).
 
 
+### Conclusion
 To reach IPv4 servers use the address of the fritzbox.
 To reach Ipv6 servers use their global (non-ULA) IPv6 address. To get this address, I suggest to use  [`myip`](myip.md).
 

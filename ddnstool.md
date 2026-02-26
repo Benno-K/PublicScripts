@@ -1,12 +1,35 @@
 # ddnstool
-## "abuse" responses from your DDNS server
-# Author: HimbeerToni
-# Email: Toni.Himbeer@fn.de
-# Repos: https://codeberg.org/Himbeertoni/PublicScripts
-# 
-# This script is available for
-# public use under GPL V3 (see
-# file LICENSE)
+## Abstract
+Script to update the DNS entries of your dynamic IP-addresses most providers support the DynDNS protocol (V2).
+
+`ddnstool` "speaks" DynDNS to your providers DDNS-server to update your servers names.
+
+It looks whether the current external IP adddress is matching the address in DNS. If it differs it tells the DDNS-server to update the record.
+
+It checks both, the IP V4 and (if applicable) the IP V6 address.
+
+Since all DDNS-servers require authorization the script must have access to the credentials.
+You need to store them in an encoded file.
+
+This is far away from being secure, so make sure
+the credentials for your DDNS account are **not** used anywhere else. And don't share the credentials file with anyone!
+
+Use the option `-c` or `-crinit` to enter and store
+the credentials. You will be prompted for 
+- name **or** IP 
+    - of your fritzbox 
+    - the dns-server[^1]
+    -  the DynDNS server
+- and for that DynDNS-server
+    - the username
+    - the password
+
+All this is going to be stored _encoded_, **but _not_ encrypted** in `~/.ddnscr`. This is **not** save, as anyone can decode it. (But it is  better than storing plaintext credentials). Make sure your DDNS-credentials are not used on any other system!
+[^1]: the one that reflects DDNS-modifications first, usually one of your provider's DNS-servers.
+
+For detailed command arguments description
+use `ddnstool -h` or `ddnstool --help`
+
 ## "abuse" responses from your DDNS server
 To prevent overloading through senseless or potential harmful requests, most DDNS server take some precaution. If your script is bothering the server somehow (let's say with 10 requests per second to set a name to the IP it already has), the server may detect this and respond with the response "abuse". Moreover your account will be put on some blacklist, and even valid requests will be blocked. The only thing you can do about this, is to **stop sending any request** to the server and **wait**. Maybe for minutes, maybe for hours, only the provider knows.
 To avoid this kind of trouble as early as possible
@@ -15,6 +38,7 @@ until you invoke `ddnstool -ra` to reset the abuse
 count.
 
 
+### ddsntool--help output
 
 ``` 
   Usage: ddnstool [options] [name ..]
@@ -64,6 +88,7 @@ count.
      Check whether the IPv4 or IPv6 has changed, if so
      update DDNS
 ```
+### ddsntool--help-abuse output
 
 ```
 DDNS response "abuse"

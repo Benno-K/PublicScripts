@@ -11,14 +11,10 @@ Ideal for SD card or disk cloning on Linux systems.
 You do **not** need to run this script with `sudo`—if not started as root, it will re-invoke itself using `sudo` automatically.
 
 
-## Options
-# Author: HimbeerToni
-# Email: Toni.Himbeer@fn.de
-# Repos: https://codeberg.org/Himbeertoni/PublicScripts
-# 
-# This script is available for
-# public use under GPL V3 (see
-# file LICENSE)
+## Note
+By default, rback will not produce any output in batch mode, and not much if run interactively.
+So, if you want information, what files are or would have been be processed, you should have a look at rsync-options (`man rsync`). You can add these at the end of the  rbackup command introduced by  `--`. All options after that are passed on to rsync. So to get detailed file-proccessing information you could use `-- -i'.
+
 ## Options
 
 - `-c`, `--cleanup`  
@@ -34,7 +30,9 @@ You do **not** need to run this script with `sudo`—if not started as root, it 
 - `--`  
   All following options are passed directly to `rsync`.
 
+## Usage
 
+### Interactive Backup (run)
 
 ```sh
 ./rbackup --dry-run
@@ -46,6 +44,7 @@ You will be prompted with source and target device information, and asked to cho
 - `a` to approve for cron but NOT run now.
 - `q` to quit.
 
+### Cron/Batch Backup (approve + cron)
 
 First, approve desired options interactively:
 ```sh
@@ -58,11 +57,13 @@ Then, schedule via cron. The script will only run with previously approved optio
 ```
 If no approval file exists for the chosen options, the cron run will be blocked and logged.
 
+## Notes
 
 - The script requires root privileges, but will automatically use `sudo` if you do not have them.
 - All operations are logged in `/var/log/rbackup.log`.
 - Approval mechanism prevents accidental or malicious use in cron jobs.
 
+## Example
 
 Interactive run:
 ```sh
@@ -79,5 +80,6 @@ Cron run (after prior approval):
 # (No prompt; runs automatically if previously approved.)
 ```
 
+## License
 
 GPLv3

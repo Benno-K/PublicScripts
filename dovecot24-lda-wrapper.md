@@ -1,13 +1,7 @@
 # dovecot-lda-wrapper
 
-### Ziel
-# Author: HimbeerToni
-# Email: Toni.Himbeer@fn.de
-# Repos: https://codeberg.org/Himbeertoni/PublicScripts
-# 
-# This script is available for
-# public use under GPL V3 (see
-# file LICENSE)
+## Postfix + SpamAssassin + Dovecot 2.4 – Zustellung mit Wrapper
+
 ### Ziel
 Spam-Mails zuverlässig anhand von SpamAssassin-Headern in **Junk** zustellen, legitime Mails in **INBOX** – **ohne** Reinjektion, **ohne** Sieve, **ohne** LMTP-Probleme.
 
@@ -15,6 +9,7 @@ Dieses Dokument beschreibt einen **produktiven Ansatz**, der auch mit **Dovecot 
 
 ---
 
+### Hintergrund / Problemstellung
 
 Mit **Dovecot 2.4** gilt:
 
@@ -36,9 +31,11 @@ In der Praxis scheitert das klassische Setup jedoch:
 
 --
 
+### Lösungskonzept
 
 Die Entscheidung *wohin* eine Mail zugestellt wird, erfolgt **vor** Dovecot, aber **nach** SpamAssassin – durch einen **Wrapper**.
 
+#### Architektur
 
 ```
   → spamassassin_virtual (pipe)
@@ -47,6 +44,7 @@ Die Entscheidung *wohin* eine Mail zugestellt wird, erfolgt **vor** Dovecot, abe
            → dovecot-lda -m Junk | INBOX
 ```
 
+#### Eigenschaften
 
 - ✔ keine Reinjektion
 - ✔ kein Postfix-Filter
@@ -56,7 +54,9 @@ Die Entscheidung *wohin* eine Mail zugestellt wird, erfolgt **vor** Dovecot, abe
 
 ---
 
+### Postfix-Konfiguration (relevanter Teil)
 
+#### master.cf
 
 ```text
 spamassassin_virtual unix - n n - - pipe
@@ -73,6 +73,7 @@ mit
 
 ---
 
+### Wrapper-Skript
 Die aktuelle Version befindet sich unter 
 - [Github -> Benno-K-> PublicScripts](https://github.com/Benno-K/PublicScripts/) als
 - [dovecot-lda-wrapper](https://github.com/Benno-K/PublicScripts/blob/main/dovecot-lda-wrapper).
@@ -85,6 +86,7 @@ curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq 
 ```
 (so kompliziert ist das Kommando, weil gezielt ein Script aus der ganzen Sammlung extrahiert wird)
 
+#### Beispielcode
 (unterscheidet sich vom aktuellen Release)[^basename].
 [^basename]: Fragen zu "```me=${0##*/}```" ???<br/> Nun, das POSIX-Konstrukt ```${0##*/}```  erfüllt dieselbe Aufgabe wie ```$(basename $0)```, nur durch Variablen-Substitution und ohne Kommando-Ausführung in einer Subshell. Übrigens: Statt ```dirname $0```  geht auch ```${0%/*}```. Neugierig, was da noch alles geht:
 unter
@@ -170,6 +172,7 @@ $lda $opts "$@" <"$tmp"
 exit
 ```
 ---
+### Regeldatei
 Pfad: `/etc/dovecot/mboxrules`
 Beispiel:
 ```config
@@ -190,6 +193,7 @@ curl -s https://api.github.com/repos/Benno-K/PublicScripts/releases/latest | jq 
 > Das Kommando ist aber länger als die Regel selbst. Selbst erstellen spart also Tipparbeit.  ;-)
 ---
 
+### Logging / Debugging
 
 - Wrapper loggt über `logger -p mail.info`
 - Zeitstempel ISO-8601 mit Mikrosekunden
@@ -202,6 +206,7 @@ dovecot-lda-wrapper: added "-m Junk" to lda-command
 
 ---
 
+### Unterschiede Dovecot 2.3 vs 2.4
 
 | Feature | Dovecot 2.3 | Dovecot 2.4 |
 |---------|------------|-------------|
@@ -212,6 +217,7 @@ dovecot-lda-wrapper: added "-m Junk" to lda-command
 
 ---
 
+### Fazit
 
 - Spam-Sortierung mit Dovecot 2.4 ist möglich **nur mit externem Wrapper**.
 - Wrapper übernimmt Policy, Dovecot übernimmt reine Zustellung.
