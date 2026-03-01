@@ -1,0 +1,22 @@
+MAKEFLAGS += --no-print-directory
+SIEVE_DIR = /etc/dovecot/sieve
+SIEVE_SCRIPTS = $(wildcard *.sieve)
+SIEVE_DEST := $(addprefix $(SIEVE_DIR)/, $(notdir $(SIEVE_SCRIPTS)))
+STAMP_FILE = .sieve_installed.stamp
+
+.PHONY: all clean run
+
+all: $(SIEVE_DEST) run
+
+$(SIEVE_DEST): $(SIEVE_DIR)/%: %
+	@sudo install -m 644 -o vmail -g vmail $< $@
+	@touch $(STAMP_FILE)  # Update stamp only if install happened
+
+run: $(STAMP_FILE)
+	@sudo make $(MAKEFLAGS) -C $(SIEVE_DIR)
+
+$(STAMP_FILE): $(SIEVE_SCRIPTS)
+	@touch -c $(STAMP_FILE)  # Create stamp if missing, don't update otherwise
+
+clean:
+	@echo "No local files to clean."
