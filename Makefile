@@ -1,3 +1,4 @@
+MAKEFLAGS += --no-print-directory
 SHELL = /bin/bash
 # testmail to be fixed #FIXME
 TARGETS = fritzip myip nonsequitur zero-out-rootfs-freespace dusage pushsslcert2fb clean crondtab kpclean ctab ghrelease ruthe whateverrun syncthing-upd ascreens upgchk screenify doAptUpgrade htmlwrap htmlmailx ddfbset homeaddr f2bsts friedl ddnstool githooks pmcheck chron rbackup sshdRestarter mmutt tymus throttleinfo getGoComics sendInlImgMai dovecot-lda-wrapper sievespamlearn
@@ -6,6 +7,8 @@ PTARGETS=git-web-viewer.php webgit.php
 STARGETS=sshdRestarter
 CTARGETS=getGoComicsList.yml
 SBTARGETS=rpi-rootctl
+SIEVEC = sievec
+SIEVE_FLAGS =
 
 LCFGDIR = /home/pi/.config
 LBINDIR = /usr/local/bin
@@ -19,7 +22,7 @@ POWNER  = www-data
 PGROUP  = www-data
 PSTYLES	= dark-theme light-theme webgit-layout
 
-install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
+install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS) dovecot
 	@for n in $(CTARGETS);\
 	do \
 	[ -r $(LCFGDIR)/$$n ] && diff -q $$n $(LCFGDIR)/$$n > /dev/null;\
@@ -44,14 +47,6 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 	   sudo install -m 755 -t $(LBINDIR) $$n;\
 	fi;\
 	done
-	@for n in mboxrules;\
-	do \
-	  [ -r $(MBXRULED)/$$n ] && diff -q $$n $(MBXRULED)/$$n > /dev/null;\
-  if [ "$$?" != "0" ];then \
-     echo sudo install -m 755 -t $(MBXRULED) $$n;\
-     sudo install -m 755 -t $(MBXRULED) $$n;\
-  fi;\
-	done
 	@for n in $(SBTARGETS);\
 	do \
 	[ -r $(SBTRGDIR)/$$n ] && diff -q $$n $(SBTRGDIR)/$$n > /dev/null;\
@@ -72,6 +67,21 @@ install: $(TARGETS) $(UTARGETS) $(STARGETS) $(CTARGETS) $(SBTARGETS)
 		 echo "DON'T FORGET TO ENABLE/START $$n";\
 	fi;\
 	done
+
+# Pattern rule: How to turn a .sieve into a .svbin
+/etc/dovecot/sieve/%.sieve: %.sieve
+	@echo "Cooying dovecot sieve script: $<"
+	$(SIEVEC) $(SIEVE_FLAGS) $< $@
+	sudo install -m 755 -t /etc/dovecot/sieve $< $@
+
+# Dovecot
+dovecot:
+	@make $(MAKEFLAGS) -f Makefile.dovecot
+
+# Clean up generated binaries
+svclean:
+	rm -f *.svbin
+
 
 restofabove:
 	echo for dusage;\
