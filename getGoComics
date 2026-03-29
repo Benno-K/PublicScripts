@@ -195,6 +195,18 @@ if [ -z "${imgUrl}" ]; then
 	echo >&2 "cannot retrieve image file url"
 	echo >&2 " from ${url}"
 	echo >&2 " via https://chrome.browserless.io/content"
+#	echo >&2 "re-doing - please look below"
+#	curl -s -X POST \
+#		-H "Content-Type: application/json" \
+#		-H 'Cache-Control: no-cache' \
+#		-d "{\"url\": \"$url\"}" \
+#		"https://chrome.browserless.io/content?token=$apiKey"
+	echo >&2 ""
+	echo >&2 "To save manually visit URL above,"
+	echo >&2 "download image and rename it in gallery to"
+	echo >&2 " $(date +Non-Sequitur-%Y-%m-%d)"
+	echo >&2 "then execute in termux"
+	echo >&2 " mv $(date +st/dl/Non-Sequitur-%Y-%m-%d.\*\ st/0/Cartoons/Wiley–Miller/%Y/)"
 	exit 1
 else
 	# Check requested against received date
