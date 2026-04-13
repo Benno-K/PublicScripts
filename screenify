@@ -9,7 +9,7 @@ if [ $? = 0 ] && [ "$(tty)" != "not a tty" ]; then
 	# then start or resume screen session
   if  [ ${#STY} = 0 ]; then
     # Check for existing detached sessions
-    # sessname=$(screen -ls | awk '/(Detached)/{print $1;exit}')
+    sessname=$(screen -ls | awk '/(Detached)/{print $1;exit}')
 		# and take the one using the lowest pty
 		maxscr=999999
 		for scr in $(screen -ls|awk '/Detached/{print $1}')
