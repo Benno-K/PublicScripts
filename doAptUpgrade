@@ -48,7 +48,7 @@ apt-get -y \
 	-o Dpkg::Progress-Fancy="0" \
 	-o Dpkg::Use-Pty="0" \
   full-upgrade \
-2>&1 >"$log"
+2>&1 | grep -v 'Not building database; man-db/auto-update is not' >"$log"
 
 # ------------------------------
 # Only send an email if there were changes
