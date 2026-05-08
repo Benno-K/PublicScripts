@@ -15,11 +15,13 @@ count=$(($(( $(df -m /|awk '/^\/dev\/root/{print $4}')-500))/100))
 # let other processes still
 # access the rootfs without
 # getting IO-errors
+trap "rm -rf /zeroes$$" EXIT
 dd bs=100M if=/dev/zero of=/zeroes$$ count=$count oflag=nonblock
 
 # Remove again the file to
 # make the space available
 # again
-rm -rf /zeroes$$
+# remove done by EXIT trap 
+# rm -rf /zeroes$$
 
 exit
